@@ -5,6 +5,21 @@ All notable changes to caddy-vps-toolkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-11
+### Added
+- Add automatic SSL certificate monitoring and renewal alerts
+- Performance benchmarks with BenchmarkDotNet
+- Improved input validation and error messages
+
+### Fixed
+- Edge case handling for null/empty inputs
+- Resource cleanup in disposal paths
+- Thread safety improvements
+
+### Changed
+- Optimized hot paths with Span<T> and object pooling
+- Better exception messages with parameter details
+
 ## [1.0.0] - 2025-10-13
 
 ### Added
@@ -107,12 +122,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upcoming Features (Roadmap)
 
-### v1.1.0 (Q1 2026)
-- [ ] PostgreSQL backend as alternative to SQLite
-- [ ] Advanced service filtering and search
-- [ ] Metrics export to CloudWatch / Datadog
-- [ ] Automated backup scheduling via cron
-
 ### v2.0.0 (2026)
 - [ ] Distributed mode for multi-VPS management
 - [ ] Web UI dashboard
@@ -126,6 +135,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date    | Support Until  |
 |---------|----------------|----------------|
+| 1.1.0   | Jun 11, 2026   | Jun 11, 2027   |
 | 1.0.0   | Oct 13, 2025   | Oct 13, 2026   |
 | 0.x.x   | Various        | Unsupported    |
 
@@ -161,4 +171,4 @@ For questions about releases or roadmap:
 
 ---
 
-**Last Updated:** October 13, 2025
+**Last Updated:** May 14, 2026

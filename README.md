@@ -122,7 +122,7 @@ sudo ./publish/caddy-vps-toolkit config init
 
 ```bash
 # Download the latest release
-wget https://github.com/Sarmkadan/caddy-vps-toolkit/releases/download/v1.0.0/caddy-vps-toolkit-linux-x64.tar.gz
+wget https://github.com/Sarmkadan/caddy-vps-toolkit/releases/download/v1.1.0/caddy-vps-toolkit-linux-x64.tar.gz
 tar -xzf caddy-vps-toolkit-linux-x64.tar.gz
 sudo ./install.sh
 ```
