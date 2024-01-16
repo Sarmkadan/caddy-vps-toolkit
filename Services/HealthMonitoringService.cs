@@ -179,8 +179,9 @@ namespace CaddyVpsToolkit.Services
             var stopwatch = Stopwatch.StartNew();
             try
             {
-                var request = new HttpRequestMessage(new HttpMethod(config.HttpMethod), url);
-                var response = await _httpClient.SendAsync(request);
+                // Fix: Ensure proper disposal of IDisposable HttpRequestMessage and HttpResponseMessage to prevent socket leaks
+                using var request = new HttpRequestMessage(new HttpMethod(config.HttpMethod), url);
+                using var response = await _httpClient.SendAsync(request);
                 stopwatch.Stop();
 
                 var isHealthy = (int)response.StatusCode == config.ExpectedHttpStatus;

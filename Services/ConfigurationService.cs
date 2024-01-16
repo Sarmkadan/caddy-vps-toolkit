@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -19,12 +20,13 @@ namespace CaddyVpsToolkit.Services
     public class ConfigurationService
     {
         private readonly IConfigurationRepository _repository;
-        private readonly Dictionary<string, string> _cache;
+        // Fix: Use ConcurrentDictionary to prevent thread-safety issues during concurrent cache access
+        private readonly ConcurrentDictionary<string, string> _cache;
 
         public ConfigurationService(IConfigurationRepository repository)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-            _cache = new Dictionary<string, string>();
+            _cache = new ConcurrentDictionary<string, string>();
             InitializeDefaults();
         }
 
@@ -103,7 +105,8 @@ namespace CaddyVpsToolkit.Services
         public async Task<bool> DeleteAsync(string key)
         {
             var result = await _repository.DeleteAsync(key);
-            _cache.Remove(key);
+            // Fix: Use TryRemove for ConcurrentDictionary
+            _cache.TryRemove(key, out _);
             return result;
         }
 
