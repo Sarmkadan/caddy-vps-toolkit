@@ -10,7 +10,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Domain.Models;
-using Newtonsoft.Json;
 
 namespace CaddyVpsToolkit.Data
 {

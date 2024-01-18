@@ -6,10 +6,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Data;
-using Newtonsoft.Json;
 
 namespace CaddyVpsToolkit.Services
 {
@@ -89,7 +89,7 @@ namespace CaddyVpsToolkit.Services
                 else if (typeof(T) == typeof(string))
                     return (T)(object)value;
 
-                return JsonConvert.DeserializeObject<T>(value);
+                return JsonSerializer.Deserialize<T>(value);
             }
             catch (Exception ex)
             {
@@ -129,7 +129,7 @@ namespace CaddyVpsToolkit.Services
             try
             {
                 var json = await File.ReadAllTextAsync(filePath);
-                var config = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+                var config = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
 
                 if (config != null)
                 {
@@ -155,7 +155,7 @@ namespace CaddyVpsToolkit.Services
             try
             {
                 var config = await GetAllAsync();
-                var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
 
                 var directory = Path.GetDirectoryName(filePath);
                 if (!Directory.Exists(directory))

@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 
 namespace CaddyVpsToolkit.Configuration
 {
@@ -26,9 +26,9 @@ namespace CaddyVpsToolkit.Configuration
             try
             {
                 var json = File.ReadAllText(path);
-                var obj = JObject.Parse(json);
+                using var doc = JsonDocument.Parse(json);
 
-                foreach (var prop in obj.Properties())
+                foreach (var prop in doc.RootElement.EnumerateObject())
                 {
                     _configuration[prop.Name] = prop.Value.ToString();
                 }

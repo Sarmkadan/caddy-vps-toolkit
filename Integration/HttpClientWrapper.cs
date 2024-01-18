@@ -6,9 +6,9 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Utilities;
-using Newtonsoft.Json;
 
 namespace CaddyVpsToolkit.Integration
 {
@@ -62,7 +62,7 @@ namespace CaddyVpsToolkit.Integration
             {
                 var request = CreateRequest(HttpMethod.Post, url, headers);
                 request.Content = new StringContent(
-                    JsonConvert.SerializeObject(data),
+                    JsonSerializer.Serialize(data),
                     System.Text.Encoding.UTF8,
                     "application/json"
                 );
@@ -80,7 +80,7 @@ namespace CaddyVpsToolkit.Integration
             {
                 var request = CreateRequest(HttpMethod.Put, url, headers);
                 request.Content = new StringContent(
-                    JsonConvert.SerializeObject(data),
+                    JsonSerializer.Serialize(data),
                     System.Text.Encoding.UTF8,
                     "application/json"
                 );
@@ -125,7 +125,7 @@ namespace CaddyVpsToolkit.Integration
             {
                 var data = typeof(T) == typeof(string)
                     ? (T)(object)content
-                    : JsonConvert.DeserializeObject<T>(content);
+                    : JsonSerializer.Deserialize<T>(content);
 
                 return new HttpResponse<T>
                 {

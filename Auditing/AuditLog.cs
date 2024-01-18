@@ -7,8 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace CaddyVpsToolkit.Auditing
 {
@@ -90,7 +90,7 @@ namespace CaddyVpsToolkit.Auditing
         {
             try
             {
-                var json = JsonConvert.SerializeObject(entry);
+                var json = JsonSerializer.Serialize(entry);
                 File.AppendAllText(_logPath, json + Environment.NewLine);
             }
             catch
