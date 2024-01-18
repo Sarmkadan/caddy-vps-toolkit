@@ -1,0 +1,217 @@
+# Docker Compose example for testing caddy-vps-toolkit
+# This sets up a complete local testing environment with multiple services
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: example-postgres
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: example-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # Node.js API Service (backend)
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: example-api
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/myapp
+      REDIS_URL: redis://redis:6379
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-network
+    volumes:
+      - ./services/api:/app
+      - /app/node_modules
+
+  # React Web Application
+  web:
+    build:
+      context: ./services/web
+      dockerfile: Dockerfile
+    container_name: example-web
+    environment:
+      NODE_ENV: development
+      REACT_APP_API_URL: http://api:8080
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-network
+    volumes:
+      - ./services/web:/app
+      - /app/node_modules
+
+  # Admin Dashboard Service
+  admin:
+    build:
+      context: ./services/admin
+      dockerfile: Dockerfile
+    container_name: example-admin
+    environment:
+      NODE_ENV: development
+      API_URL: http://api:8080
+      PORT: 9000
+    ports:
+      - "9000:9000"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-network
+
+  # Caddy Reverse Proxy
+  caddy:
+    image: caddy:latest
+    container_name: example-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: localhost
+    depends_on:
+      - web
+      - api
+      - admin
+    networks:
+      - app-network
+
+  # Prometheus Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: example-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - app-network
+
+  # Grafana Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: example-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  app-network:
+    driver: bridge
+
+# To use this file:
+#
+# 1. Set up service directories:
+#    mkdir -p services/{api,web,admin}
+#
+# 2. Create Dockerfiles for each service (or use existing images)
+#
+# 3. Create Caddyfile with:
+#    localhost {
+#        reverse_proxy /api* api:8080
+#        reverse_proxy / web:3000
+#    }
+#    admin.localhost {
+#        reverse_proxy / admin:9000
+#    }
+#
+# 4. Start all services:
+#    docker-compose up -d
+#
+# 5. Test toolkit with:
+#    caddy-vps-toolkit service add \
+#      --name api \
+#      --port 8080 \
+#      --domain api.localhost \
+#      --health-check-url http://localhost:8080/health
+#
+# 6. View services:
+#    caddy-vps-toolkit service list
+#
+# 7. Check health:
+#    caddy-vps-toolkit health check api
+#
+# Services are accessible at:
+# - Web: http://localhost:3000
+# - API: http://localhost:8080
+# - Admin: http://localhost:9000
+# - Grafana: http://localhost:3001
+# - Prometheus: http://localhost:9090
