@@ -6,8 +6,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using System.Xml.Serialization;
-using Newtonsoft.Json;
 
 namespace CaddyVpsToolkit.Utilities
 {
@@ -24,7 +24,7 @@ namespace CaddyVpsToolkit.Utilities
         {
             try
             {
-                return JsonConvert.SerializeObject(obj, Formatting.Indented);
+                return JsonSerializer.Serialize(obj, new JsonSerializerOptions { WriteIndented = true });
             }
             catch (Exception ex)
             {
@@ -39,7 +39,7 @@ namespace CaddyVpsToolkit.Utilities
         {
             try
             {
-                return JsonConvert.DeserializeObject<T>(json);
+                return JsonSerializer.Deserialize<T>(json);
             }
             catch (Exception ex)
             {
@@ -54,7 +54,7 @@ namespace CaddyVpsToolkit.Utilities
         {
             try
             {
-                return JsonConvert.DeserializeObject<T>(json) ?? defaultValue;
+                return JsonSerializer.Deserialize<T>(json) ?? defaultValue;
             }
             catch
             {

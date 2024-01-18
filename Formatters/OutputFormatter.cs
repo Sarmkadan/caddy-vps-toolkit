@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 
 namespace CaddyVpsToolkit.Formatters
 {
@@ -150,7 +151,7 @@ namespace CaddyVpsToolkit.Formatters
             if (items == null)
                 items = new List<T>();
 
-            return Newtonsoft.Json.JsonConvert.SerializeObject(items, Newtonsoft.Json.Formatting.Indented);
+            return JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true });
         }
 
         public string Format<T>(T item)
@@ -158,7 +159,7 @@ namespace CaddyVpsToolkit.Formatters
             if (item == null)
                 return "null";
 
-            return Newtonsoft.Json.JsonConvert.SerializeObject(item, Newtonsoft.Json.Formatting.Indented);
+            return JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });
         }
     }
 
