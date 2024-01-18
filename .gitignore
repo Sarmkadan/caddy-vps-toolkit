@@ -28,6 +28,7 @@ bld/
 *.iml
 *.iws
 *.ipr
+*.DotSettings.user
 
 # Visual Studio Code
 .vscode/
@@ -37,6 +38,7 @@ bld/
 *.nupkg
 *.snupkg
 .nuget/
+packages/
 
 # Build Artifacts
 artifacts/
