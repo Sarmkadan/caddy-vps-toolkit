@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using CaddyVpsToolkit.Core;
+using ValidationException = System.ComponentModel.DataAnnotations.ValidationException;
 
 namespace CaddyVpsToolkit.Domain.Models
 {

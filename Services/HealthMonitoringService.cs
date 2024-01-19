@@ -47,7 +47,7 @@ namespace CaddyVpsToolkit.Services
                 {
                     HealthCheckType.Http => await CheckHttpHealthAsync(service),
                     HealthCheckType.Tcp => await CheckTcpHealthAsync(service),
-                    _ => throw new NotSupportedException($"Health check type '{service.HealthCheck.Type}' is not supported")
+                    _ => throw new System.NotSupportedException($"Health check type '{service.HealthCheck.Type}' is not supported")
                 };
 
                 result.ServiceId = serviceId;

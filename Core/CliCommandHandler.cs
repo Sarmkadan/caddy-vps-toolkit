@@ -112,7 +112,7 @@ namespace CaddyVpsToolkit.Core
             var services = await _serviceManager.GetAllServicesAsync();
             Console.WriteLine($"Total Services: {services.Count}");
             Console.WriteLine(new string('-', 80));
-            Console.WriteLine($"{'ID',-36} {'Name',-20} {'Type',-15} {'Status',-12} {'Port',-6}");
+            Console.WriteLine($"{"ID",-36} {"Name",-20} {"Type",-15} {"Status",-12} {"Port",-6}");
             Console.WriteLine(new string('-', 80));
 
             foreach (var service in services)

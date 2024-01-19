@@ -36,7 +36,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static T FirstOrDefault<T>(this IEnumerable<T> collection)
         {
-            return collection?.FirstOrDefault() ?? default;
+            return collection == null ? default! : collection.FirstOrDefault()!;
         }
 
         /// <summary>

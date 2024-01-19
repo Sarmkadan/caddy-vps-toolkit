@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Domain.Models;
 
 namespace CaddyVpsToolkit.Data
