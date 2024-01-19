@@ -21,7 +21,7 @@ A comprehensive .NET CLI tool for managing multiple services on a single VPS wit
 - [Advanced Topics](#advanced-topics)
 - [Testing](#testing)
 - [Performance](#performance)
-- [Ecosystem](#ecosystem)
+- [Related Projects](#related-projects)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -122,7 +122,7 @@ sudo ./publish/caddy-vps-toolkit config init
 
 ```bash
 # Download the latest release
-wget https://github.com/Sarmkadan/caddy-vps-toolkit/releases/download/v1.2.0/caddy-vps-toolkit-linux-x64.tar.gz
+wget https://github.com/Sarmkadan/caddy-vps-toolkit/releases/download/v1.0.0/caddy-vps-toolkit-linux-x64.tar.gz
 tar -xzf caddy-vps-toolkit-linux-x64.tar.gz
 sudo ./install.sh
 ```
@@ -737,7 +737,7 @@ caddy-vps-toolkit is optimized for minimal overhead on resource-constrained VPS 
 
 \* Network-latency dependent. Benchmarks measured on a 2 vCPU / 2 GB VPS (AMD EPYC 7R13, Ubuntu 22.04, .NET 10, single core).
 
-## Ecosystem
+## Related Projects
 
 Part of a collection of .NET libraries and tools. See more at [github.com/sarmkadan](https://github.com/sarmkadan).
 
