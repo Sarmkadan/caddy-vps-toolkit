@@ -43,9 +43,9 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 
 **How to Report:**
 
-1. **Email**: https://sarmkadan.com (use the contact form to report)
-2. **GitHub**: Open a private security advisory (if available)
-3. **Issue**: Open a confidential issue describing the behavior
+1. **GitHub**: Use GitHub's private vulnerability reporting at https://github.com/sarmkadan/caddy-vps-toolkit/security/advisories/new
+2. **Email**: rutova2@gmail.com
+3. **Private Issue**: Contact project maintainers for private discussion
 
 Please include:
 - Your contact information
@@ -94,7 +94,7 @@ Please report it to the project maintainers as described in the Reporting Violat
 
 ### Can I remain anonymous?
 
-Yes, you can report violations anonymously through the contact form on https://sarmkadan.com by not providing your name or contact information.
+Yes, you can report violations anonymously by emailing rutova2@gmail.com without providing your name or contact information.
 
 ### What if I disagree with an enforcement decision?
 
@@ -112,7 +112,7 @@ This Code of Conduct is a set of community guidelines, not a legal document. We 
 
 ## Questions?
 
-If you have questions about this Code of Conduct, please contact the project maintainers through https://sarmkadan.com.
+If you have questions about this Code of Conduct, please contact the project maintainers via GitHub Issues or email rutova2@gmail.com.
 
 ---
 
