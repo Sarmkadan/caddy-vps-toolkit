@@ -10,6 +10,7 @@ using CaddyVpsToolkit.Integration;
 using CaddyVpsToolkit.Middleware;
 using CaddyVpsToolkit.Events;
 using CaddyVpsToolkit.BackgroundWorkers;
+using CaddyVpsToolkit.Utilities;
 
 namespace CaddyVpsToolkit.Extensions
 {

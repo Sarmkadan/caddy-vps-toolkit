@@ -224,9 +224,15 @@ namespace CaddyVpsToolkit.Services
                     else if (line.StartsWith("Type="))
                         status.Type = line.Substring("Type=".Length);
                     else if (line.StartsWith("ExecMainPID="))
-                        int.TryParse(line.Substring("ExecMainPID=".Length), out status.MainPid);
+                    {
+                        if (int.TryParse(line.Substring("ExecMainPID=".Length), out int pid))
+                            status.MainPid = pid;
+                    }
                     else if (line.StartsWith("TimeoutStartUSec="))
-                        ulong.TryParse(line.Substring("TimeoutStartUSec=".Length), out status.TimeoutStartUsec);
+                    {
+                        if (ulong.TryParse(line.Substring("TimeoutStartUSec=".Length), out ulong timeout))
+                            status.TimeoutStartUsec = timeout;
+                    }
                 }
 
                 return status;
