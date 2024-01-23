@@ -4,6 +4,7 @@
 // =============================================================================
 
 using System;
+using System.Buffers;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -16,6 +17,14 @@ namespace CaddyVpsToolkit.Utilities
     /// </summary>
     public static class StringExtensions
     {
+        // Compiled once; avoids per-call regex compilation overhead.
+        private static readonly Regex _kebabCaseRegex = new(
+            "(?<!^)(?=[A-Z])", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
+
+        // SearchValues<char> lets the JIT use SIMD-accelerated scanning for IsNumeric.
+        private static readonly SearchValues<char> _digitChars =
+            SearchValues.Create("0123456789");
+
         /// <summary>
         /// Check if string is null, empty, or whitespace
         /// </summary>
@@ -29,10 +38,16 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string ToTitleCase(this string value)
         {
-            if (value.IsNullOrWhiteSpace())
+            if (string.IsNullOrWhiteSpace(value))
                 return value;
 
-            return char.ToUpper(value[0]) + value.Substring(1).ToLower();
+            return string.Create(value.Length, value, static (span, src) =>
+            {
+                src.AsSpan().CopyTo(span);
+                span[0] = char.ToUpper(span[0]);
+                for (int i = 1; i < span.Length; i++)
+                    span[i] = char.ToLower(span[i]);
+            });
         }
 
         /// <summary>
@@ -40,10 +55,10 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string ToKebabCase(this string value)
         {
-            if (value.IsNullOrWhiteSpace())
+            if (string.IsNullOrWhiteSpace(value))
                 return value;
 
-            return Regex.Replace(value, "(?<!^)(?=[A-Z])", "-").ToLower();
+            return _kebabCaseRegex.Replace(value, "-").ToLower();
         }
 
         /// <summary>
@@ -51,7 +66,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string ToCamelCase(this string value)
         {
-            if (value.IsNullOrWhiteSpace())
+            if (string.IsNullOrWhiteSpace(value))
                 return value;
 
             var parts = value.Split('-');
@@ -66,7 +81,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string Truncate(this string value, int maxLength, string suffix = "...")
         {
-            if (value.IsNullOrWhiteSpace() || value.Length <= maxLength)
+            if (string.IsNullOrWhiteSpace(value) || value.Length <= maxLength)
                 return value;
 
             return value.Substring(0, maxLength - suffix.Length) + suffix;
@@ -77,7 +92,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static bool IsValidEmail(this string value)
         {
-            if (value.IsNullOrWhiteSpace())
+            if (string.IsNullOrWhiteSpace(value))
                 return false;
 
             try
@@ -96,7 +111,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static bool IsValidUrl(this string value)
         {
-            return !value.IsNullOrWhiteSpace() &&
+            return !string.IsNullOrWhiteSpace(value) &&
                    Uri.TryCreate(value, UriKind.Absolute, out var uriResult) &&
                    (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
@@ -106,7 +121,9 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static bool IsNumeric(this string value)
         {
-            return !value.IsNullOrWhiteSpace() && value.All(char.IsDigit);
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            // ContainsAnyExcept with pre-built SearchValues uses SIMD on supported hardware.
+            return !value.AsSpan().ContainsAnyExcept(_digitChars);
         }
 
         /// <summary>
@@ -114,10 +131,17 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string Repeat(this string value, int count)
         {
-            if (count <= 0 || value.IsNullOrWhiteSpace())
+            if (count <= 0 || string.IsNullOrWhiteSpace(value))
                 return string.Empty;
 
-            return string.Concat(Enumerable.Repeat(value, count));
+            // string.Create allocates exactly once; no intermediate arrays or LINQ.
+            return string.Create(value.Length * count, (value, count), static (span, state) =>
+            {
+                var (str, cnt) = state;
+                var src = str.AsSpan();
+                for (int i = 0; i < cnt; i++)
+                    src.CopyTo(span.Slice(i * str.Length));
+            });
         }
 
         /// <summary>
@@ -125,10 +149,9 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string EscapeShell(this string value)
         {
-            if (value.IsNullOrWhiteSpace())
+            if (string.IsNullOrWhiteSpace(value))
                 return value;
 
-            // Wrap in single quotes and escape any single quotes within
             return "'" + value.Replace("'", "'\\''") + "'";
         }
 
@@ -137,7 +160,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string SafeSubstring(this string value, int startIndex, int length)
         {
-            if (value.IsNullOrWhiteSpace() || startIndex >= value.Length)
+            if (string.IsNullOrWhiteSpace(value) || startIndex >= value.Length)
                 return string.Empty;
 
             int actualLength = Math.Min(length, value.Length - startIndex);
@@ -150,9 +173,15 @@ namespace CaddyVpsToolkit.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool StartsWithAny(this string value, params string[] prefixes)
         {
-            // Fix: Handle null boundary cases for both value and prefixes arrays to prevent NullReferenceException
-            if (value == null || prefixes == null || prefixes.Length == 0) return false;
-            return prefixes.Any(p => p != null && value.StartsWith(p));
+            if (value is null || prefixes is null || prefixes.Length == 0) return false;
+            var span = value.AsSpan();
+            // Span.StartsWith avoids temporary string allocation for each prefix test.
+            foreach (var prefix in prefixes)
+            {
+                if (prefix is not null && span.StartsWith(prefix.AsSpan(), StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
         }
     }
 }

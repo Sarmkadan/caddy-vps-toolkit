@@ -4,6 +4,7 @@
 // =============================================================================
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,8 +16,16 @@ namespace CaddyVpsToolkit.Cli
     /// </summary>
     public class ArgumentParser
     {
+        // FrozenSet provides O(1) lookup with minimal overhead; constructed once at
+        // startup so there is zero cost on the hot path that calls HasFlag/GetFlagValue.
+        private static readonly FrozenSet<string> _booleanFlags = FrozenSet.Create(
+            StringComparer.OrdinalIgnoreCase,
+            "verbose", "quiet", "debug", "force", "dry-run", "yes", "confirm",
+            "json", "no-color", "version", "help", "ssl", "no-ssl", "https",
+            "include-comments", "watch", "daemon", "validate"
+        );
+
         private readonly string[] _args;
-        private int _position = 0;
 
         public ArgumentParser(string[] args)
         {
@@ -41,20 +50,34 @@ namespace CaddyVpsToolkit.Cli
         }
 
         /// <summary>
-        /// Get flag value (--flag value or --flag=value)
+        /// Get flag value (--flag value or --flag=value).
+        /// Boolean flags (--verbose, --force, etc.) return empty string when present, null when absent.
         /// </summary>
         public string GetFlagValue(string flagName)
         {
+            if (flagName is null) return null;
+
+            // Known boolean flags never carry a value — avoid scanning for a trailing argument.
+            if (_booleanFlags.Contains(flagName))
+                return HasFlag(flagName) ? string.Empty : null;
+
+            var fnSpan = flagName.AsSpan();
             for (int i = 1; i < _args.Length; i++)
             {
-                string arg = _args[i];
+                var argSpan = _args[i].AsSpan();
+                if (argSpan.Length < 4 || argSpan[0] != '-' || argSpan[1] != '-') continue;
+                var rest = argSpan[2..];
 
-                // Handle --flag=value format
-                if (arg.StartsWith($"--{flagName}="))
-                    return arg.Substring($"--{flagName}=".Length);
+                // --flag=value format: no extra string allocation for prefix construction.
+                if (rest.Length > fnSpan.Length + 1
+                    && rest[fnSpan.Length] == '='
+                    && rest.StartsWith(fnSpan, StringComparison.Ordinal))
+                {
+                    return rest[(fnSpan.Length + 1)..].ToString();
+                }
 
-                // Handle --flag value format
-                if (arg == $"--{flagName}")
+                // --flag value format
+                if (rest.SequenceEqual(fnSpan))
                 {
                     if (i + 1 < _args.Length && !_args[i + 1].StartsWith("--"))
                         return _args[i + 1];
@@ -65,11 +88,27 @@ namespace CaddyVpsToolkit.Cli
         }
 
         /// <summary>
-        /// Check if flag is present
+        /// Check if flag is present.
+        /// Uses span comparisons to avoid allocating "--flagName" and "--flagName=" strings on each call.
         /// </summary>
         public bool HasFlag(string flagName)
         {
-            return _args.Any(a => a == $"--{flagName}" || a.StartsWith($"--{flagName}="));
+            if (flagName is null) return false;
+            var fnSpan = flagName.AsSpan();
+
+            foreach (var arg in _args)
+            {
+                var argSpan = arg.AsSpan();
+                if (argSpan.Length < 4 || argSpan[0] != '-' || argSpan[1] != '-') continue;
+                var rest = argSpan[2..];
+
+                if (rest.SequenceEqual(fnSpan)) return true;
+                if (rest.Length > fnSpan.Length
+                    && rest[fnSpan.Length] == '='
+                    && rest.StartsWith(fnSpan, StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -92,12 +131,14 @@ namespace CaddyVpsToolkit.Cli
         public List<string> GetAllFlags()
         {
             var flags = new List<string>();
-            foreach (var arg in _args.Skip(1))
+            foreach (var arg in _args.AsSpan(1))
             {
-                if (arg.StartsWith("--"))
+                var span = arg.AsSpan();
+                if (span.Length >= 3 && span[0] == '-' && span[1] == '-')
                 {
-                    string flagName = arg.Substring(2).Split('=')[0];
-                    flags.Add(flagName);
+                    var rest = span[2..];
+                    var eqIdx = rest.IndexOf('=');
+                    flags.Add(eqIdx >= 0 ? rest[..eqIdx].ToString() : rest.ToString());
                 }
             }
             return flags;
