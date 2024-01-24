@@ -81,6 +81,5 @@ Thumbs.db
 
 # Project-specific
 /config/
-/data/
 /cache/
 .claude/
