@@ -3,6 +3,8 @@
 // CTO & Software Architect
 // =============================================================================
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -93,9 +95,10 @@ namespace CaddyVpsToolkit.Auditing
                 var json = JsonSerializer.Serialize(entry);
                 File.AppendAllText(_logPath, json + Environment.NewLine);
             }
-            catch
+            catch (Exception ex)
             {
-                // Silently fail to prevent cascading errors
+                // Log the error instead of silently failing
+                System.Console.WriteLine($"Failed to write to audit log: {ex.Message}");
             }
         }
 
