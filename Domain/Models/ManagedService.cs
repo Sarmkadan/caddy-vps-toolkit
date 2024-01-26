@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <summary>
     /// Represents a service managed by the VPS toolkit
     /// </summary>
-    public class ManagedService
+    public sealed class ManagedService
     {
         [Required]
         public string Id { get; set; } = Guid.NewGuid().ToString();

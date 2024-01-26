@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ namespace CaddyVpsToolkit.Results
     /// Supports success/failure states with data and error information.
     /// Useful for API responses and operation results.
     /// </summary>
-    public class Result<T>
+    public sealed class Result<T>
     {
         public bool IsSuccess { get; set; }
         public T Data { get; set; }
@@ -38,7 +39,7 @@ namespace CaddyVpsToolkit.Results
     /// <summary>
     /// Non-generic result wrapper
     /// </summary>
-    public class Result
+    public sealed class Result
     {
         public bool IsSuccess { get; set; }
         public string ErrorMessage { get; set; }
@@ -63,7 +64,7 @@ namespace CaddyVpsToolkit.Results
     /// <summary>
     /// Paginated result for list operations
     /// </summary>
-    public class PaginatedResult<T>
+    public sealed class PaginatedResult<T>
     {
         public System.Collections.Generic.List<T> Items { get; set; } = new();
         public int Page { get; set; }

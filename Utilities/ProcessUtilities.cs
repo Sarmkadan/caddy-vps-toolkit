@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -131,7 +132,7 @@ namespace CaddyVpsToolkit.Utilities
     /// <summary>
     /// Result of process execution
     /// </summary>
-    public class ProcessResult
+    public sealed class ProcessResult
     {
         public int ExitCode { get; set; }
         public string Output { get; set; }

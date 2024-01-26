@@ -28,7 +28,7 @@ namespace CaddyVpsToolkit.Services
     /// <see cref="CaddyConfigurationService"/> to slot into the v1.x infrastructure without
     /// requiring changes to those services.
     /// </summary>
-    public class UpstreamManagerService
+    public sealed class UpstreamManagerService
     {
         private readonly ServiceManagementService _serviceManager;
         private readonly HealthMonitoringService _healthMonitor;

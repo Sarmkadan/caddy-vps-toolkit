@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -34,7 +35,7 @@ namespace CaddyVpsToolkit.Middleware
     /// File-based logger with console output option.
     /// Keeps a rotating log file to prevent unlimited growth.
     /// </summary>
-    public class FileLogger : ILogger
+    public sealed class FileLogger : ILogger
     {
         private readonly string _logPath;
         private readonly LogLevel _minLevel;
@@ -105,7 +106,7 @@ namespace CaddyVpsToolkit.Middleware
     /// <summary>
     /// In-memory logger for testing and minimal overhead scenarios
     /// </summary>
-    public class MemoryLogger : ILogger
+    public sealed class MemoryLogger : ILogger
     {
         private readonly List<string> _logs = new();
         private readonly LogLevel _minLevel;

@@ -165,3 +165,9 @@ indent_style = tab
 # XML files
 [*.xml]
 indent_size = 2
+
+# Namespace declarations
+csharp_style_namespace_declarations = file_scoped:suggestion
+
+# Using directives placement
+csharp_using_directive_placement = outside_namespace:suggestion

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -17,7 +18,7 @@ namespace CaddyVpsToolkit.Services
     /// <summary>
     /// Service for generating and managing Caddy reverse proxy configurations
     /// </summary>
-    public class CaddyConfigurationService
+    public sealed class CaddyConfigurationService
     {
         private readonly ServiceManagementService _serviceManager;
 
@@ -31,10 +32,10 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task<string> GenerateCaddyfileAsync(CaddyConfig globalConfig, List<CaddyRoute> routes)
         {
-            if (globalConfig == null)
+            if (globalConfig is null)
                 throw new ArgumentNullException(nameof(globalConfig));
 
-            if (routes == null)
+            if (routes is null)
                 routes = new List<CaddyRoute>();
 
             globalConfig.Validate();
@@ -112,7 +113,7 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public string GenerateRouteBlock(CaddyRoute route)
         {
-            if (route == null)
+            if (route is null)
                 throw new ArgumentNullException(nameof(route));
 
             route.Validate();
@@ -198,7 +199,7 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public CaddyRoute GenerateRouteForService(ManagedService service, string domain)
         {
-            if (service == null)
+            if (service is null)
                 throw new ArgumentNullException(nameof(service));
 
             if (string.IsNullOrWhiteSpace(domain))
