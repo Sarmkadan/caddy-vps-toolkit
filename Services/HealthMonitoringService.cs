@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Data;
 using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Utilities;
 
 namespace CaddyVpsToolkit.Services
 {
@@ -174,6 +175,23 @@ namespace CaddyVpsToolkit.Services
 
         private async Task<HealthCheckResult> CheckHttpHealthAsync(ManagedService service)
         {
+            // Verify systemd unit is not in a transient restart/activating state before probing
+            // the HTTP endpoint. Firing the HTTP probe during a restart race causes a 502 from
+            // the Caddy reverse proxy that would otherwise be reported as a permanent failure.
+            var unitName = service.GetSystemdUnitName();
+            var systemdState = await GetSystemdActiveStateAsync(unitName);
+            if (systemdState == "activating" || systemdState == "reloading")
+            {
+                return new HealthCheckResult
+                {
+                    ServiceId = service.Id,
+                    IsHealthy = true,
+                    Status = HealthCheckStatus.Degraded,
+                    ResponseTimeMs = 0,
+                    ErrorMessage = $"Service '{service.Name}' is restarting (systemd state: {systemdState}); HTTP probe deferred to avoid false positive"
+                };
+            }
+
             var config = service.HealthCheck;
             var url = config.GetHealthCheckUrl(service.HostBinding, service.Port);
 
@@ -219,6 +237,25 @@ namespace CaddyVpsToolkit.Services
                     service.Id,
                     $"Health check timed out for {service.Name} ({url}) after {config.TimeoutSeconds}s",
                     config.TimeoutSeconds * 1000);
+            }
+        }
+
+        /// <summary>
+        /// Returns the systemd <c>ActiveState</c> for the given unit name by running
+        /// <c>systemctl is-active</c>. Returns an empty string when systemd is unavailable
+        /// or the unit is not found, which causes the HTTP probe to proceed normally.
+        /// </summary>
+        private static async Task<string> GetSystemdActiveStateAsync(string unitName)
+        {
+            try
+            {
+                var result = await ProcessUtilities.ExecuteAsync("systemctl", $"is-active {unitName}", 5000);
+                return result.Output.Trim().ToLowerInvariant();
+            }
+            catch
+            {
+                // systemd not available or command failed; let the HTTP probe proceed
+                return string.Empty;
             }
         }
 
