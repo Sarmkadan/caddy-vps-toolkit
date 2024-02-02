@@ -8,10 +8,20 @@ using CaddyVpsToolkit.Domain.Models;
 
 namespace CaddyVpsToolkit.LoadBalancing
 {
+    /// <summary>
+    /// Stateless implementation of <see cref="IUpstreamSelector"/> that supports round-robin
+    /// and IP-hash load-balancing strategies.
+    /// <para>
+    /// When <see cref="UpstreamSelectionContext.ClientIp"/> is set the selector hashes the IP to
+    /// produce a stable, deterministic upstream assignment. Otherwise a per-pool atomic round-robin
+    /// cursor distributes requests evenly across all candidates.
+    /// </para>
+    /// </summary>
     public sealed class UpstreamSelector : IUpstreamSelector
     {
         private readonly ConcurrentDictionary<string, int> _rrCursors = new();
 
+        /// <inheritdoc/>
         public UpstreamServer? Select(IReadOnlyList<UpstreamServer> servers, UpstreamSelectionContext context)
         {
             if (servers is null || servers.Count == 0)
