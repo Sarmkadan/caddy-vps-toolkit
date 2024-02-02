@@ -63,7 +63,7 @@ namespace CaddyVpsToolkit.Core
                         break;
 
                     case "list-services":
-                        await ListServicesAsync();
+                        await ListServicesAsync(args);
                         break;
 
                     case "service-status":
@@ -108,9 +108,19 @@ namespace CaddyVpsToolkit.Core
             }
         }
 
-        private async Task ListServicesAsync()
+        private async Task ListServicesAsync(string[] args)
         {
+            var useJson = Array.Exists(args, a => a.Equals("--json", StringComparison.OrdinalIgnoreCase));
             var services = await _serviceManager.GetAllServicesAsync();
+
+            if (useJson)
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(services,
+                    new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine(json);
+                return;
+            }
+
             Console.WriteLine($"Total Services: {services.Count}");
             Console.WriteLine(new string('-', 80));
             Console.WriteLine($"{"ID",-36} {"Name",-20} {"Type",-15} {"Status",-12} {"Port",-6}");
@@ -198,7 +208,7 @@ namespace CaddyVpsToolkit.Core
             Console.WriteLine("\nCommands:");
             Console.WriteLine("  version              Show version information");
             Console.WriteLine("  help                 Show help information");
-            Console.WriteLine("  list-services        List all services");
+            Console.WriteLine("  list-services        List all services (--json for JSON output)");
             Console.WriteLine("  service-status <id>  Get service status");
             Console.WriteLine("  health-check <id>    Perform health check");
             Console.WriteLine("  health-summary       Get overall health summary");
