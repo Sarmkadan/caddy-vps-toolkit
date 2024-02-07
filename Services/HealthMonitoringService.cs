@@ -17,7 +17,7 @@ using CaddyVpsToolkit.Utilities;
 namespace CaddyVpsToolkit.Services
 {
     /// <summary>
-    /// Service for monitoring health of managed services
+    /// Service for monitoring health of managed services.
     /// </summary>
     public sealed class HealthMonitoringService
     {
@@ -25,6 +25,11 @@ namespace CaddyVpsToolkit.Services
         private readonly ServiceManagementService _serviceManager;
         private readonly HttpClient _httpClient;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HealthMonitoringService"/> class.
+        /// </summary>
+        /// <param name="repository">The health check repository.</param>
+        /// <param name="serviceManager">The service management service.</param>
         public HealthMonitoringService(IHealthCheckRepository repository, ServiceManagementService serviceManager)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -33,8 +38,10 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Perform an HTTP health check for a service
+        /// Perform an HTTP health check for a service.
         /// </summary>
+        /// <param name="serviceId">The ID of the service to check.</param>
+        /// <returns>The health check result.</returns>
         public async Task<HealthCheckResult> CheckServiceHealthAsync(string serviceId)
         {
             try
@@ -72,16 +79,21 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Get latest health status for a service
+        /// Get latest health status for a service.
         /// </summary>
+        /// <param name="serviceId">The ID of the service.</param>
+        /// <returns>The latest health check result.</returns>
         public async Task<HealthCheckResult> GetLatestHealthStatusAsync(string serviceId)
         {
             return await _repository.GetLatestAsync(serviceId);
         }
 
         /// <summary>
-        /// Get health check history for a service
+        /// Get health check history for a service.
         /// </summary>
+        /// <param name="serviceId">The ID of the service.</param>
+        /// <param name="hours">The number of hours of history to retrieve.</param>
+        /// <returns>A list of health check results.</returns>
         public async Task<List<HealthCheckResult>> GetHealthHistoryAsync(string serviceId, int hours)
         {
             if (hours < 1)
@@ -91,8 +103,12 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Get health statistics for a service
+        /// Get health statistics for a service.
         /// </summary>
+        /// <param name="serviceId">The ID of the service.</param>
+        /// <param name="from">The start time.</param>
+        /// <param name="to">The end time.</param>
+        /// <returns>The health check statistics.</returns>
         public async Task<HealthCheckStatistics> GetHealthStatisticsAsync(string serviceId, DateTime from, DateTime to)
         {
             if (from >= to)
@@ -102,8 +118,10 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Clean up old health check records
+        /// Clean up old health check records.
         /// </summary>
+        /// <param name="daysToKeep">The number of days to keep records.</param>
+        /// <returns>True if the cleanup was successful, otherwise false.</returns>
         public async Task<bool> CleanupOldRecordsAsync(int daysToKeep = 30)
         {
             if (daysToKeep < 1)
@@ -114,8 +132,9 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Check health of all services
+        /// Check health of all services.
         /// </summary>
+        /// <returns>A list of health check results for all services.</returns>
         public async Task<List<HealthCheckResult>> CheckAllServicesHealthAsync()
         {
             var results = new List<HealthCheckResult>();
@@ -138,8 +157,9 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Get health summary for all services
+        /// Get health summary for all services.
         /// </summary>
+        /// <returns>The health summary.</returns>
         public async Task<HealthSummary> GetHealthSummaryAsync()
         {
             var summary = new HealthSummary();
@@ -175,9 +195,6 @@ namespace CaddyVpsToolkit.Services
 
         private async Task<HealthCheckResult> CheckHttpHealthAsync(ManagedService service)
         {
-            // Verify systemd unit is not in a transient restart/activating state before probing
-            // the HTTP endpoint. Firing the HTTP probe during a restart race causes a 502 from
-            // the Caddy reverse proxy that would otherwise be reported as a permanent failure.
             var unitName = service.GetSystemdUnitName();
             var systemdState = await GetSystemdActiveStateAsync(unitName);
             if (systemdState == "activating" || systemdState == "reloading")
@@ -198,7 +215,6 @@ namespace CaddyVpsToolkit.Services
             var stopwatch = Stopwatch.StartNew();
             try
             {
-                // Fix: Ensure proper disposal of IDisposable HttpRequestMessage and HttpResponseMessage to prevent socket leaks
                 using var request = new HttpRequestMessage(new HttpMethod(config.HttpMethod), url);
                 using var response = await _httpClient.SendAsync(request);
                 stopwatch.Stop();
@@ -240,11 +256,6 @@ namespace CaddyVpsToolkit.Services
             }
         }
 
-        /// <summary>
-        /// Returns the systemd <c>ActiveState</c> for the given unit name by running
-        /// <c>systemctl is-active</c>. Returns an empty string when systemd is unavailable
-        /// or the unit is not found, which causes the HTTP probe to proceed normally.
-        /// </summary>
         private static async Task<string> GetSystemdActiveStateAsync(string unitName)
         {
             try
@@ -254,7 +265,6 @@ namespace CaddyVpsToolkit.Services
             }
             catch
             {
-                // systemd not available or command failed; let the HTTP probe proceed
                 return string.Empty;
             }
         }
@@ -294,6 +304,9 @@ namespace CaddyVpsToolkit.Services
         }
     }
 
+    /// <summary>
+    /// Represents the health summary for all services.
+    /// </summary>
     public sealed class HealthSummary
     {
         public int TotalServices { get; set; }
