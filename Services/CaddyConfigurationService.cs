@@ -16,20 +16,27 @@ using CaddyVpsToolkit.Domain.Models;
 namespace CaddyVpsToolkit.Services
 {
     /// <summary>
-    /// Service for generating and managing Caddy reverse proxy configurations
+    /// Service for generating and managing Caddy reverse proxy configurations.
     /// </summary>
     public sealed class CaddyConfigurationService
     {
         private readonly ServiceManagementService _serviceManager;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CaddyConfigurationService"/> class.
+        /// </summary>
+        /// <param name="serviceManager">The service manager.</param>
         public CaddyConfigurationService(ServiceManagementService serviceManager)
         {
             _serviceManager = serviceManager ?? throw new ArgumentNullException(nameof(serviceManager));
         }
 
         /// <summary>
-        /// Generate Caddyfile content for all services with routes
+        /// Generate Caddyfile content for all services with routes.
         /// </summary>
+        /// <param name="globalConfig">The global Caddy configuration.</param>
+        /// <param name="routes">The list of Caddy routes.</param>
+        /// <returns>The generated Caddyfile content.</returns>
         public async Task<string> GenerateCaddyfileAsync(CaddyConfig globalConfig, List<CaddyRoute> routes)
         {
             if (globalConfig is null)
@@ -69,6 +76,10 @@ namespace CaddyVpsToolkit.Services
         /// printed to stdout and no file is modified — safe to use on production servers before
         /// committing a configuration change.
         /// </summary>
+        /// <param name="content">The Caddyfile content.</param>
+        /// <param name="filePath">The file path to write to.</param>
+        /// <param name="dryRun">Whether to perform a dry run.</param>
+        /// <returns>True if the write (or dry run) was successful.</returns>
         public async Task<bool> WriteCaddyfileAsync(string content, string filePath = null, bool dryRun = false)
         {
             if (string.IsNullOrWhiteSpace(content))
@@ -112,6 +123,9 @@ namespace CaddyVpsToolkit.Services
         /// <summary>
         /// Print a simple line-level diff between <paramref name="oldContent"/> and <paramref name="newContent"/>.
         /// </summary>
+        /// <param name="oldContent">The old content.</param>
+        /// <param name="newContent">The new content.</param>
+        /// <param name="filePath">The file path.</param>
         private static void PrintDiff(string oldContent, string newContent, string filePath)
         {
             var oldLines = oldContent.Split('\n');
@@ -134,8 +148,10 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Read Caddyfile from disk
+        /// Read Caddyfile from disk.
         /// </summary>
+        /// <param name="filePath">The file path to read from.</param>
+        /// <returns>The Caddyfile content.</returns>
         public async Task<string> ReadCaddyfileAsync(string filePath = null)
         {
             filePath = filePath ?? Path.Combine(AppConstants.CaddyConfigDirectory, AppConstants.CaddyfileName);
@@ -159,6 +175,8 @@ namespace CaddyVpsToolkit.Services
         /// as the bare domain. Named matcher identifiers must not contain hyphens; service names are
         /// sanitized via <see cref="CaddyRoute.GetCaddyMatcherName"/> (hyphens replaced with underscores).
         /// </summary>
+        /// <param name="route">The Caddy route.</param>
+        /// <returns>The generated route block.</returns>
         public string GenerateRouteBlock(CaddyRoute route)
         {
             if (route is null)
@@ -255,8 +273,10 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Validate Caddyfile syntax (mock - requires actual Caddy)
+        /// Validate Caddyfile syntax (mock - requires actual Caddy).
         /// </summary>
+        /// <param name="content">The Caddyfile content.</param>
+        /// <returns>True if the syntax is valid, otherwise throws an exception.</returns>
         public async Task<bool> ValidateCaddyfileAsync(string content)
         {
             if (string.IsNullOrWhiteSpace(content))
@@ -297,8 +317,12 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Generate configuration for a service as a Caddy route
+        /// Generate configuration for a service as a Caddy route.
         /// </summary>
+        /// <param name="service">The managed service.</param>
+        /// <param name="domain">The domain name.</param>
+        /// <param name="tlsDnsProvider">The optional TLS DNS provider.</param>
+        /// <returns>The generated Caddy route.</returns>
         public CaddyRoute GenerateRouteForService(ManagedService service, string domain, string tlsDnsProvider = null)
         {
             if (service is null)
@@ -321,8 +345,11 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Generate Caddy JSON configuration (alternative format)
+        /// Generate Caddy JSON configuration (alternative format).
         /// </summary>
+        /// <param name="globalConfig">The global Caddy configuration.</param>
+        /// <param name="routes">The list of Caddy routes.</param>
+        /// <returns>The generated JSON configuration.</returns>
         public string GenerateCaddyJsonAsync(CaddyConfig globalConfig, List<CaddyRoute> routes)
         {
             // Simplified JSON generation
