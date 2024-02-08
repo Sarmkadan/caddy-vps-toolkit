@@ -195,6 +195,14 @@ caddy-vps-toolkit monitor start --interval 30s
 
 ## Usage Examples
 
+### Programming Examples
+
+For programmatic usage, see the [examples](./examples) directory:
+
+- [BasicUsage.cs](./examples/BasicUsage.cs): Minimal setup and service listing.
+- [AdvancedUsage.cs](./examples/AdvancedUsage.cs): Creating and updating services with error handling.
+- [IntegrationExample.cs](./examples/IntegrationExample.cs): Wiring toolkit services into an ASP.NET Core DI container.
+
 ### Example 1: Simple Web Application
 
 ```bash
