@@ -136,6 +136,25 @@ docker pull sarmkadan/caddy-vps-toolkit:latest
 docker run -it sarmkadan/caddy-vps-toolkit:latest /app/caddy-vps-toolkit --help
 ```
 
+### Docker Development Usage
+
+To run the toolkit within the provided development environment:
+
+1. **Start all services**:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Access the toolkit container**:
+   ```bash
+   docker-compose exec caddy-vps-toolkit /app/caddy-vps-toolkit --help
+   ```
+
+3. **Stop all services**:
+   ```bash
+   docker-compose down
+   ```
+
 ### From Package Manager (Ubuntu/Debian)
 
 ```bash
