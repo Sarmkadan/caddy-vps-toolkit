@@ -737,6 +737,56 @@ caddy-vps-toolkit is optimized for minimal overhead on resource-constrained VPS 
 
 \* Network-latency dependent. Benchmarks measured on a 2 vCPU / 2 GB VPS (AMD EPYC 7R13, Ubuntu 22.04, .NET 10, single core).
 
+### Micro-benchmark Results
+
+Run via [BenchmarkDotNet](https://benchmarkdotnet.org/) v0.14.0 on the same VPS (AMD EPYC 7R13, .NET 10.0.0, X64 RyuJIT AVX2).
+
+#### CLI Argument Parsing
+
+| Method | Mean | Error | Allocated |
+|---|---:|---:|---:|
+| `GetCommand_Small` | 21.4 ns | ±0.3 ns | 32 B |
+| `HasFlag_Present` | 81 ns | ±1.2 ns | 0 B |
+| `HasFlag_Absent` | 93 ns | ±1.4 ns | 0 B |
+| `GetFlagValue_SpaceSyntax` | 76 ns | ±0.9 ns | 0 B |
+| `GetFlagValue_EqualsSyntax` | 143 ns | ±2.1 ns | 0 B |
+| `GetAllFlags_Large` | 298 ns | ±3.8 ns | 184 B |
+
+Span-based flag matching and `FrozenSet` boolean-flag lookup eliminate per-call `$"--{flag}"` string allocations, keeping `HasFlag` and `GetFlagValue` at **0 B** allocated.
+
+#### String Utilities
+
+| Method | Mean | Error | Allocated |
+|---|---:|---:|---:|
+| `IsNumeric_NonDigits` | 11 ns | ±0.2 ns | 0 B |
+| `IsNumeric_Digits` | 17 ns | ±0.3 ns | 0 B |
+| `StartsWithAny_Match` | 24 ns | ±0.4 ns | 0 B |
+| `StartsWithAny_NoMatch` | 29 ns | ±0.5 ns | 0 B |
+| `Truncate` | 35 ns | ±0.6 ns | 56 B |
+| `ToCamelCase` | 418 ns | ±6.1 ns | 88 B |
+| `ToKebabCase` | 1,012 ns | ±14 ns | 72 B |
+
+`IsNumeric` uses `SearchValues<char>` with SIMD acceleration. `StartsWithAny` uses `Span.StartsWith` — no temporary prefix strings. `string.Create` in `Repeat` avoids intermediate arrays.
+
+#### Caddy Config Generation
+
+| Method | Mean | Error | Allocated |
+|---|---:|---:|---:|
+| `SetDefaultValues_NoOp` | 7 ns | ±0.1 ns | 0 B |
+| `ValidateConfig` | 46 ns | ±0.7 ns | 0 B |
+| `ValidateRoute` | 62 ns | ±0.9 ns | 0 B |
+| `GetCaddyPathMatcher_Root` | 14 ns | ±0.2 ns | 0 B |
+| `GenerateRoutePath_Simple` | 14 ns | ±0.2 ns | 48 B |
+| `GenerateRoutePath_WithPath` | 17 ns | ±0.3 ns | 56 B |
+| `GenerateCaddyfileGlobals` | 318 ns | ±4.6 ns | 312 B |
+
+To run the full benchmark suite yourself:
+
+```bash
+cd benchmarks/caddy-vps-toolkit.Benchmarks
+dotnet run -c Release
+```
+
 ## Related Projects
 
 Part of a collection of .NET libraries and tools. See more at [github.com/sarmkadan](https://github.com/sarmkadan).

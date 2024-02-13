@@ -17,6 +17,13 @@ namespace CaddyVpsToolkit.Utilities
     /// </summary>
     public static class SerializationHelper
     {
+        // Cached once at startup — JsonSerializerOptions is expensive to construct and immutable after first use.
+        private static readonly JsonSerializerOptions _indentedOptions =
+            new(JsonSerializerDefaults.General) { WriteIndented = true };
+
+        private static readonly JsonSerializerOptions _compactOptions =
+            new(JsonSerializerDefaults.General) { WriteIndented = false };
+
         /// <summary>
         /// Serialize object to JSON string
         /// </summary>
@@ -24,7 +31,7 @@ namespace CaddyVpsToolkit.Utilities
         {
             try
             {
-                return JsonSerializer.Serialize(obj, new JsonSerializerOptions { WriteIndented = true });
+                return JsonSerializer.Serialize(obj, _indentedOptions);
             }
             catch (Exception ex)
             {
