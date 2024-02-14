@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -15,7 +16,7 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests
 {
-    public class ArgumentParserTests
+    public sealed class ArgumentParserTests
     {
         [Fact]
         public void GetCommand_CommandWithMixedCase_ReturnsLowercaseCommand()

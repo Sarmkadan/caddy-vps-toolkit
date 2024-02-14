@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -24,7 +25,7 @@ namespace CaddyVpsToolkit.Integration
         Task<HttpResponse<string>> DeleteAsync(string url, Dictionary<string, string> headers = null);
     }
 
-    public class HttpClientWrapper : IHttpClient
+    public sealed class HttpClientWrapper : IHttpClient
     {
         private readonly HttpClient _client;
         private readonly IRetryPolicy _retryPolicy;
@@ -108,7 +109,7 @@ namespace CaddyVpsToolkit.Integration
         {
             var request = new HttpRequestMessage(method, url);
 
-            if (headers != null)
+            if (headers is not null)
             {
                 foreach (var kvp in headers)
                     request.Headers.Add(kvp.Key, kvp.Value);
@@ -167,7 +168,7 @@ namespace CaddyVpsToolkit.Integration
     /// <summary>
     /// HTTP response wrapper with status, data, and error information
     /// </summary>
-    public class HttpResponse<T>
+    public sealed class HttpResponse<T>
     {
         public int StatusCode { get; set; }
         public bool IsSuccess { get; set; }

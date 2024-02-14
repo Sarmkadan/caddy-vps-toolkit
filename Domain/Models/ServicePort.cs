@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -11,7 +12,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <summary>
     /// Port configuration for service exposure
     /// </summary>
-    public class ServicePort
+    public sealed class ServicePort
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
 

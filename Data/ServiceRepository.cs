@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ namespace CaddyVpsToolkit.Data
     /// <summary>
     /// SQLite-based repository for managing services
     /// </summary>
-    public class ServiceRepository : IServiceRepository
+    public sealed class ServiceRepository : IServiceRepository
     {
         private readonly string _connectionString;
 
@@ -217,7 +218,7 @@ namespace CaddyVpsToolkit.Data
                 command.CommandText = "SELECT COUNT(*) FROM Services WHERE Id = @id";
                 command.Parameters.AddWithValue("@id", id);
                 var result = await command.ExecuteScalarAsync();
-                return result != null && (long)result > 0;
+                return result is not null && (long)result > 0;
             }
         }
 
@@ -229,7 +230,7 @@ namespace CaddyVpsToolkit.Data
                 var command = connection.CreateCommand();
                 command.CommandText = "SELECT COUNT(*) FROM Services";
                 var result = await command.ExecuteScalarAsync();
-                return result != null ? (int)(long)result : 0;
+                return result is not null ? (int)(long)result : 0;
             }
         }
 

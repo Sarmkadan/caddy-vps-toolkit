@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -11,7 +12,7 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Domain
 {
-    public class HealthCheckConfigTests
+    public sealed class HealthCheckConfigTests
     {
         [Fact]
         public void Validate_WithValidData_ShouldNotThrow()

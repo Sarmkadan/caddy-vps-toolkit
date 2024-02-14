@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ namespace CaddyVpsToolkit.Processing
     /// Processes items in batches for efficient bulk operations.
     /// Useful for optimizing database operations and API calls.
     /// </summary>
-    public class BatchProcessor<T>
+    public sealed class BatchProcessor<T>
     {
         private readonly int _batchSize;
         private readonly Func<List<T>, Task> _processFunction;
@@ -54,7 +55,7 @@ namespace CaddyVpsToolkit.Processing
     /// <summary>
     /// Batch result with success/failure tracking
     /// </summary>
-    public class BatchResult<T>
+    public sealed class BatchResult<T>
     {
         public List<T> SuccessfulItems { get; set; } = new();
         public List<(T item, Exception error)> FailedItems { get; set; } = new();
@@ -73,7 +74,7 @@ namespace CaddyVpsToolkit.Processing
     /// <summary>
     /// Batch processor with error handling and result tracking
     /// </summary>
-    public class SafeBatchProcessor<T>
+    public sealed class SafeBatchProcessor<T>
     {
         private readonly int _batchSize;
         private readonly Func<T, Task> _processFunction;

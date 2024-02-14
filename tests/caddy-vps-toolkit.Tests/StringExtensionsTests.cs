@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -9,7 +10,7 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests
 {
-    public class StringExtensionsTests
+    public sealed class StringExtensionsTests
     {
         [Fact]
         public void ToKebabCase_CamelCaseString_ReturnsLowercaseWithHyphens()

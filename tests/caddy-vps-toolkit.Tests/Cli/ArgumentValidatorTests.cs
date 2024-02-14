@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -10,7 +11,7 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Cli
 {
-    public class ArgumentValidatorTests
+    public sealed class ArgumentValidatorTests
     {
         private readonly ArgumentValidator _sut;
 

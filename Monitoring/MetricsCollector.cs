@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ namespace CaddyVpsToolkit.Monitoring
     /// Collects application metrics for monitoring and analytics.
     /// Supports counters, gauges, and histograms.
     /// </summary>
-    public class MetricsCollector
+    public sealed class MetricsCollector
     {
         private readonly Dictionary<string, Counter> _counters = new();
         private readonly Dictionary<string, Gauge> _gauges = new();
@@ -129,7 +130,7 @@ namespace CaddyVpsToolkit.Monitoring
         }
     }
 
-    public class Counter
+    public sealed class Counter
     {
         private long _value;
         public long Value => _value;
@@ -145,7 +146,7 @@ namespace CaddyVpsToolkit.Monitoring
         }
     }
 
-    public class Gauge
+    public sealed class Gauge
     {
         private double _value;
         public double Value => _value;
@@ -156,7 +157,7 @@ namespace CaddyVpsToolkit.Monitoring
         }
     }
 
-    public class Histogram
+    public sealed class Histogram
     {
         private readonly List<double> _values = new();
 
@@ -187,7 +188,7 @@ namespace CaddyVpsToolkit.Monitoring
         }
     }
 
-    public class HistogramStats
+    public sealed class HistogramStats
     {
         public int Count { get; set; }
         public double Min { get; set; }

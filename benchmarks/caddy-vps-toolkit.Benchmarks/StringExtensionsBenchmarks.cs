@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace CaddyVpsToolkit.Benchmarks;
 /// </summary>
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
-public class StringExtensionsBenchmarks
+public sealed class StringExtensionsBenchmarks
 {
     private const string CamelCaseInput = "reverseProxyUpstreamService";
     private const string KebabCaseInput = "reverse-proxy-upstream-service";

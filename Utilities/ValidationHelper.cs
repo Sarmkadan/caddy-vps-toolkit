@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace CaddyVpsToolkit.Utilities
     /// Centralized validation helper for common validation scenarios.
     /// Returns validation results with detailed error messages.
     /// </summary>
-    public class ValidationHelper
+    public sealed class ValidationHelper
     {
         public static ValidationResult ValidatePort(int port)
         {
@@ -87,7 +88,7 @@ namespace CaddyVpsToolkit.Utilities
         {
             var errors = new List<string>();
 
-            if (value == null)
+            if (value is null)
                 errors.Add($"{fieldName} cannot be null");
 
             return new ValidationResult { IsValid = errors.Count == 0, Errors = errors };
@@ -117,7 +118,7 @@ namespace CaddyVpsToolkit.Utilities
     /// <summary>
     /// Validation result container
     /// </summary>
-    public class ValidationResult
+    public sealed class ValidationResult
     {
         public bool IsValid { get; set; } = true;
         public List<string> Errors { get; set; } = new();

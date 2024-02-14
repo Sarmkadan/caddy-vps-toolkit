@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -32,7 +33,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <summary>
     /// Metadata for an SSL/TLS certificate retrieved from a remote domain.
     /// </summary>
-    public class SslCertificateInfo
+    public sealed class SslCertificateInfo
     {
         /// <summary>Domain name the certificate was retrieved from.</summary>
         [Required]
@@ -60,7 +61,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <summary>
     /// Outcome of an SSL certificate check for a single domain.
     /// </summary>
-    public class SslCertificateCheckResult
+    public sealed class SslCertificateCheckResult
     {
         /// <summary>Domain that was inspected.</summary>
         [Required]
