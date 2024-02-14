@@ -207,12 +207,18 @@ namespace CaddyVpsToolkit.Services
             catch (HttpRequestException ex)
             {
                 stopwatch.Stop();
-                return HealthCheckResult.CreateFailure(service.Id, $"HTTP request failed: {ex.Message}", (int)stopwatch.ElapsedMilliseconds);
+                return HealthCheckResult.CreateFailure(
+                    service.Id,
+                    $"HTTP health check failed for {service.Name} ({url}): {ex.Message}",
+                    (int)stopwatch.ElapsedMilliseconds);
             }
-            catch (TaskCanceledException ex)
+            catch (TaskCanceledException)
             {
                 stopwatch.Stop();
-                return HealthCheckResult.CreateFailure(service.Id, $"Health check timeout: {ex.Message}", config.TimeoutSeconds * 1000);
+                return HealthCheckResult.CreateFailure(
+                    service.Id,
+                    $"Health check timed out for {service.Name} ({url}) after {config.TimeoutSeconds}s",
+                    config.TimeoutSeconds * 1000);
             }
         }
 
@@ -237,7 +243,9 @@ namespace CaddyVpsToolkit.Services
                     }
                     else
                     {
-                        return HealthCheckResult.CreateFailure(service.Id, "TCP connection timeout");
+                        return HealthCheckResult.CreateFailure(
+                            service.Id,
+                            $"TCP connection to {service.Name} ({service.HostBinding}:{service.Port}) timed out after {AppConstants.HealthCheckSocketTimeoutMs}ms");
                     }
                 }
             }
