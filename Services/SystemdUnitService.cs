@@ -26,9 +26,11 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Create and enable a systemd unit for a service
+        /// Create and enable a systemd unit for a service.
+        /// When <paramref name="dryRun"/> is <c>true</c>, prints the content that would be written
+        /// without touching disk or reloading the systemd daemon.
         /// </summary>
-        public async Task<bool> CreateUnitFileAsync(SystemdUnitConfig config, ManagedService service)
+        public async Task<bool> CreateUnitFileAsync(SystemdUnitConfig config, ManagedService service, bool dryRun = false)
         {
             if (config is null)
                 throw new ArgumentNullException(nameof(config));
@@ -42,6 +44,16 @@ namespace CaddyVpsToolkit.Services
             {
                 var content = config.GenerateSystemdContent();
                 var filePath = Path.Combine(AppConstants.SystemdUnitsDirectory, config.UnitName);
+
+                if (dryRun)
+                {
+                    Console.WriteLine($"[dry-run] Would write systemd unit to: {filePath}");
+                    Console.WriteLine("[dry-run] --- begin unit content ---");
+                    Console.WriteLine(content);
+                    Console.WriteLine("[dry-run] --- end unit content ---");
+                    Console.WriteLine("[dry-run] Would run: systemctl daemon-reload");
+                    return true;
+                }
 
                 if (!Directory.Exists(AppConstants.SystemdUnitsDirectory))
                     throw new SystemdOperationException($"Systemd directory not found: {AppConstants.SystemdUnitsDirectory}");
