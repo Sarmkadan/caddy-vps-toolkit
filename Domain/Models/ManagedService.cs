@@ -117,5 +117,14 @@ namespace CaddyVpsToolkit.Domain.Models
         {
             return SystemdUnitName ?? $"vps-{Name.ToLower().Replace(" ", "-")}.service";
         }
+
+        /// <summary>
+        /// Returns a name safe for use as a Caddy identifier (named matcher, snippet name, etc.).
+        /// Caddy identifiers do not allow hyphens; replaces them with underscores.
+        /// </summary>
+        public string GetCaddySafeName()
+        {
+            return Name.ToLower().Replace(" ", "_").Replace("-", "_");
+        }
     }
 }
