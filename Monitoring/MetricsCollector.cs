@@ -69,6 +69,10 @@ namespace CaddyVpsToolkit.Monitoring
             }
         }
 
+        /// <summary>
+        /// Returns the current cumulative value of the named counter, or <c>0</c> if it has never been incremented.
+        /// </summary>
+        /// <param name="name">Counter name.</param>
         public long GetCounter(string name)
         {
             lock (_lockObject)
@@ -77,6 +81,10 @@ namespace CaddyVpsToolkit.Monitoring
             }
         }
 
+        /// <summary>
+        /// Returns the most recently recorded value for the named gauge, or <c>0</c> if it has never been set.
+        /// </summary>
+        /// <param name="name">Gauge name.</param>
         public double GetGauge(string name)
         {
             lock (_lockObject)
@@ -85,6 +93,10 @@ namespace CaddyVpsToolkit.Monitoring
             }
         }
 
+        /// <summary>
+        /// Returns computed statistics for the named histogram, or <c>null</c> if no values have been recorded.
+        /// </summary>
+        /// <param name="name">Histogram name.</param>
         public HistogramStats GetHistogramStats(string name)
         {
             lock (_lockObject)
@@ -93,6 +105,9 @@ namespace CaddyVpsToolkit.Monitoring
             }
         }
 
+        /// <summary>
+        /// Generates a human-readable text report of all counters, gauges, and histograms.
+        /// </summary>
         public string GenerateReport()
         {
             var lines = new List<string> { "=== Metrics Report ===", "" };
@@ -130,6 +145,9 @@ namespace CaddyVpsToolkit.Monitoring
         }
     }
 
+    /// <summary>
+    /// Thread-unsafe monotonically increasing counter. Guarded externally by <see cref="MetricsCollector"/>'s lock.
+    /// </summary>
     public sealed class Counter
     {
         private long _value;
@@ -146,6 +164,10 @@ namespace CaddyVpsToolkit.Monitoring
         }
     }
 
+    /// <summary>
+    /// Holds a single mutable floating-point value that can be set arbitrarily.
+    /// Guarded externally by <see cref="MetricsCollector"/>'s lock.
+    /// </summary>
     public sealed class Gauge
     {
         private double _value;
@@ -157,6 +179,10 @@ namespace CaddyVpsToolkit.Monitoring
         }
     }
 
+    /// <summary>
+    /// Accumulates an unbounded list of observed values and computes summary statistics on demand.
+    /// Internal access is guarded by a per-instance lock.
+    /// </summary>
     public sealed class Histogram
     {
         private readonly List<double> _values = new();
@@ -188,12 +214,24 @@ namespace CaddyVpsToolkit.Monitoring
         }
     }
 
+    /// <summary>
+    /// Immutable summary statistics computed from a <see cref="Histogram"/> sample set.
+    /// </summary>
     public sealed class HistogramStats
     {
+        /// <summary>Gets or sets the total number of recorded observations.</summary>
         public int Count { get; set; }
+
+        /// <summary>Gets or sets the minimum observed value.</summary>
         public double Min { get; set; }
+
+        /// <summary>Gets or sets the maximum observed value.</summary>
         public double Max { get; set; }
+
+        /// <summary>Gets or sets the arithmetic mean of all observations.</summary>
         public double Average { get; set; }
+
+        /// <summary>Gets or sets the median (50th percentile) of all observations.</summary>
         public double Median { get; set; }
     }
 }
