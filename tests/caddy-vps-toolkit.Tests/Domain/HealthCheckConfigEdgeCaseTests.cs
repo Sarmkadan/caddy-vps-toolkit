@@ -27,7 +27,12 @@ public sealed class HealthCheckConfigEdgeCaseTests
     [Fact]
     public void Validate_IntervalExactlyMinimum_DoesNotThrow()
     {
-        var config = new HealthCheckConfig { IntervalSeconds = 5, TimeoutSeconds = 1 };
+        var config = new HealthCheckConfig
+        {
+            Type = HealthCheckType.Tcp,
+            IntervalSeconds = 5,
+            TimeoutSeconds = 1
+        };
 
         var act = () => config.Validate();
 
@@ -47,7 +52,12 @@ public sealed class HealthCheckConfigEdgeCaseTests
     [Fact]
     public void Validate_TimeoutEqualsInterval_DoesNotThrow()
     {
-        var config = new HealthCheckConfig { IntervalSeconds = 10, TimeoutSeconds = 10 };
+        var config = new HealthCheckConfig
+        {
+            Type = HealthCheckType.Tcp,
+            IntervalSeconds = 10,
+            TimeoutSeconds = 10
+        };
 
         var act = () => config.Validate();
 
