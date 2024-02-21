@@ -7,8 +7,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CaddyVpsToolkit.Services;
 using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Services;
 
 namespace CaddyVpsToolkit.Core
 {
@@ -22,19 +22,28 @@ namespace CaddyVpsToolkit.Core
         private readonly CaddyConfigurationService _caddyConfig;
         private readonly SystemdUnitService _systemdUnit;
         private readonly ConfigurationService _config;
+        private readonly IBackupService _backup;
+        private readonly ILogAggregationService _logAggregation;
+        private readonly ISslCertificateMonitoringService _sslMonitor;
 
         public CliCommandHandler(
             ServiceManagementService serviceManager,
             HealthMonitoringService healthMonitor,
             CaddyConfigurationService caddyConfig,
             SystemdUnitService systemdUnit,
-            ConfigurationService config)
+            ConfigurationService config,
+            IBackupService backup,
+            ILogAggregationService logAggregation,
+            ISslCertificateMonitoringService sslMonitor)
         {
             _serviceManager = serviceManager;
             _healthMonitor = healthMonitor;
             _caddyConfig = caddyConfig;
             _systemdUnit = systemdUnit;
             _config = config;
+            _backup = backup;
+            _logAggregation = logAggregation;
+            _sslMonitor = sslMonitor;
         }
 
         /// <summary>
@@ -92,6 +101,28 @@ namespace CaddyVpsToolkit.Core
                         if (args.Length < 3)
                             throw new ArgumentException("Configuration key and value required");
                         await SetConfigAsync(args[1], args[2]);
+                        break;
+
+                    case "backup-create":
+                        await BackupCreateAsync(args);
+                        break;
+
+                    case "backup-restore":
+                        if (args.Length < 2)
+                            throw new ArgumentException("Backup file path required");
+                        await BackupRestoreAsync(args[1]);
+                        break;
+
+                    case "backup-list":
+                        await BackupListAsync(args);
+                        break;
+
+                    case "logs-view":
+                        await LogsViewAsync(args);
+                        break;
+
+                    case "ssl-check":
+                        await SslCheckAsync(args);
                         break;
 
                     default:
@@ -194,6 +225,157 @@ namespace CaddyVpsToolkit.Core
             Console.WriteLine($"Configuration updated: {key}={value}");
         }
 
+        private async Task BackupCreateAsync(string[] args)
+        {
+            string? outputPath = null;
+            string description = "";
+
+            for (int i = 1; i < args.Length - 1; i++)
+            {
+                if (args[i].Equals("--output", StringComparison.OrdinalIgnoreCase))
+                    outputPath = args[i + 1];
+                else if (args[i].Equals("--description", StringComparison.OrdinalIgnoreCase))
+                    description = args[i + 1];
+            }
+
+            var filePath = await _backup.CreateBackupAsync(outputPath, description);
+            Console.WriteLine($"Backup created: {filePath}");
+        }
+
+        private async Task BackupRestoreAsync(string backupFilePath)
+        {
+            var manifest = await _backup.RestoreBackupAsync(backupFilePath);
+            Console.WriteLine($"Backup restored successfully.");
+            Console.WriteLine($"  Backup ID:  {manifest.BackupId}");
+            Console.WriteLine($"  Created At: {manifest.CreatedAt:O}");
+            Console.WriteLine($"  Services:   {manifest.ServiceCount}");
+            Console.WriteLine($"  Caddyfile:  {(manifest.CaddyfileContent is not null ? "restored" : "not included")}");
+            if (!string.IsNullOrWhiteSpace(manifest.Description))
+                Console.WriteLine($"  Note:       {manifest.Description}");
+        }
+
+        private async Task BackupListAsync(string[] args)
+        {
+            string? directory = null;
+            for (int i = 1; i < args.Length - 1; i++)
+            {
+                if (args[i].Equals("--dir", StringComparison.OrdinalIgnoreCase))
+                    directory = args[i + 1];
+            }
+
+            var files = await _backup.ListBackupsAsync(directory);
+
+            if (files.Count == 0)
+            {
+                Console.WriteLine("No backups found.");
+                return;
+            }
+
+            Console.WriteLine($"Available backups ({files.Count}):");
+            Console.WriteLine(new string('-', 60));
+            foreach (var file in files)
+                Console.WriteLine($"  {file}");
+        }
+
+        private async Task LogsViewAsync(string[] args)
+        {
+            var options = new LogQueryOptions();
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                if (args[i].Equals("--lines", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    if (int.TryParse(args[++i], out var lines) && lines > 0)
+                        options.Lines = lines;
+                }
+                else if (args[i].Equals("--level", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    options.MinLevel = args[++i];
+                }
+                else if (args[i].Equals("--service", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    options.ServiceId = args[++i];
+                }
+                else if (args[i].Equals("--since", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    if (DateTime.TryParse(args[++i], out var since))
+                        options.Since = since.ToUniversalTime();
+                }
+            }
+
+            var entries = await _logAggregation.GetLogsAsync(options);
+
+            if (entries.Count == 0)
+            {
+                Console.WriteLine("No log entries found matching the given filters.");
+                return;
+            }
+
+            Console.WriteLine($"{"Timestamp",-30} {"Level",-8} {"Source",-20} Message");
+            Console.WriteLine(new string('-', 100));
+
+            foreach (var entry in entries)
+            {
+                Console.WriteLine($"{entry.Timestamp:yyyy-MM-dd HH:mm:ss.fff,-30} {entry.Level,-8} {entry.Source,-20} {entry.Message}");
+            }
+        }
+
+        private async Task SslCheckAsync(string[] args)
+        {
+            // If a domain is specified check that one, otherwise check all enabled services
+            if (args.Length >= 2 && !args[1].StartsWith("--"))
+            {
+                var domain = args[1];
+                var outcome = await _sslMonitor.CheckCertificateAsync(domain);
+
+                if (!outcome.IsSuccess)
+                {
+                    Console.Error.WriteLine($"[ERROR] {outcome.ErrorMessage}");
+                    return;
+                }
+
+                PrintSslResult(outcome.Data);
+                return;
+            }
+
+            // Check all services
+            var services = await _serviceManager.GetEnabledServicesAsync();
+            var results = await _sslMonitor.CheckAllServicesAsync(services);
+
+            if (results.Count == 0)
+            {
+                Console.WriteLine("No services with public domains found to check.");
+                return;
+            }
+
+            Console.WriteLine($"{"Domain",-30} {"Status",-14} {"Expires",-12} Message");
+            Console.WriteLine(new string('-', 90));
+
+            foreach (var result in results)
+            {
+                var expiry = result.Certificate is not null
+                    ? result.Certificate.ExpiresAt.ToString("yyyy-MM-dd")
+                    : "N/A";
+                Console.WriteLine($"{result.Domain,-30} {result.Status,-14} {expiry,-12} {result.Message}");
+            }
+        }
+
+        private static void PrintSslResult(SslCertificateCheckResult result)
+        {
+            Console.WriteLine($"Domain:  {result.Domain}");
+            Console.WriteLine($"Status:  {result.Status}");
+            Console.WriteLine($"Message: {result.Message}");
+            Console.WriteLine($"Checked: {result.CheckedAt:O}");
+
+            if (result.Certificate is not null)
+            {
+                Console.WriteLine($"Subject: {result.Certificate.Subject}");
+                Console.WriteLine($"Issuer:  {result.Certificate.Issuer}");
+                Console.WriteLine($"Issued:  {result.Certificate.IssuedAt:yyyy-MM-dd}");
+                Console.WriteLine($"Expires: {result.Certificate.ExpiresAt:yyyy-MM-dd} ({result.Certificate.DaysUntilExpiry} days)");
+            }
+        }
+
         private void PrintVersion()
         {
             Console.WriteLine($"{AppConstants.AppName} v{AppConstants.AppVersion}");
@@ -206,14 +388,19 @@ namespace CaddyVpsToolkit.Core
             Console.WriteLine($"{AppConstants.AppName} v{AppConstants.AppVersion}");
             Console.WriteLine("\nUsage: caddy-vps-toolkit <command> [options]");
             Console.WriteLine("\nCommands:");
-            Console.WriteLine("  version              Show version information");
-            Console.WriteLine("  help                 Show help information");
-            Console.WriteLine("  list-services        List all services (--json for JSON output)");
-            Console.WriteLine("  service-status <id>  Get service status");
-            Console.WriteLine("  health-check <id>    Perform health check");
-            Console.WriteLine("  health-summary       Get overall health summary");
-            Console.WriteLine("  config-get <key>     Get configuration value");
-            Console.WriteLine("  config-set <k> <v>   Set configuration value");
+            Console.WriteLine("  version                   Show version information");
+            Console.WriteLine("  help                      Show help information");
+            Console.WriteLine("  list-services             List all services (--json for JSON output)");
+            Console.WriteLine("  service-status <id>       Get service status");
+            Console.WriteLine("  health-check <id>         Perform health check");
+            Console.WriteLine("  health-summary            Get overall health summary");
+            Console.WriteLine("  config-get <key>          Get configuration value");
+            Console.WriteLine("  config-set <k> <v>        Set configuration value");
+            Console.WriteLine("  backup-create             Create a configuration backup (--output <path>)");
+            Console.WriteLine("  backup-restore <path>     Restore configuration from a backup file");
+            Console.WriteLine("  backup-list               List available backups (--dir <path>)");
+            Console.WriteLine("  logs-view                 View aggregated logs (--lines N, --level L, --service ID)");
+            Console.WriteLine("  ssl-check [<domain>]      Check SSL certificate status for a domain or all services");
         }
 
         private void PrintHelp()
@@ -226,6 +413,9 @@ namespace CaddyVpsToolkit.Core
             Console.WriteLine("  - Caddy reverse proxy configuration");
             Console.WriteLine("  - Systemd unit management");
             Console.WriteLine("  - Configuration management");
+            Console.WriteLine("  - Backup and restore of all service configurations");
+            Console.WriteLine("  - Aggregated log viewer across all service log files");
+            Console.WriteLine("  - SSL certificate status checker with expiry alerts");
             Console.WriteLine("\nFor more information, visit: https://github.com/vladyslav-zaiets/caddy-vps-toolkit");
         }
     }
