@@ -5,10 +5,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>CaddyVpsToolkit</RootNamespace>
     <AssemblyName>caddy-vps-toolkit</AssemblyName>
-    <Version>2.0.0</Version>
-    <Authors>Vladyslav Zaiets</Authors>
-    <Description>.NET CLI tool for managing multiple services on a single VPS - Caddy config generation, systemd units, health monitoring</Description>
     <PackageId>Zaiets.caddy.vps.toolkit</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Vladyslav Zaiets</Authors>
+    <Description>A .NET CLI tool for managing multiple services on a single Linux VPS including Caddy configuration, systemd units, and health monitoring.</Description>
     <PackageTags>cli caddy vps service-management systemd health-monitoring reverse-proxy devops</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/sarmkadan/caddy-vps-toolkit</PackageProjectUrl>
