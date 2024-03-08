@@ -17,12 +17,19 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Services
 {
+    /// <summary>
+    /// Tests for the <see cref="CaddyConfigurationService"/> class.
+    /// </summary>
     public sealed class CaddyConfigurationServiceTests
     {
         private readonly IServiceRepository _serviceRepositoryMock;
         private readonly ServiceManagementService _serviceManager;
         private readonly CaddyConfigurationService _sut;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CaddyConfigurationServiceTests"/> class.
+        /// Sets up the necessary mocks and service instances for testing.
+        /// </summary>
         public CaddyConfigurationServiceTests()
         {
             _serviceRepositoryMock = Substitute.For<IServiceRepository>();
@@ -30,6 +37,11 @@ namespace CaddyVpsToolkit.Tests.Services
             _sut = new CaddyConfigurationService(_serviceManager);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="CaddyConfigurationService.GenerateCaddyfileAsync(CaddyConfig, IEnumerable{CaddyRoute})"/>
+        /// throws an <see cref="ArgumentNullException"/> when the global configuration is null.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [Fact]
         public async Task GenerateCaddyfileAsync_WithNullGlobalConfig_ShouldThrowArgumentNullException()
         {
@@ -40,6 +52,12 @@ namespace CaddyVpsToolkit.Tests.Services
             await act.Should().ThrowAsync<ArgumentNullException>();
         }
 
+        /// <summary>
+        /// Verifies that <see cref="CaddyConfigurationService.GenerateCaddyfileAsync(CaddyConfig, IEnumerable{CaddyRoute})"/>
+        /// returns a non-empty Caddyfile string containing the expected route block and reverse proxy configuration
+        /// when provided with valid inputs.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [Fact]
         public async Task GenerateCaddyfileAsync_WithValidInputs_ShouldReturnString()
         {
@@ -59,6 +77,11 @@ namespace CaddyVpsToolkit.Tests.Services
             result.Should().Contain("reverse_proxy http://localhost:8080");
         }
 
+        /// <summary>
+        /// Verifies that <see cref="CaddyConfigurationService.GenerateRouteBlock(CaddyRoute)"/>
+        /// throws an <see cref="ArgumentNullException"/> when the route argument is null.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [Fact]
         public void GenerateRouteBlock_WithNullRoute_ShouldThrowArgumentNullException()
         {
@@ -69,6 +92,12 @@ namespace CaddyVpsToolkit.Tests.Services
             act.Should().Throw<ArgumentNullException>();
         }
 
+        /// <summary>
+        /// Verifies that <see cref="CaddyConfigurationService.GenerateRouteForService(ManagedService, string)"/>
+        /// correctly creates a <see cref="CaddyRoute"/> with the expected domain and upstream URL
+        /// when provided with a valid service and domain.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [Fact]
         public void GenerateRouteForService_WithValidService_ShouldCreateRoute()
         {
@@ -84,6 +113,11 @@ namespace CaddyVpsToolkit.Tests.Services
             result.UpstreamUrl.Should().Be("http://127.0.0.1:5000");
         }
 
+        /// <summary>
+        /// Verifies that <see cref="CaddyConfigurationService.GenerateRouteForService(ManagedService, string)"/>
+        /// throws an <see cref="ArgumentNullException"/> when the service argument is null.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [Fact]
         public void GenerateRouteForService_WithNullService_ShouldThrowArgumentNullException()
         {
@@ -94,6 +128,11 @@ namespace CaddyVpsToolkit.Tests.Services
             act.Should().Throw<ArgumentNullException>();
         }
 
+        /// <summary>
+        /// Verifies that <see cref="CaddyConfigurationService.ValidateCaddyfileAsync(string)"/>
+        /// throws an <see cref="ArgumentException"/> when the provided Caddyfile content is empty.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         [Fact]
         public async Task ValidateCaddyfileAsync_WithEmptyContent_ShouldThrowArgumentException()
         {
