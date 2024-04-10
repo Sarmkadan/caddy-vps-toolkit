@@ -16,7 +16,7 @@ namespace CaddyVpsToolkit.Utilities
     /// Extension methods for string manipulation and validation.
     /// Improves code readability by adding domain-specific string operations.
     /// </summary>
-    public static class StringExtensions
+    public static partial class StringExtensions
     {
         // Compiled once; avoids per-call regex compilation overhead.
         private static readonly Regex _kebabCaseRegex = new(
