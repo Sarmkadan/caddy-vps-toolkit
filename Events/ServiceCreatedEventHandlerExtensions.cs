@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Threading.Tasks;
@@ -12,33 +12,38 @@ using CaddyVpsToolkit.Integration;
 namespace CaddyVpsToolkit.Events
 {
     /// <summary>
-    /// Extension methods for ServiceCreatedEventHandler providing additional functionality
+    /// Extension methods for <see cref="ServiceCreatedEventHandler"/> providing additional functionality
     /// </summary>
     public static class ServiceCreatedEventHandlerExtensions
     {
         /// <summary>
-        /// Creates a new ServiceCreatedEventHandler with the specified logger and webhook handler
+        /// Creates a new <see cref="ServiceCreatedEventHandler"/> with the specified logger and webhook handler.
         /// </summary>
-        /// <param name="logger">The logger instance</param>
-        /// <param name="webhookHandler">The webhook handler instance</param>
-        /// <returns>A new ServiceCreatedEventHandler instance</returns>
+        /// <param name="logger">The logger instance. Cannot be null.</param>
+        /// <param name="webhookHandler">The webhook handler instance. Cannot be null.</param>
+        /// <returns>A new <see cref="ServiceCreatedEventHandler"/> instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="logger"/> or <paramref name="webhookHandler"/> is null.</exception>
         public static ServiceCreatedEventHandler WithLogger(this ILogger logger, IWebhookHandler webhookHandler)
         {
+            ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(webhookHandler);
+
             return new ServiceCreatedEventHandler(logger, webhookHandler);
         }
 
         /// <summary>
         /// Handles the service created event with additional validation logging
         /// </summary>
-        /// <param name="handler">The event handler</param>
-        /// <param name="@event">The service created event</param>
-        /// <returns>Task representing the async operation</returns>
+        /// <param name="handler">The event handler. Cannot be null.</param>
+        /// <param name="@event">The service created event. Cannot be null and must have valid properties.</param>
+        /// <returns>Task representing the async operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="handler"/> or <paramref name="@event"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="@event"/>.ServiceName is null or whitespace, or <paramref name="@event"/>.ExecutablePath is null or whitespace.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="@event"/>.Port is not in valid range (1-65535).</exception>
         public static async Task HandleWithValidationAsync(this ServiceCreatedEventHandler handler, ServiceCreatedEvent @event)
         {
-            if (@event == null)
-            {
-                throw new ArgumentNullException(nameof(@event));
-            }
+            ArgumentNullException.ThrowIfNull(handler);
+            ArgumentNullException.ThrowIfNull(@event);
 
             if (string.IsNullOrWhiteSpace(@event.ServiceName))
             {
@@ -61,16 +66,15 @@ namespace CaddyVpsToolkit.Events
         /// <summary>
         /// Handles the service created event and logs to a specific log level
         /// </summary>
-        /// <param name="handler">The event handler</param>
-        /// <param name="@event">The service created event</param>
-        /// <param name="logLevel">The log level to use</param>
-        /// <returns>Task representing the async operation</returns>
+        /// <param name="handler">The event handler. Cannot be null.</param>
+        /// <param name="@event">The service created event. Cannot be null.</param>
+        /// <param name="logLevel">The log level to use.</param>
+        /// <returns>Task representing the async operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="handler"/> or <paramref name="@event"/> is null.</exception>
         public static async Task HandleWithLogLevelAsync(this ServiceCreatedEventHandler handler, ServiceCreatedEvent @event, LogLevel logLevel)
         {
-            if (@event == null)
-            {
-                throw new ArgumentNullException(nameof(@event));
-            }
+            ArgumentNullException.ThrowIfNull(handler);
+            ArgumentNullException.ThrowIfNull(@event);
 
             var message = $"Service created: {{{@event.ServiceName}}} on port {@event.Port} (type: {@event.ServiceType}) - Executable: {@event.ExecutablePath}";
 
@@ -99,14 +103,13 @@ namespace CaddyVpsToolkit.Events
         /// <summary>
         /// Gets the logger instance associated with this handler
         /// </summary>
-        /// <param name="handler">The event handler</param>
-        /// <returns>The logger instance</returns>
+        /// <param name="handler">The event handler. Cannot be null.</param>
+        /// <returns>The logger instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="handler"/> is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the logger field cannot be found in <see cref="ServiceCreatedEventHandler"/> type.</exception>
         public static ILogger GetLogger(this ServiceCreatedEventHandler handler)
         {
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
+            ArgumentNullException.ThrowIfNull(handler);
 
             // Use reflection to get the private logger field
             var loggerField = typeof(ServiceCreatedEventHandler).GetField(
@@ -124,14 +127,13 @@ namespace CaddyVpsToolkit.Events
         /// <summary>
         /// Gets the webhook handler instance associated with this handler
         /// </summary>
-        /// <param name="handler">The event handler</param>
-        /// <returns>The webhook handler instance</returns>
+        /// <param name="handler">The event handler. Cannot be null.</param>
+        /// <returns>The webhook handler instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="handler"/> is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the webhook handler field cannot be found in <see cref="ServiceCreatedEventHandler"/> type.</exception>
         public static IWebhookHandler GetWebhookHandler(this ServiceCreatedEventHandler handler)
         {
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
+            ArgumentNullException.ThrowIfNull(handler);
 
             // Use reflection to get the private webhook handler field
             var webhookHandlerField = typeof(ServiceCreatedEventHandler).GetField(
