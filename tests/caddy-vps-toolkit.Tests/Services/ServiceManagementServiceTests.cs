@@ -18,11 +18,17 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Services
 {
+    /// <summary>
+    /// Unit tests for the <see cref="ServiceManagementService"/> class.
+    /// </summary>
     public sealed class ServiceManagementServiceTests
     {
         private readonly IServiceRepository _repositoryMock;
         private readonly ServiceManagementService _sut;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceManagementServiceTests"/> class.
+        /// </summary>
         public ServiceManagementServiceTests()
         {
             _repositoryMock = Substitute.For<IServiceRepository>();
@@ -30,6 +36,9 @@ namespace CaddyVpsToolkit.Tests.Services
         }
 
         [Fact]
+        /// <summary>
+        /// Verifies that <see cref="ServiceManagementService.CreateServiceAsync"/> returns the service ID when provided with a valid service.
+        /// </summary>
         public async Task CreateServiceAsync_WithValidService_ShouldReturnId()
         {
             // Arrange
@@ -52,6 +61,9 @@ namespace CaddyVpsToolkit.Tests.Services
         }
 
         [Fact]
+        /// <summary>
+        /// Verifies that <see cref="ServiceManagementService.CreateServiceAsync"/> throws an <see cref="ArgumentNullException"/> when the service is null.
+        /// </summary>
         public async Task CreateServiceAsync_WithNullService_ShouldThrowArgumentNullException()
         {
             // Act
@@ -62,6 +74,9 @@ namespace CaddyVpsToolkit.Tests.Services
         }
 
         [Fact]
+        /// <summary>
+        /// Verifies that <see cref="ServiceManagementService.CreateServiceAsync"/> throws a <see cref="ServiceConfigurationException"/> when a service with the same name already exists.
+        /// </summary>
         public async Task CreateServiceAsync_WithExistingName_ShouldThrowServiceConfigurationException()
         {
             // Arrange
@@ -76,6 +91,9 @@ namespace CaddyVpsToolkit.Tests.Services
         }
 
         [Fact]
+        /// <summary>
+        /// Verifies that <see cref="ServiceManagementService.GetServiceAsync"/> returns the expected service when provided with a valid ID.
+        /// </summary>
         public async Task GetServiceAsync_WithValidId_ShouldReturnService()
         {
             // Arrange
@@ -92,6 +110,9 @@ namespace CaddyVpsToolkit.Tests.Services
         }
 
         [Fact]
+        /// <summary>
+        /// Verifies that <see cref="ServiceManagementService.DeleteServiceAsync"/> throws a <see cref="ServiceConfigurationException"/> when attempting to delete a running service.
+        /// </summary>
         public async Task DeleteServiceAsync_WhenServiceIsRunning_ShouldThrowServiceConfigurationException()
         {
             // Arrange
@@ -108,6 +129,9 @@ namespace CaddyVpsToolkit.Tests.Services
         }
 
         [Fact]
+        /// <summary>
+        /// Verifies that <see cref="ServiceManagementService.UpdateServiceStatusAsync"/> successfully updates the service status and returns true.
+        /// </summary>
         public async Task UpdateServiceStatusAsync_WithValidId_ShouldUpdateAndReturnTrue()
         {
             // Arrange
