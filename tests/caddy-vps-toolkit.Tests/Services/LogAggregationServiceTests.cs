@@ -14,8 +14,22 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Services
 {
+    /// <summary>
+    /// Tests for the LogAggregationService class.
+    /// </summary>
     public sealed class LogAggregationServiceTests
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LogAggregationServiceTests"/> class.
+        /// </summary>
+        public LogAggregationServiceTests()
+        {
+        }
+
+        /// <summary>
+        /// Verifies that the GetLogsAsync method returns an empty list when the log directory is empty.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task GetLogsAsync_WithEmptyDirectory_ReturnsEmptyList()
         {
@@ -31,6 +45,10 @@ namespace CaddyVpsToolkit.Tests.Services
             result.Should().BeEmpty();
         }
 
+        /// <summary>
+        /// Verifies that the GetLogsAsync method parses standard log format.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task GetLogsAsync_ParsesStandardLogFormat()
         {
@@ -56,6 +74,10 @@ namespace CaddyVpsToolkit.Tests.Services
             result.Should().Contain(e => e.Level == "Error");
         }
 
+        /// <summary>
+        /// Verifies that the GetLogsAsync method filters by minimum log level.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task GetLogsAsync_FiltersbyMinLevel()
         {
@@ -79,6 +101,10 @@ namespace CaddyVpsToolkit.Tests.Services
             result[0].Level.Should().Be("Error");
         }
 
+        /// <summary>
+        /// Verifies that the GetLogsAsync method respects the lines limit.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task GetLogsAsync_RespectsLinesLimit()
         {
@@ -100,6 +126,10 @@ namespace CaddyVpsToolkit.Tests.Services
             result.Should().HaveCount(5);
         }
 
+        /// <summary>
+        /// Verifies that the GetLogsAsync method returns the most recent logs first.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task GetLogsAsync_ReturnsMostRecentFirst()
         {
@@ -122,6 +152,10 @@ namespace CaddyVpsToolkit.Tests.Services
             result[1].Message.Should().Be("Older event");
         }
 
+        /// <summary>
+        /// Verifies that the GetLogsAsync method filters by since date.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task GetLogsAsync_FiltersBySince()
         {
@@ -145,6 +179,9 @@ namespace CaddyVpsToolkit.Tests.Services
             result[0].Message.Should().Be("Recent event");
         }
 
+        /// <summary>
+        /// Verifies that the GetLogSources method returns log files.
+        /// </summary>
         [Fact]
         public void GetLogSources_ReturnsLogFiles()
         {
