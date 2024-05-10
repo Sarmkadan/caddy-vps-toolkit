@@ -14,49 +14,57 @@ namespace CaddyVpsToolkit.Tests.Cli
     public static class ArgumentValidatorTestsExtensions
     {
         /// <summary>
-        /// Creates a validator with a command descriptor that has the specified required arguments.
+        /// Creates a command descriptor with the specified required arguments.
         /// </summary>
-        public static ArgumentValidator CreateValidatorWithRequiredArgs(this ArgumentValidator validator, params string[] requiredArgs)
+        /// <param name="requiredArgs">The required arguments to include in the descriptor.</param>
+        /// <returns>A new <see cref="CommandDescriptor"/> instance with the specified required arguments.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="requiredArgs"/> is null.</exception>
+        public static CommandDescriptor WithRequiredArgs(this CommandDescriptor descriptor, params string[] requiredArgs)
         {
-            var descriptor = new CommandDescriptor("test", "Test command")
+            ArgumentNullException.ThrowIfNull(requiredArgs);
+            ArgumentNullException.ThrowIfNull(descriptor);
+
+            foreach (var arg in requiredArgs)
             {
-                RequiredArguments = new System.Collections.Generic.List<string>(requiredArgs),
-                OptionalFlags = new System.Collections.Generic.List<string>()
-            };
+                descriptor.RequireArgument(arg);
+            }
 
-            var parser = new ArgumentParser(new[] { "test" });
-            var result = validator.Validate(parser, descriptor);
-
-            return validator;
+            return descriptor;
         }
 
         /// <summary>
-        /// Creates a validator with a command descriptor that has the specified optional flags.
+        /// Creates a command descriptor with the specified optional flags.
         /// </summary>
-        public static ArgumentValidator CreateValidatorWithOptionalFlags(this ArgumentValidator validator, params string[] optionalFlags)
+        /// <param name="optionalFlags">The optional flags to include in the descriptor.</param>
+        /// <returns>A new <see cref="CommandDescriptor"/> instance with the specified optional flags.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="optionalFlags"/> is null.</exception>
+        public static CommandDescriptor WithOptionalFlags(this CommandDescriptor descriptor, params string[] optionalFlags)
         {
-            var descriptor = new CommandDescriptor("test", "Test command")
+            ArgumentNullException.ThrowIfNull(optionalFlags);
+            ArgumentNullException.ThrowIfNull(descriptor);
+
+            foreach (var flag in optionalFlags)
             {
-                RequiredArguments = new System.Collections.Generic.List<string>(),
-                OptionalFlags = new System.Collections.Generic.List<string>(optionalFlags)
-            };
+                descriptor.AllowFlag(flag);
+            }
 
-            var parser = new ArgumentParser(new[] { "test" });
-            var result = validator.Validate(parser, descriptor);
-
-            return validator;
+            return descriptor;
         }
 
         /// <summary>
         /// Validates that the validator correctly identifies missing required arguments.
         /// </summary>
+        /// <param name="args">The command line arguments to test.</param>
+        /// <param name="requiredArgs">The required arguments that should be detected as missing.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="args"/> or <paramref name="requiredArgs"/> is null.</exception>
         public static void ShouldDetectMissingRequiredArguments(this ArgumentValidator validator, string[] args, params string[] requiredArgs)
         {
+            ArgumentNullException.ThrowIfNull(validator);
+            ArgumentNullException.ThrowIfNull(args);
+            ArgumentNullException.ThrowIfNull(requiredArgs);
+
             var descriptor = new CommandDescriptor("test", "Test command")
-            {
-                RequiredArguments = new System.Collections.Generic.List<string>(requiredArgs),
-                OptionalFlags = new System.Collections.Generic.List<string>()
-            };
+                .WithRequiredArgs(requiredArgs);
 
             var parser = new ArgumentParser(args);
             var result = validator.Validate(parser, descriptor);
@@ -68,13 +76,17 @@ namespace CaddyVpsToolkit.Tests.Cli
         /// <summary>
         /// Validates that the validator correctly identifies unknown flags.
         /// </summary>
+        /// <param name="args">The command line arguments to test.</param>
+        /// <param name="allowedFlags">The allowed flags that should not trigger validation errors.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="args"/> or <paramref name="allowedFlags"/> is null.</exception>
         public static void ShouldDetectUnknownFlags(this ArgumentValidator validator, string[] args, params string[] allowedFlags)
         {
+            ArgumentNullException.ThrowIfNull(validator);
+            ArgumentNullException.ThrowIfNull(args);
+            ArgumentNullException.ThrowIfNull(allowedFlags);
+
             var descriptor = new CommandDescriptor("test", "Test command")
-            {
-                RequiredArguments = new System.Collections.Generic.List<string>(),
-                OptionalFlags = new System.Collections.Generic.List<string>(allowedFlags)
-            };
+                .WithOptionalFlags(allowedFlags);
 
             var parser = new ArgumentParser(args);
             var result = validator.Validate(parser, descriptor);
