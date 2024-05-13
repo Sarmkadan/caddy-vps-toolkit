@@ -16,96 +16,143 @@ using CaddyVpsToolkit.Utilities;
 namespace CaddyVpsToolkit.Extensions
 {
     /// <summary>
-    /// Extension methods for IServiceCollection to simplify DI registration.
-    /// Provides fluent API for adding infrastructure services.
+    /// Extension methods for <see cref="IServiceCollection"/> to simplify dependency injection registration.
+    /// Provides a fluent API for adding infrastructure services to the service collection.
     /// </summary>
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// Add caching services
+        /// Adds caching services to the service collection.
         /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
         public static IServiceCollection AddCachingServices(this IServiceCollection services)
         {
+            ArgumentNullException.ThrowIfNull(services);
+
             services.AddSingleton<ICacheService, MemoryCache>();
             return services;
         }
 
         /// <summary>
-        /// Add HTTP client with retry policy
+        /// Adds HTTP client services with retry policy to the service collection.
         /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="timeoutMs">HTTP request timeout in milliseconds. Defaults to 30 seconds.</param>
+        /// <param name="maxRetries">Maximum number of retry attempts. Defaults to 3.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
         public static IServiceCollection AddHttpClientServices(
             this IServiceCollection services,
             int timeoutMs = 30000,
             int maxRetries = 3)
         {
-            services.AddSingleton<IRetryPolicy>(new ExponentialBackoffRetryPolicy(maxRetries));
+            ArgumentNullException.ThrowIfNull(services);
+
+            services.AddSingleton<IRetryPolicy>(_ => new ExponentialBackoffRetryPolicy(maxRetries));
             services.AddSingleton<IHttpClient>(sp =>
-            {
-                var retryPolicy = sp.GetRequiredService<IRetryPolicy>();
-                return new HttpClientWrapper(timeoutMs, retryPolicy);
-            });
+                new HttpClientWrapper(timeoutMs, sp.GetRequiredService<IRetryPolicy>()));
+
             return services;
         }
 
         /// <summary>
-        /// Add webhook services
+        /// Adds webhook services to the service collection.
         /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
         public static IServiceCollection AddWebhookServices(this IServiceCollection services)
         {
+            ArgumentNullException.ThrowIfNull(services);
+
             services.AddSingleton<IWebhookHandler>(sp =>
                 new WebhookHandler(sp.GetRequiredService<IHttpClient>()));
+
             return services;
         }
 
         /// <summary>
-        /// Add logging services
+        /// Adds logging services to the service collection.
         /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="logPath">Path to the log file. Defaults to "logs/app.log".</param>
+        /// <param name="minLevel">Minimum log level to record. Defaults to <see cref="LogLevel.Info"/>.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
         public static IServiceCollection AddLoggingServices(
             this IServiceCollection services,
             string logPath = "logs/app.log",
             LogLevel minLevel = LogLevel.Info)
         {
-            services.AddSingleton<ILogger>(new FileLogger(logPath, minLevel, true));
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentException.ThrowIfNullOrEmpty(logPath);
+
+            services.AddSingleton<ILogger>(_ => new FileLogger(logPath, minLevel, true));
             return services;
         }
 
         /// <summary>
-        /// Add event bus
+        /// Adds event bus services to the service collection.
         /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
         public static IServiceCollection AddEventBus(this IServiceCollection services)
         {
+            ArgumentNullException.ThrowIfNull(services);
+
             services.AddSingleton<IEventBus, EventBus>();
             return services;
         }
 
         /// <summary>
-        /// Add rate limiting
+        /// Adds rate limiting services to the service collection.
         /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="capacity">Maximum number of requests allowed in the bucket. Defaults to 100.</param>
+        /// <param name="refillRate">Number of tokens added per second. Defaults to 10.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
         public static IServiceCollection AddRateLimiting(
             this IServiceCollection services,
             int capacity = 100,
             int refillRate = 10)
         {
-            services.AddSingleton<IRateLimiter>(new TokenBucketRateLimiter(capacity, refillRate));
+            ArgumentNullException.ThrowIfNull(services);
+
+            services.AddSingleton<IRateLimiter>(_ => new TokenBucketRateLimiter(capacity, refillRate));
             return services;
         }
 
         /// <summary>
-        /// Add service discovery
+        /// Adds service discovery services to the service collection.
         /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
         public static IServiceCollection AddServiceDiscovery(this IServiceCollection services)
         {
+            ArgumentNullException.ThrowIfNull(services);
+
             services.AddSingleton<IServiceDiscoveryClient, InMemoryServiceDiscoveryClient>();
             return services;
         }
 
         /// <summary>
-        /// Add all infrastructure services at once
+        /// Adds all infrastructure services at once to the service collection.
         /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+        /// <param name="configure">Optional configuration action for infrastructure options.</param>
+        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
         public static IServiceCollection AddInfrastructureServices(
             this IServiceCollection services,
-            Action<InfrastructureOptions> configure = null)
+            Action<InfrastructureOptions>? configure = null)
         {
+            ArgumentNullException.ThrowIfNull(services);
+
             var options = new InfrastructureOptions();
             configure?.Invoke(options);
 
@@ -122,7 +169,7 @@ namespace CaddyVpsToolkit.Extensions
     }
 
     /// <summary>
-    /// Configuration options for infrastructure services
+    /// Configuration options for infrastructure services.
     /// </summary>
     public sealed class InfrastructureOptions
     {
