@@ -6,6 +6,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -29,7 +30,10 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Check if string is null, empty, or whitespace
         /// </summary>
-        public static bool IsNullOrWhiteSpace(this string value)
+        /// <param name="value">The string to check.</param>
+        /// <returns><see langword="true"/> if the string is null, empty, or consists only of white-space characters; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
+        public static bool IsNullOrWhiteSpace([NotNullWhen(false)] this string? value)
         {
             return string.IsNullOrWhiteSpace(value);
         }
@@ -37,6 +41,9 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Convert string to title case (first letter uppercase)
         /// </summary>
+        /// <param name="value">The string to convert.</param>
+        /// <returns>The string in title case format, or null if input is null/empty/whitespace.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         public static string ToTitleCase(this string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -54,6 +61,9 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Convert camelCase to kebab-case
         /// </summary>
+        /// <param name="value">The string to convert.</param>
+        /// <returns>The kebab-case representation, or the original value if null/empty/whitespace.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         public static string ToKebabCase(this string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -65,6 +75,9 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Convert kebab-case to camelCase
         /// </summary>
+        /// <param name="value">The string to convert.</param>
+        /// <returns>The camelCase representation, or the original value if null/empty/whitespace.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         public static string ToCamelCase(this string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -80,8 +93,16 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Truncate string to max length with ellipsis
         /// </summary>
+        /// <param name="value">The string to truncate.</param>
+        /// <param name="maxLength">Maximum length including suffix.</param>
+        /// <param name="suffix">Suffix to append when truncating. Defaults to "...".</param>
+        /// <returns>The truncated string, or the original value if it's shorter than maxLength.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxLength"/> is less than 0.</exception>
         public static string Truncate(this string value, int maxLength, string suffix = "...")
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(maxLength);
+
             if (string.IsNullOrWhiteSpace(value) || value.Length <= maxLength)
                 return value;
 
@@ -91,6 +112,9 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Check if string is valid email format
         /// </summary>
+        /// <param name="value">The string to validate.</param>
+        /// <returns><see langword="true"/> if the string is a valid email address; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         public static bool IsValidEmail(this string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -110,6 +134,9 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Check if string is valid URL format
         /// </summary>
+        /// <param name="value">The string to validate.</param>
+        /// <returns><see langword="true"/> if the string is a valid HTTP/HTTPS URL; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         public static bool IsValidUrl(this string value)
         {
             return !string.IsNullOrWhiteSpace(value) &&
@@ -120,9 +147,14 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Check if string contains only digits
         /// </summary>
+        /// <param name="value">The string to check.</param>
+        /// <returns><see langword="true"/> if the string contains only digits; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         public static bool IsNumeric(this string value)
         {
-            if (string.IsNullOrWhiteSpace(value)) return false;
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
             // ContainsAnyExcept with pre-built SearchValues uses SIMD on supported hardware.
             return !value.AsSpan().ContainsAnyExcept(_digitChars);
         }
@@ -130,9 +162,16 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Repeat string multiple times
         /// </summary>
+        /// <param name="value">The string to repeat.</param>
+        /// <param name="count">Number of times to repeat.</param>
+        /// <returns>The repeated string, or empty string if count is 0 or value is null/empty/whitespace.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="count"/> is less than 0.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         public static string Repeat(this string value, int count)
         {
-            if (count <= 0 || string.IsNullOrWhiteSpace(value))
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+
+            if (count == 0 || string.IsNullOrWhiteSpace(value))
                 return string.Empty;
 
             // string.Create allocates exactly once; no intermediate arrays or LINQ.
@@ -148,6 +187,9 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Escape string for use in shell commands
         /// </summary>
+        /// <param name="value">The string to escape.</param>
+        /// <returns>The escaped string, or the original value if null/empty/whitespace.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         public static string EscapeShell(this string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -159,8 +201,16 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Safe substring that won't throw if indices are invalid
         /// </summary>
+        /// <param name="value">The source string.</param>
+        /// <param name="startIndex">Starting index.</param>
+        /// <param name="length">Length of substring.</param>
+        /// <returns>The substring, or empty string if indices are invalid.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
         public static string SafeSubstring(this string value, int startIndex, int length)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
             if (string.IsNullOrWhiteSpace(value) || startIndex >= value.Length)
                 return string.Empty;
 
@@ -171,10 +221,16 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Check if string starts with any of the provided prefixes
         /// </summary>
+        /// <param name="value">The string to check.</param>
+        /// <param name="prefixes">Array of prefixes to test against.</param>
+        /// <returns><see langword="true"/> if the string starts with any of the prefixes; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> or <paramref name="prefixes"/> is <see langword="null"/></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool StartsWithAny(this string value, params string[] prefixes)
         {
-            if (value is null || prefixes is null || prefixes.Length == 0) return false;
+            if (value is null || prefixes is null || prefixes.Length == 0)
+                return false;
+
             var span = value.AsSpan();
             // Span.StartsWith avoids temporary string allocation for each prefix test.
             foreach (var prefix in prefixes)
