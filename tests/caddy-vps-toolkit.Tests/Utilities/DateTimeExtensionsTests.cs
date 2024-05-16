@@ -18,14 +18,14 @@ namespace CaddyVpsToolkit.Tests.Utilities
         public void ToRelativeTime_ShouldReturnMinutesAgo_WhenLessThanHour()
         {
             var dateTime = DateTime.UtcNow.AddMinutes(-10);
-            dateTime.ToRelativeTime().Should().Be("10 minute(s) ago");
+            dateTime.ToRelativeTime().Should().Be("10 minutes ago");
         }
 
         [Fact]
         public void ToRelativeTime_ShouldReturnHoursAgo_WhenLessThanDay()
         {
             var dateTime = DateTime.UtcNow.AddHours(-5);
-            dateTime.ToRelativeTime().Should().Be("5 hour(s) ago");
+            dateTime.ToRelativeTime().Should().Be("5 hours ago");
         }
 
         [Fact]

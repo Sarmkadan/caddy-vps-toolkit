@@ -41,16 +41,31 @@ namespace CaddyVpsToolkit.Utilities
                     var outputTask = process.StandardOutput.ReadToEndAsync();
                     var errorTask = process.StandardError.ReadToEndAsync();
 
-                    if (!process.WaitForExit(timeoutMs))
+                    using (var cts = new CancellationTokenSource(timeoutMs))
                     {
-                        process.Kill();
-                        return new ProcessResult
+                        try
                         {
-                            ExitCode = -1,
-                            Output = "",
-                            Error = "Process timeout",
-                            IsSuccess = false
-                        };
+                            await process.WaitForExitAsync(cts.Token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            try
+                            {
+                                process.Kill(entireProcessTree: true);
+                            }
+                            catch (InvalidOperationException)
+                            {
+                                // Process exited between the timeout and the kill attempt.
+                            }
+
+                            return new ProcessResult
+                            {
+                                ExitCode = -1,
+                                Output = "",
+                                Error = "Process timeout",
+                                IsSuccess = false
+                            };
+                        }
                     }
 
                     var output = await outputTask;
@@ -85,7 +100,10 @@ namespace CaddyVpsToolkit.Utilities
             try
             {
                 var processes = Process.GetProcessesByName(processName);
-                return processes.Length > 0;
+                var running = processes.Length > 0;
+                foreach (var process in processes)
+                    process.Dispose();
+                return running;
             }
             catch
             {
@@ -100,7 +118,11 @@ namespace CaddyVpsToolkit.Utilities
         {
             try
             {
-                return Process.GetProcessesByName(processName).Length;
+                var processes = Process.GetProcessesByName(processName);
+                var count = processes.Length;
+                foreach (var process in processes)
+                    process.Dispose();
+                return count;
             }
             catch
             {
@@ -116,9 +138,17 @@ namespace CaddyVpsToolkit.Utilities
             try
             {
                 var processes = Process.GetProcessesByName(processName);
-                foreach (var process in processes)
+                try
                 {
-                    process.Kill();
+                    foreach (var process in processes)
+                    {
+                        process.Kill();
+                    }
+                }
+                finally
+                {
+                    foreach (var process in processes)
+                        process.Dispose();
                 }
                 return true;
             }

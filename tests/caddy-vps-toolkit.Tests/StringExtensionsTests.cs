@@ -80,8 +80,10 @@ namespace CaddyVpsToolkit.Tests
             /// </summary>
             /// <param name="input">The input string to escape.</param>
             /// <param name="expected">The expected output string.</param>
+            // POSIX single-quote escaping: close the quote, emit an escaped
+            // quote, then reopen - 'hello'\''world'.
             const string input = "hello'world";
-            const string expected = "'hello''world'";
+            const string expected = "'hello'\\''world'";
 
             // Act
             var result = input.EscapeShell();
