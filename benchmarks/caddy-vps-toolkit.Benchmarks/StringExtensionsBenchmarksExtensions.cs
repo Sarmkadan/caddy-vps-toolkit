@@ -3,10 +3,15 @@ using System.Text;
 
 namespace CaddyVpsToolkit.Benchmarks
 {
+    /// <summary>
+    /// Provides benchmark-oriented extension methods for <see cref="string"/> that are exercised in the
+    /// performance tests of the CaddyVpsToolkit project.
+    /// </summary>
     public static class StringExtensionsBenchmarksExtensions
     {
         /// <summary>
-        /// Determines whether the specified string ends with any of the provided suffixes using ordinal, case-insensitive comparison.
+        /// Determines whether the specified string ends with any of the provided suffixes using ordinal,
+        /// case‑insensitive comparison.
         /// </summary>
         /// <param name="value">The string to check.</param>
         /// <param name="suffixes">The array of suffixes to compare against.</param>
@@ -61,10 +66,10 @@ namespace CaddyVpsToolkit.Benchmarks
         }
 
         /// <summary>
-        /// Encodes the string as a Base64 URL-safe string without padding characters.
+        /// Encodes the string as a Base64 URL‑safe string without padding characters.
         /// </summary>
         /// <param name="value">The string to encode.</param>
-        /// <returns>The Base64 URL-safe encoded string, or <see langword="null"/> if the input was null.</returns>
+        /// <returns>The Base64 URL‑safe encoded string, or <see langword="null"/> if the input was null.</returns>
         public static string ToBase64UrlEncode(this string value)
         {
             if (value is null)
