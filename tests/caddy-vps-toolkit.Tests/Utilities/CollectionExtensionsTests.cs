@@ -13,10 +13,17 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Utilities
 {
+    /// <summary>
+    /// Provides unit tests for the <see cref="CollectionExtensions"/> class extension methods.
+    /// Tests various collection operations including safe access, batching, partitioning, and conditional removal.
+    /// </summary>
     public sealed class CollectionExtensionsTests
     {
         // ── SafeGet ──────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Tests that SafeGet returns the element at a valid index.
+        /// </summary>
         [Fact]
         public void SafeGet_ValidIndex_ReturnsElement()
         {
@@ -25,6 +32,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             list.SafeGet(1).Should().Be("b");
         }
 
+        /// <summary>
+        /// Tests that SafeGet returns the default value when the index is out of range.
+        /// </summary>
         [Fact]
         public void SafeGet_IndexOutOfRange_ReturnsDefault()
         {
@@ -33,6 +43,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             list.SafeGet(10).Should().Be(0);
         }
 
+        /// <summary>
+        /// Tests that SafeGet returns the default value when the index is negative.
+        /// </summary>
         [Fact]
         public void SafeGet_NegativeIndex_ReturnsDefault()
         {
@@ -41,6 +54,12 @@ namespace CaddyVpsToolkit.Tests.Utilities
             list.SafeGet(-1).Should().Be(0);
         }
 
+        /// <summary>
+        /// Tests that SafeGet returns the provided default value when the collection is null.
+        /// <param name="list">The null collection to test</param>
+        /// <param name="fallback">The fallback value to return</param>
+        /// <returns>The fallback value when collection is null</returns>
+        /// </summary>
         [Fact]
         public void SafeGet_NullList_ReturnsProvidedDefault()
         {
@@ -51,6 +70,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
 
         // ── IsNullOrEmpty ────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Tests that IsNullOrEmpty returns true for a null collection.
+        /// </summary>
         [Fact]
         public void IsNullOrEmpty_NullCollection_ReturnsTrue()
         {
@@ -59,6 +81,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             collection!.IsNullOrEmpty().Should().BeTrue();
         }
 
+        /// <summary>
+        /// Tests that IsNullOrEmpty returns true for an empty collection.
+        /// </summary>
         [Fact]
         public void IsNullOrEmpty_EmptyCollection_ReturnsTrue()
         {
@@ -67,6 +92,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             collection.IsNullOrEmpty().Should().BeTrue();
         }
 
+        /// <summary>
+        /// Tests that IsNullOrEmpty returns false for a non-empty collection.
+        /// </summary>
         [Fact]
         public void IsNullOrEmpty_NonEmptyCollection_ReturnsFalse()
         {
@@ -77,6 +105,12 @@ namespace CaddyVpsToolkit.Tests.Utilities
 
         // ── Batch ────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Tests that Batch produces correct batches when dividing evenly.
+        /// <param name="items">The collection to batch</param>
+        /// <param name="batchSize">The size of each batch</param>
+        /// <returns>A collection of batches</returns>
+        /// </summary>
         [Fact]
         public void Batch_EvenDivision_ProducesCorrectBatches()
         {
@@ -90,6 +124,12 @@ namespace CaddyVpsToolkit.Tests.Utilities
             batches[2].Should().Equal(5, 6);
         }
 
+        /// <summary>
+        /// Tests that Batch handles remainder correctly with the last batch having fewer items.
+        /// <param name="items">The collection to batch</param>
+        /// <param name="batchSize">The size of each batch</param>
+        /// <returns>A collection of batches with the last batch having fewer items</returns>
+        /// </summary>
         [Fact]
         public void Batch_WithRemainder_LastBatchHasFewerItems()
         {
@@ -101,6 +141,10 @@ namespace CaddyVpsToolkit.Tests.Utilities
             batches[2].Should().Equal(5);
         }
 
+        /// <summary>
+        /// Tests that Batch throws ArgumentException when batch size is zero.
+        /// <param name="items">The collection to batch</param>
+        /// </summary>
         [Fact]
         public void Batch_ZeroBatchSize_ThrowsArgumentException()
         {
@@ -111,6 +155,10 @@ namespace CaddyVpsToolkit.Tests.Utilities
             act.Should().Throw<ArgumentException>();
         }
 
+        /// <summary>
+        /// Tests that Batch throws ArgumentNullException when the collection is null.
+        /// <param name="items">The null collection to batch</param>
+        /// </summary>
         [Fact]
         public void Batch_NullCollection_ThrowsArgumentNullException()
         {
@@ -121,6 +169,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
             act.Should().Throw<ArgumentNullException>();
         }
 
+        /// <summary>
+        /// Tests that Batch returns an empty list when the collection is empty.
+        /// <param name="items">The empty collection to batch</param>
+        /// <returns>An empty list of batches</returns>
+        /// </summary>
         [Fact]
         public void Batch_EmptyCollection_ReturnsEmptyList()
         {
@@ -133,6 +186,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
 
         // ── Partition ────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Tests that Partition correctly splits items into matching and not matching groups.
+        /// <param name="items">The collection to partition</param>
+        /// <returns>A tuple containing matching and not matching collections</returns>
+        /// </summary>
         [Fact]
         public void Partition_SplitsIntoMatchingAndNotMatching()
         {
@@ -144,6 +202,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
             odds.Should().Equal(1, 3, 5);
         }
 
+        /// <summary>
+        /// Tests that Partition returns an empty notMatching collection when all items match.
+        /// <param name="items">The collection to partition</param>
+        /// <returns>A tuple where notMatching is empty</returns>
+        /// </summary>
         [Fact]
         public void Partition_AllMatch_NotMatchingIsEmpty()
         {
@@ -155,6 +218,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
             notMatching.Should().BeEmpty();
         }
 
+        /// <summary>
+        /// Tests that Partition returns an empty matching collection when no items match.
+        /// <param name="items">The collection to partition</param>
+        /// <returns>A tuple where matching is empty</returns>
+        /// </summary>
         [Fact]
         public void Partition_NoneMatch_MatchingIsEmpty()
         {
@@ -166,6 +234,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
             notMatching.Should().HaveCount(3);
         }
 
+        /// <summary>
+        /// Tests that Partition returns two empty lists when the collection is null.
+        /// <param name="items">The null collection to partition</param>
+        /// <returns>A tuple of two empty lists</returns>
+        /// </summary>
         [Fact]
         public void Partition_NullCollection_ReturnsTwoEmptyLists()
         {
@@ -179,6 +252,10 @@ namespace CaddyVpsToolkit.Tests.Utilities
 
         // ── RemoveWhere ──────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Tests that RemoveWhere removes items matching the predicate.
+        /// <param name="list">The list to modify</param>
+        /// </summary>
         [Fact]
         public void RemoveWhere_MatchingPredicate_RemovesItems()
         {
@@ -189,6 +266,10 @@ namespace CaddyVpsToolkit.Tests.Utilities
             list.Should().Equal(1, 3, 5);
         }
 
+        /// <summary>
+        /// Tests that RemoveWhere leaves the list unchanged when no items match the predicate.
+        /// <param name="list">The list to test</param>
+        /// </summary>
         [Fact]
         public void RemoveWhere_NoMatches_LeavesListUnchanged()
         {
@@ -201,6 +282,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
 
         // ── AddRangeIfNotExists ──────────────────────────────────────────────
 
+        /// <summary>
+        /// Tests that AddRangeIfNotExists adds all new items to the list.
+        /// <param name="list">The list to modify</param>
+        /// <param name="newItems">The items to add</param>
+        /// </summary>
         [Fact]
         public void AddRangeIfNotExists_NewItems_AddsAll()
         {
@@ -211,6 +297,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
             list.Should().Equal(1, 2, 3, 4);
         }
 
+        /// <summary>
+        /// Tests that AddRangeIfNotExists skips duplicate items.
+        /// <param name="list">The list to modify</param>
+        /// <param name="newItems">The items to add (containing duplicates)</param>
+        /// </summary>
         [Fact]
         public void AddRangeIfNotExists_DuplicateItems_SkipsDuplicates()
         {
@@ -221,6 +312,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
             list.Should().Equal(1, 2, 3, 4);
         }
 
+        /// <summary>
+        /// Tests that AddRangeIfNotExists does not throw when the items to add are null.
+        /// <param name="list">The list to test</param>
+        /// <param name="newItems">The null items to add</param>
+        /// </summary>
         [Fact]
         public void AddRangeIfNotExists_NullItems_DoesNotThrow()
         {
@@ -234,6 +330,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
 
         // ── ToTupleList ──────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Tests that ToTupleList converts a dictionary to a list of key-value tuples.
+        /// <param name="dict">The dictionary to convert</param>
+        /// <returns>A list of key-value tuples</returns>
+        /// </summary>
         [Fact]
         public void ToTupleList_NormalDictionary_ReturnsTuples()
         {
@@ -246,6 +347,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
             tuples.Should().Contain(("b", 2));
         }
 
+        /// <summary>
+        /// Tests that ToTupleList returns an empty list when the dictionary is null.
+        /// <param name="dict">The null dictionary to convert</param>
+        /// <returns>An empty list of tuples</returns>
+        /// </summary>
         [Fact]
         public void ToTupleList_NullDictionary_ReturnsEmptyList()
         {
