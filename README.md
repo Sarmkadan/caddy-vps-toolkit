@@ -690,6 +690,34 @@ public class HealthMonitoringService
 }
 ```
 
+### ServiceCreatedEventHandlerExtensions
+
+Provides extension methods for `ServiceCreatedEventHandler` that enable enhanced event handling capabilities including validation, custom logging levels, and access to internal components.
+
+```csharp
+// Example: Creating a handler with custom logger and webhook handler
+var logger = new ConsoleLogger();
+var webhookHandler = new SlackWebhookHandler("https://hooks.slack.com/services/...");
+var handler = logger.WithLogger(webhookHandler);
+
+// Example: Handling an event with validation
+var serviceEvent = new ServiceCreatedEvent(
+    serviceName: "api-service",
+    port: 8080,
+    serviceType: "web-api",
+    executablePath: "/usr/local/bin/api-server"
+);
+
+await handler.HandleWithValidationAsync(serviceEvent);
+
+// Example: Handling with custom log level
+await handler.HandleWithLogLevelAsync(serviceEvent, LogLevel.Info);
+
+// Example: Accessing internal components
+var eventLogger = handler.GetLogger();
+var webhook = handler.GetWebhookHandler();
+```
+
 ## Troubleshooting
 
 ### Service Won't Start
