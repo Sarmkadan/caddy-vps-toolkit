@@ -864,6 +864,31 @@ caddy-vps-toolkit is optimized for minimal overhead on resource-constrained VPS 
 
 \* Network-latency dependent. Benchmarks measured on a 2 vCPU / 2 GB VPS (AMD EPYC 7R13, Ubuntu 22.04, .NET 10, single core).
 
+
+## CaddyConfigBenchmarksExtensions
+
+Provides extension methods for benchmarking Caddy configuration generation and validation scenarios. These utilities help measure performance characteristics of configuration serialization, route validation, and path matcher generation.
+
+
+```csharp
+// Example: Creating a production configuration for benchmarking
+var benchmarks = new CaddyConfigBenchmarks();
+var productionConfig = benchmarks.CreateProductionConfig();
+
+// Example: Creating an API route for benchmarking
+var apiRoute = benchmarks.CreateApiRoute("api.example.com", 8080);
+
+// Example: Generating a complete Caddyfile
+var config = benchmarks.CreateProductionConfig();
+var routes = new List<CaddyRoute> { apiRoute };
+var caddyfile = benchmarks.GenerateCaddyfile(config, routes);
+
+// Example: Validating routes
+benchmarks.ValidateRoutes(routes);
+
+// Example: Generating path matchers for all routes
+var matchers = benchmarks.GetPathMatchers(routes);
+```
 ### Micro-benchmark Results
 
 Run via [BenchmarkDotNet](https://benchmarkdotnet.org/) v0.14.0 on the same VPS (AMD EPYC 7R13, .NET 10.0.0, X64 RyuJIT AVX2).
