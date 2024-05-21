@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace CaddyVpsToolkit.Auditing
 {
     /// <summary>
-    /// Provides validation methods for <see cref="AuditLogEntry"/> instances.
+    /// Provides validation methods for <see cref="AuditLogEntry"/> instances, including checks for required properties and valid values.
     /// </summary>
     public static class AuditLogEntryValidation
     {
@@ -66,7 +66,7 @@ namespace CaddyVpsToolkit.Auditing
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="AuditLogEntry"/> is valid.
+        /// Determines whether the specified <see cref="AuditLogEntry"/> is valid by checking if it has no validation errors.
         /// </summary>
         /// <param name="value">The audit log entry to check.</param>
         /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
@@ -77,7 +77,7 @@ namespace CaddyVpsToolkit.Auditing
         /// </summary>
         /// <param name="value">The audit log entry to validate.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown if the audit log entry is invalid.</exception>
+        /// <exception cref="ArgumentException">Thrown if the audit log entry is invalid, with a message listing all validation failures.</exception>
         public static void EnsureValid(this AuditLogEntry value)
         {
             ArgumentNullException.ThrowIfNull(value);
