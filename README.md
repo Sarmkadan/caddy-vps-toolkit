@@ -965,6 +965,168 @@ cd benchmarks/caddy-vps-toolkit.Benchmarks
 dotnet run -c Release
 ```
 
+## DomainEvent
+
+The `DomainEvent` class is a lightweight event bus implementation that enables publish-subscribe communication between components in the application. It provides a simple way to decouple event producers from event consumers, allowing for flexible event-driven architecture patterns.
+
+### Key Features
+
+- **Type-safe event handling**: Strongly-typed event subscriptions using generic methods
+- **Asynchronous publishing**: Supports async event handlers for non-blocking operations
+- **Dynamic subscription management**: Add and remove event handlers at runtime
+- **Aggregate-based event tracking**: Track events by aggregate ID for domain-driven design patterns
+- **Subscriber counting**: Query the number of subscribers for a specific event type
+
+### Public Members
+
+```csharp
+public string EventId { get; }
+public DateTime OccurredAt { get; }
+public string AggregateId { get; }
+public void Subscribe<TEvent>(Action<TEvent> handler) where TEvent : DomainEvent
+public void Unsubscribe<TEvent>(Action<TEvent> handler) where TEvent : DomainEvent
+public async Task PublishAsync<TEvent>(TEvent @event) where TEvent : DomainEvent
+public int GetSubscriberCount<TEvent>() where TEvent : DomainEvent
+```
+
+### Usage Example
+
+```csharp
+// Define a custom event type
+public class ServiceHealthChangedEvent : DomainEvent
+{
+    public string ServiceName { get; }
+    public bool IsHealthy { get; }
+    public string PreviousStatus { get; }
+    
+    public ServiceHealthChangedEvent(
+        string aggregateId,
+        string serviceName,
+        bool isHealthy,
+        string previousStatus)
+        : base(aggregateId)
+    {
+        ServiceName = serviceName;
+        IsHealthy = isHealthy;
+        PreviousStatus = previousStatus;
+    }
+}
+
+// In your application startup or service initialization
+var eventBus = new EventBus();
+
+// Subscribe to health change events
+// This could be in a monitoring service or health check handler
+eventBus.Subscribe<ServiceHealthChangedEvent>(async healthEvent =>
+{
+    var message = healthEvent.IsHealthy
+        ? $"Service {healthEvent.ServiceName} is now healthy"
+        : $"Service {healthEvent.ServiceName} became unhealthy (was {healthEvent.PreviousStatus}) - sending alert!";
+    
+    Console.WriteLine(message);
+    
+    // Could also send webhook notifications, update dashboards, etc.
+    await notifier.SendAlertAsync(message);
+});
+
+// Publish an event when service health changes
+// This would typically be in your health monitoring service
+var healthEvent = new ServiceHealthChangedEvent(
+    aggregateId: "api-service-123",
+    serviceName: "api-service",
+    isHealthy: true,
+    previousStatus: "unhealthy"
+);
+
+await eventBus.PublishAsync(healthEvent);
+
+// Check how many subscribers are listening for this event type
+int subscriberCount = eventBus.GetSubscriberCount<ServiceHealthChangedEvent>();
+Console.WriteLine($"Health change events have {subscriberCount} subscribers");
+
+// Unsubscribe when no longer needed (e.g., during cleanup)
+eventBus.Unsubscribe<ServiceHealthChangedEvent>(alertHandler);
+```
+
+### Common Event Patterns
+
+**1. Domain Event Pattern**: Use `DomainEvent` as a base class for domain events in DDD applications
+
+```csharp
+public abstract class DomainEvent
+{
+    public string EventId { get; } = Guid.NewGuid().ToString();
+    public DateTime OccurredAt { get; } = DateTime.UtcNow;
+    public string AggregateId { get; }
+    
+    protected DomainEvent(string aggregateId)
+    {
+        AggregateId = aggregateId;
+    }
+}
+```
+
+**2. Integration Events**: Use for cross-cutting concerns like logging, monitoring, or notifications
+
+```csharp
+public class AuditLogEntryCreatedEvent : DomainEvent
+{
+    public string UserId { get; }
+    public string Action { get; }
+    public string EntityType { get; }
+    public string EntityId { get; }
+    
+    public AuditLogEntryCreatedEvent(
+        string aggregateId,
+        string userId,
+        string action,
+        string entityType,
+        string entityId)
+        : base(aggregateId)
+    {
+        UserId = userId;
+        Action = action;
+        EntityType = entityType;
+        EntityId = entityId;
+    }
+}
+```
+
+**3. Health Monitoring Integration**: Combine with health check system for real-time notifications
+
+```csharp
+// In your health monitoring service
+public class HealthMonitoringService
+{
+    private readonly EventBus _eventBus;
+    
+    public HealthMonitoringService(EventBus eventBus)
+    {
+        _eventBus = eventBus;
+    }
+    
+    public async Task RecordHealthStatusAsync(string serviceName, bool isHealthy, string previousStatus)
+    {
+        var healthEvent = new ServiceHealthChangedEvent(
+            aggregateId: serviceName,
+            serviceName: serviceName,
+            isHealthy: isHealthy,
+            previousStatus: previousStatus
+        );
+        
+        await _eventBus.PublishAsync(healthEvent);
+    }
+}
+```
+
+### Best Practices
+
+- **Keep event handlers focused**: Each handler should do one thing well
+- **Handle exceptions**: Wrap handler logic in try-catch blocks
+- **Consider ordering**: Events are processed in subscription order
+- **Use meaningful aggregate IDs**: Choose IDs that represent the entity or aggregate root
+- **Keep events immutable**: Once published, events should not be modified
+
 ## Related Projects
 
 Part of a collection of .NET libraries and tools. See more at [github.com/sarmkadan](https://github.com/sarmkadan).
