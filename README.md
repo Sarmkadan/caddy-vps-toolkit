@@ -654,6 +654,32 @@ Output includes expiry date, days remaining, and a status classification:
 
 ### Core Services
 
+#### BatchProcessor
+
+`BatchProcessor<T>` processes items in configurable batch sizes for efficient bulk operations. It's ideal for optimizing database operations, API calls, and other scenarios where processing items individually would be inefficient.
+
+```csharp
+// Example: Processing a list of service configurations in batches
+var services = new List<ManagedService> {
+    new ManagedService { Name = "api", Port = 8080, Domain = "api.example.com" },
+    new ManagedService { Name = "web", Port = 3000, Domain = "web.example.com" },
+    new ManagedService { Name = "cache", Port = 6379, Domain = "cache.example.com" }
+};
+
+var batchProcessor = new BatchProcessor<ManagedService>(
+    batchSize: 50,
+    processFunction: async batch => {
+        // Process each batch of services
+        foreach (var service in batch) {
+            Console.WriteLine($"Processing service: {service.Name}");
+            // Your batch processing logic here
+        }
+    }
+);
+
+await batchProcessor.ProcessAsync(services);
+```
+
 #### ServiceManagementService
 
 ```csharp
