@@ -1220,3 +1220,43 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 **Built by [Vladyslav Zaiets](https://sarmkadan.com) - CTO & Software Architect**
 
 [Portfolio](https://sarmkadan.com) | [GitHub](https://github.com/Sarmkadan) | [Telegram](https://t.me/sarmkadan)
+
+## ServiceCreatedEventHandler
+
+`ServiceCreatedEventHandler` is an event handler that responds to `ServiceCreatedEvent` notifications. It logs the creation of new services and triggers webhook notifications to external systems, enabling integration with monitoring, alerting, and automation platforms.
+
+
+The handler requires `ILogger` and `IWebhookHandler` dependencies for logging service creation events and dispatching webhook notifications respectively.
+
+### Real-World Usage Example
+
+```csharp
+// Setup dependency injection container
+var services = new ServiceCollection();
+
+// Register required services
+services.AddLogging(configure => configure.AddConsole());
+services.AddSingleton<IWebhookHandler, SlackWebhookHandler>();
+services.AddSingleton<ILogger, ConsoleLogger>();
+services.AddSingleton<ServiceCreatedEventHandler>();
+
+var serviceProvider = services.BuildServiceProvider();
+
+// Resolve the event handler
+var eventHandler = serviceProvider.GetRequiredService<ServiceCreatedEventHandler>();
+
+// Create and publish a service creation event
+var serviceEvent = new ServiceCreatedEvent(
+    serviceName: "api-service",
+    port: 8080,
+    serviceType: ServiceType.WebApi,
+    executablePath: "/usr/local/bin/api-server"
+);
+
+// Handle the event (logs and triggers webhook)
+await eventHandler.HandleAsync(serviceEvent);
+
+// Output:
+// [INFO] Service created: {api-service} on port 8080
+// Webhook notification sent to external system with service details
+```
