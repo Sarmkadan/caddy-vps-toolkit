@@ -873,7 +873,55 @@ Run with code coverage:
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-The test suite covers argument parsing and validation (`ArgumentParserTests`), string extension utilities (`StringExtensionsTests`), and configuration validation helpers (`ValidationHelperTests`). Integration tests require a local SQLite database, which is created automatically on first run.
+The test suite covers argument parsing and validation (`ArgumentParserTests`), string extension utilities (`StringExtensionsTests`), and configuration validation helpers (`ValidationHelperTests`).
+
+## ValidationHelperTests
+
+`ValidationHelperTests` provides unit tests for input validation utilities used throughout the application. It validates port numbers, domain names, service identifiers, and error result merging, ensuring that configuration inputs meet the required constraints before being processed by other components. The test class exercises both success and failure paths for common validation scenarios.
+
+```csharp
+// Example: Validating service configuration inputs
+var validation = new ValidationHelperTests();
+
+// Test port validation - zero is invalid
+var portResult = validation.ValidatePort_PortZero_ReturnsInvalidResult();
+Assert.False(portResult.IsValid);
+Assert.Contains("Port must be greater than 0", portResult.ErrorMessages);
+
+// Test domain validation - well-formed domain passes
+var domainResult = validation.ValidateDomain_WellFormedDomain_ReturnsValidResult();
+Assert.True(domainResult.IsValid);
+Assert.Empty(domainResult.ErrorMessages);
+
+// Test service name validation - names shorter than 3 characters fail
+var nameResult = validation.ValidateServiceName_LessThanThreeChars_ReturnsError();
+Assert.False(nameResult.IsValid);
+Assert.Contains("Service name must be at least 3 characters", nameResult.ErrorMessages);
+
+// Test combining multiple validation failures
+var failure1 = validation.ValidatePort_PortZero_ReturnsInvalidResult();
+var failure2 = validation.ValidateServiceName_LessThanThreeChars_ReturnsError();
+var combined = ValidationHelper.Combine(failure1, failure2);
+Assert.False(combined.IsValid);
+Assert.Contains("Port must be greater than 0", combined.ErrorMessages);
+Assert.Contains("Service name must be at least 3 characters", combined.ErrorMessages);
+
+// Test health check result creation
+var healthResult = validation.HealthCheckResult_CreateSuccess_SetsHealthyProperties();
+Assert.True(healthResult.IsHealthy);
+Assert.Equal(0, healthResult.ResponseTimeMs);
+
+// Test slow response detection
+var slowResult = validation.HealthCheckResult_IsSlowResponse_ReturnsTrueOnlyAboveThreshold();
+Assert.True(slowResult.IsSlowResponse);
+
+// Test systemd unit name formatting with spaces
+var serviceName = "My Production Service";
+var unitName = validation.ManagedService_GetSystemdUnitName_WithSpacesInName_FormatsCorrectly(serviceName);
+Assert.Equal("my-production-service.service", unitName);
+```
+
+Integration tests require a local SQLite database, which is created automatically on first run.
 
 ## Performance
 
