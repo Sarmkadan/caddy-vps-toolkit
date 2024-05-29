@@ -982,6 +982,74 @@ Console.WriteLine($"Health change events have {subscriberCount} subscribers");
 eventBus.Unsubscribe<ServiceHealthChangedEvent>(healthHandler);
 ```
 
+## ServiceLifecycleIntegrationTests
+
+`ServiceLifecycleIntegrationTests` provides end-to-end integration tests that validate the complete service lifecycle workflow. These tests verify service creation, status transitions, Caddy configuration generation, health monitoring, caching, event bus integration, retry policies, and state management. The test suite demonstrates how all components work together in realistic scenarios, including concurrent operations and configuration combinations.
+
+```csharp
+// Example: Creating a service and generating its Caddy configuration
+var serviceRepo = Substitute.For<IServiceRepository>();
+var healthRepo = Substitute.For<IHealthCheckRepository>();
+var serviceManager = new ServiceManagementService(serviceRepo);
+var healthMonitor = new HealthMonitoringService(healthRepo, serviceManager);
+var caddyService = new CaddyConfigurationService(serviceManager);
+
+// Create a new service
+var newService = new ManagedService
+{
+    Name = "api-backend",
+    Description = "Backend API",
+    ExecutablePath = "/usr/bin/dotnet",
+    WorkingDirectory = "/opt/api",
+    Port = 5000,
+    Status = ServiceStatus.Stopped
+};
+
+// Add the service
+var serviceId = await serviceManager.CreateServiceAsync(newService);
+
+// Update service status
+var updated = await serviceManager.UpdateServiceStatusAsync(serviceId, ServiceStatus.Running);
+
+// Build Caddy route configuration
+var route = new CaddyRoute
+{
+    Domain = "api.example.com",
+    UpstreamUrl = $"http://localhost:{newService.Port}",
+    IsActive = true,
+    EnableHttps = true
+};
+
+// Generate Caddy configuration
+var globalConfig = new CaddyConfig { AdminEmail = "ops@example.com" };
+var caddyfile = await caddyService.GenerateCaddyfileAsync(globalConfig, new List<CaddyRoute> { route });
+
+// Verify the generated configuration
+Console.WriteLine(caddyfile);
+
+// Monitor service health
+var healthHistory = await healthMonitor.GetHealthHistoryAsync(serviceId, 24);
+
+// Delete the service when done
+var deleted = await serviceManager.DeleteServiceAsync(serviceId);
+```
+
+The test suite includes the following scenarios:
+
+- **Full Workflow**: Create service → Generate Caddy config → Verify output
+- **Status Transitions**: Stopped → Running → Stopped state changes
+- **Lifecycle Management**: Create → Update → Delete complete cycle
+- **Health Monitoring**: Retrieve health history for the last 24 hours
+- **Concurrent Operations**: Memory cache, event bus, retry policies, and state machines
+- **Configuration Combinations**: Multiple active routes, empty routes, null handling
+- **Pagination & Filtering**: Service list pagination with query builder
+- **Template Rendering**: Systemd unit file template generation
+- **Integration Examples**: Real-world use cases from README documentation
+
+
+
+Integration tests require a local SQLite database, which is created automatically on first run.
+
 ## Performance
 
 caddy-vps-toolkit is optimized for minimal overhead on resource-constrained VPS environments.
