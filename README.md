@@ -927,6 +927,47 @@ Integration tests require a local SQLite database, which is created automaticall
 
 `EventBusTests` validates the `EventBus` class, a lightweight publish-subscribe event bus implementation that enables decoupled communication between components. The tests cover core functionality including event publishing with subscribers, null event handling, multiple subscriber scenarios, handler management (subscribe/unsubscribe), subscriber counting, event type isolation, and concurrent publishing.
 
+## ArgumentParserEdgeCaseTests
+
+`ArgumentParserEdgeCaseTests` validates the edge case behavior of the CLI argument parser, ensuring robust handling of null values, empty argument lists, out-of-bounds access, and various flag parsing scenarios. These tests verify that the parser gracefully handles malformed inputs and edge cases without throwing exceptions, maintaining application stability in production environments.
+
+```csharp
+// Example: Testing argument parser with null and edge cases
+var parser = new ArgumentParser(null);
+
+// Test null arguments handling
+var nullArgsTest = new ArgumentParserEdgeCaseTests();
+nullArgsTest.Constructor_NullArgs_DoesNotThrow();
+
+// Test empty arguments list
+var emptyArgsResult = parser.GetCommand("");
+Assert.Equal(string.Empty, emptyArgsResult);
+
+// Test single argument command extraction
+var singleArgCommand = parser.GetCommand("start");
+Assert.Equal("start", singleArgCommand);
+
+// Test out-of-bounds positional argument access
+var outOfBoundsResult = parser.GetPositional(10);
+Assert.Null(outOfBoundsResult);
+
+// Test valid positional argument access
+var validPositional = parser.GetPositional(0);
+Assert.Equal("start", validPositional);
+
+// Test flag value parsing with various formats
+var flagParser = new ArgumentParser(new[] { "--ssl", "--timeout", "30" });
+var booleanFlag = flagParser.HasFlag("ssl");
+Assert.True(booleanFlag);
+
+var valueFlag = flagParser.GetFlagValue("timeout");
+Assert.Equal("30", valueFlag);
+
+// Test case-insensitive flag detection
+var caseInsensitive = flagParser.HasFlag("SSL");
+Assert.True(caseInsensitive);
+```
+
 ```csharp
 // Example: Using EventBus for service health monitoring notifications
 var eventBus = new EventBus();
