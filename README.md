@@ -921,6 +921,37 @@ var unitName = validation.ManagedService_GetSystemdUnitName_WithSpacesInName_For
 Assert.Equal("my-production-service.service", unitName);
 ```
 
+## ResultGenericTests
+
+`ResultGenericTests` validates the generic `Result<T>` class, which provides a type-safe wrapper for operation results with support for both success and failure states. The test suite verifies that successful results properly set the `IsSuccess` flag and return the provided data (or default values when no data is provided), while failure results correctly set the `IsSuccess` flag to false and populate the error message and optional error code. This pattern is commonly used throughout the application to handle operations that may fail without throwing exceptions.
+
+```csharp
+// Example: Using Result<T> for a successful operation with data
+var userResult = Result<User>.Success(new User { Id = 1, Name = "Alice" });
+
+if (userResult.IsSuccess)
+{
+    User user = userResult.Data;
+    Console.WriteLine($"Retrieved user: {user.Name}");
+}
+
+// Example: Using Result<T> for a successful operation with default data
+var countResult = Result<int>.Success();
+Console.WriteLine($"Default count: {countResult.Data}"); // Outputs: Default count: 0
+
+// Example: Using Result<T> for a failed operation with error message
+var errorResult = Result<string>.Failure("User not found");
+
+if (!errorResult.IsSuccess)
+{
+    Console.WriteLine($"Error: {errorResult.ErrorMessage}"); // Outputs: Error: User not found
+}
+
+// Example: Using Result<T> for a failed operation with error code
+var apiError = Result<ApiResponse>.Failure("Invalid request", "BAD_REQUEST");
+Console.WriteLine($"Error code: {apiError.ErrorCode}"); // Outputs: Error code: BAD_REQUEST
+```
+
 Integration tests require a local SQLite database, which is created automatically on first run.
 
 ## ArgumentValidatorTests
