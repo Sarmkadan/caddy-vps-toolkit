@@ -923,6 +923,35 @@ Assert.Equal("my-production-service.service", unitName);
 
 Integration tests require a local SQLite database, which is created automatically on first run.
 
+## ArgumentValidatorTests
+
+`ArgumentValidatorTests` provides unit tests for the `ArgumentValidator` class, which validates CLI command arguments against their expected descriptors. The test suite verifies error handling for null descriptors, missing required positional arguments, unknown flags, and validates that error messages are properly joined. These tests ensure the argument validation logic correctly identifies and reports invalid command inputs before they reach the application logic.
+
+```csharp
+// Example: Validating CLI command arguments
+var argumentParser = new ArgumentParser(new[] { "service", "update", "my-service", "--verbose" });
+var commandDescriptor = new CommandDescriptor("service", "Service management commands")
+{
+    Name = "service",
+    RequiredArguments = new List<string> { "action", "serviceName" },
+    OptionalFlags = new List<string> { "verbose", "force" }
+};
+
+// Validate arguments against descriptor
+var validator = new ArgumentValidator();
+var validationResult = validator.Validate(argumentParser, commandDescriptor);
+
+if (!validationResult.IsValid)
+{
+    Console.WriteLine("Validation failed:");
+    Console.WriteLine(validationResult.GetErrorMessage());
+    return;
+}
+
+// Arguments are valid - proceed with command execution
+Console.WriteLine("Arguments are valid!");
+```
+
 ## EventBusTests
 
 `EventBusTests` validates the `EventBus` class, a lightweight publish-subscribe event bus implementation that enables decoupled communication between components. The tests cover core functionality including event publishing with subscribers, null event handling, multiple subscriber scenarios, handler management (subscribe/unsubscribe), subscriber counting, event type isolation, and concurrent publishing.
