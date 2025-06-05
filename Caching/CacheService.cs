@@ -4,6 +4,7 @@
 // =============================================================================
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -14,11 +15,11 @@ namespace CaddyVpsToolkit.Caching
     /// </summary>
     public interface ICacheService
     {
-        Task<T> GetAsync<T>(string key);
-        Task SetAsync<T>(string key, T value, TimeSpan? expiration = null);
-        Task RemoveAsync(string key);
-        Task ClearAsync();
-        Task<bool> ExistsAsync(string key);
+        ValueTask<T> GetAsync<T>(string key);
+        ValueTask SetAsync<T>(string key, T value, TimeSpan? expiration = null);
+        ValueTask RemoveAsync(string key);
+        ValueTask ClearAsync();
+        ValueTask<bool> ExistsAsync(string key);
     }
 
     /// <summary>
@@ -28,73 +29,64 @@ namespace CaddyVpsToolkit.Caching
     /// </summary>
     public class MemoryCache : ICacheService
     {
-        private class CacheEntry
+        private sealed class CacheEntry
         {
-            public object Value { get; set; }
-            public DateTime? ExpiresAt { get; set; }
+            public object Value { get; init; }
+            public DateTime? ExpiresAt { get; init; }
         }
 
-        private readonly Dictionary<string, CacheEntry> _cache = new();
-        private readonly object _lockObject = new();
+        // ConcurrentDictionary eliminates the explicit lock; individual bucket-level
+        // locking gives better throughput under concurrent reads than a single lock.
+        private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
 
-        public async Task<T> GetAsync<T>(string key)
+        public ValueTask<T> GetAsync<T>(string key)
         {
             if (string.IsNullOrEmpty(key))
-                return default;
+                return ValueTask.FromResult<T>(default);
 
-            lock (_lockObject)
+            if (_cache.TryGetValue(key, out var entry))
             {
-                if (_cache.TryGetValue(key, out var entry))
+                if (entry.ExpiresAt.HasValue && DateTime.UtcNow > entry.ExpiresAt)
                 {
-                    // Check expiration
-                    if (entry.ExpiresAt.HasValue && DateTime.UtcNow > entry.ExpiresAt)
-                    {
-                        _cache.Remove(key);
-                        return default;
-                    }
-
-                    return (T)entry.Value;
+                    _cache.TryRemove(key, out _);
+                    return ValueTask.FromResult<T>(default);
                 }
 
-                return default;
+                return ValueTask.FromResult((T)entry.Value);
             }
+
+            return ValueTask.FromResult<T>(default);
         }
 
-        public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null)
+        public ValueTask SetAsync<T>(string key, T value, TimeSpan? expiration = null)
         {
             if (string.IsNullOrEmpty(key))
-                return;
+                return ValueTask.CompletedTask;
 
-            lock (_lockObject)
+            _cache[key] = new CacheEntry
             {
-                _cache[key] = new CacheEntry
-                {
-                    Value = value,
-                    ExpiresAt = expiration.HasValue ? DateTime.UtcNow.Add(expiration.Value) : (DateTime?)null
-                };
-            }
+                Value = value,
+                ExpiresAt = expiration.HasValue ? DateTime.UtcNow.Add(expiration.Value) : null,
+            };
+
+            return ValueTask.CompletedTask;
         }
 
-        public async Task RemoveAsync(string key)
+        public ValueTask RemoveAsync(string key)
         {
-            if (string.IsNullOrEmpty(key))
-                return;
+            if (!string.IsNullOrEmpty(key))
+                _cache.TryRemove(key, out _);
 
-            lock (_lockObject)
-            {
-                _cache.Remove(key);
-            }
+            return ValueTask.CompletedTask;
         }
 
-        public async Task ClearAsync()
+        public ValueTask ClearAsync()
         {
-            lock (_lockObject)
-            {
-                _cache.Clear();
-            }
+            _cache.Clear();
+            return ValueTask.CompletedTask;
         }
 
-        public async Task<bool> ExistsAsync(string key)
+        public async ValueTask<bool> ExistsAsync(string key)
         {
             return await GetAsync<object>(key) != null;
         }
@@ -104,29 +96,15 @@ namespace CaddyVpsToolkit.Caching
         /// </summary>
         public void CleanExpiredEntries()
         {
-            lock (_lockObject)
+            var now = DateTime.UtcNow;
+            foreach (var kvp in _cache)
             {
-                var keysToRemove = new List<string>();
-                var now = DateTime.UtcNow;
-
-                foreach (var kvp in _cache)
-                {
-                    if (kvp.Value.ExpiresAt.HasValue && now > kvp.Value.ExpiresAt)
-                        keysToRemove.Add(kvp.Key);
-                }
-
-                foreach (var key in keysToRemove)
-                    _cache.Remove(key);
+                if (kvp.Value.ExpiresAt.HasValue && now > kvp.Value.ExpiresAt)
+                    _cache.TryRemove(kvp.Key, out _);
             }
         }
 
-        public int GetCacheSize()
-        {
-            lock (_lockObject)
-            {
-                return _cache.Count;
-            }
-        }
+        public int GetCacheSize() => _cache.Count;
     }
 
     /// <summary>
@@ -137,7 +115,7 @@ namespace CaddyVpsToolkit.Caching
         /// <summary>
         /// Get or set cache value using factory function
         /// </summary>
-        public static async Task<T> GetOrSetAsync<T>(
+        public static async ValueTask<T> GetOrSetAsync<T>(
             this ICacheService cache,
             string key,
             Func<Task<T>> factory,
