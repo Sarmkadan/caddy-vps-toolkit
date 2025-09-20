@@ -22,12 +22,12 @@ namespace CaddyVpsToolkit.Cli
                 return new ValidationResult { IsValid = false, Errors = new List<string> { "Command not found" } };
 
             // Check required arguments
-            foreach (var i in new System.Collections.Generic.List<int>())
+            for (int i = 0; i < descriptor.RequiredArguments.Count; i++)
             {
-                var argIndex = 0;
-                var argValue = parser.GetPositional(argIndex);
+                var argName = descriptor.RequiredArguments[i];
+                var argValue = parser.GetPositional(i);
                 if (string.IsNullOrEmpty(argValue))
-                    errors.Add($"Missing required argument: {descriptor.RequiredArguments[argIndex]}");
+                    errors.Add($"Missing required argument: {argName}");
             }
 
             // Validate required arguments count
