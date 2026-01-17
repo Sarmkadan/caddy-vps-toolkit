@@ -10,7 +10,7 @@ using CaddyVpsToolkit.Data;
 using CaddyVpsToolkit.Domain.Models;
 using CaddyVpsToolkit.Core;
 using FluentAssertions;
-using Moq;
+using NSubstitute;
 using Xunit;
 
 namespace CaddyVpsToolkit.Tests
@@ -70,20 +70,18 @@ namespace CaddyVpsToolkit.Tests
                 Type = ServiceType.ApiService
             };
 
-            var repoMock = new Mock<IServiceRepository>();
-            repoMock
-                .Setup(r => r.GetByIdAsync(serviceId))
-                .ReturnsAsync(expectedService);
+            var repoMock = Substitute.For<IServiceRepository>();
+            repoMock.GetByIdAsync(serviceId).Returns(expectedService);
 
             // Act
-            var service = await repoMock.Object.GetByIdAsync(serviceId);
+            var service = await repoMock.GetByIdAsync(serviceId);
 
             // Assert
             service.Should().NotBeNull();
             service!.Name.Should().Be("test-api");
             service.Port.Should().Be(5000);
             service.Type.Should().Be(ServiceType.ApiService);
-            repoMock.Verify(r => r.GetByIdAsync(serviceId), Times.Once);
+            await repoMock.Received(1).GetByIdAsync(serviceId);
         }
     }
 }
