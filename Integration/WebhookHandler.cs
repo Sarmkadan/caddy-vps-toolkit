@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -34,7 +35,7 @@ namespace CaddyVpsToolkit.Integration
         Task<bool> TriggerAsync(WebhookEventType eventType, object payload);
     }
 
-    public class WebhookHandler : IWebhookHandler
+    public sealed class WebhookHandler : IWebhookHandler
     {
         private readonly Dictionary<WebhookEventType, List<string>> _registrations = new();
         private readonly IHttpClient _httpClient;
@@ -108,7 +109,7 @@ namespace CaddyVpsToolkit.Integration
     /// <summary>
     /// Standard webhook payload format
     /// </summary>
-    public class WebhookPayload
+    public sealed class WebhookPayload
     {
         [JsonPropertyName("event_type")]
         public string EventType { get; set; }

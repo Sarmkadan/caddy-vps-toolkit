@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -123,7 +124,7 @@ namespace CaddyVpsToolkit.Extensions
     /// <summary>
     /// Configuration options for infrastructure services
     /// </summary>
-    public class InfrastructureOptions
+    public sealed class InfrastructureOptions
     {
         public int HttpTimeoutMs { get; set; } = 30000;
         public int MaxRetries { get; set; } = 3;

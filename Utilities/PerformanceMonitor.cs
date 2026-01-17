@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace CaddyVpsToolkit.Utilities
     /// Measures performance of operations with detailed timing metrics.
     /// Useful for profiling and identifying bottlenecks.
     /// </summary>
-    public class PerformanceMonitor : IDisposable
+    public sealed class PerformanceMonitor : IDisposable
     {
         private readonly Stopwatch _stopwatch;
         private readonly string _operationName;
@@ -70,7 +71,7 @@ namespace CaddyVpsToolkit.Utilities
     /// <summary>
     /// Async operation timer for measuring async operations
     /// </summary>
-    public class AsyncTimer
+    public sealed class AsyncTimer
     {
         public static async Task<(T result, long elapsedMs)> TimeAsync<T>(Func<Task<T>> operation)
         {
@@ -92,7 +93,7 @@ namespace CaddyVpsToolkit.Utilities
     /// <summary>
     /// Simple benchmark for comparing multiple operations
     /// </summary>
-    public class Benchmark
+    public sealed class Benchmark
     {
         private readonly Dictionary<string, List<long>> _results = new();
 

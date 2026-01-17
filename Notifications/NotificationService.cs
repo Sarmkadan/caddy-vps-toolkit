@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -24,7 +25,7 @@ namespace CaddyVpsToolkit.Notifications
     /// <summary>
     /// Notification object with metadata
     /// </summary>
-    public class Notification
+    public sealed class Notification
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Title { get; set; }
@@ -47,7 +48,7 @@ namespace CaddyVpsToolkit.Notifications
     /// Service for sending notifications through multiple providers.
     /// Supports retry and failure handling.
     /// </summary>
-    public class NotificationService
+    public sealed class NotificationService
     {
         private readonly Dictionary<string, INotificationProvider> _providers = new();
         private readonly ILogger _logger;
@@ -59,7 +60,7 @@ namespace CaddyVpsToolkit.Notifications
 
         public void Register(INotificationProvider provider)
         {
-            if (provider == null)
+            if (provider is null)
                 throw new ArgumentNullException(nameof(provider));
 
             _providers[provider.ProviderName] = provider;
@@ -67,7 +68,7 @@ namespace CaddyVpsToolkit.Notifications
 
         public async Task<bool> SendAsync(Notification notification)
         {
-            if (notification == null)
+            if (notification is null)
                 throw new ArgumentNullException(nameof(notification));
 
             var results = new List<bool>();
@@ -106,7 +107,7 @@ namespace CaddyVpsToolkit.Notifications
     /// <summary>
     /// Console notification provider for testing/development
     /// </summary>
-    public class ConsoleNotificationProvider : INotificationProvider
+    public sealed class ConsoleNotificationProvider : INotificationProvider
     {
         public string ProviderName => "Console";
 

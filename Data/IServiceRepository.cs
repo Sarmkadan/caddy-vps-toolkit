@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -53,7 +54,7 @@ namespace CaddyVpsToolkit.Data
         Task<Dictionary<string, string>> GetAllAsync();
     }
 
-    public class HealthCheckStatistics
+    public sealed class HealthCheckStatistics
     {
         public int TotalChecks { get; set; }
         public int SuccessfulChecks { get; set; }

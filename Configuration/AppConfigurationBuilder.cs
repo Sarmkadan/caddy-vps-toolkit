@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace CaddyVpsToolkit.Configuration
     /// Fluent builder for application configuration.
     /// Supports JSON files, environment variables, and programmatic configuration.
     /// </summary>
-    public class AppConfigurationBuilder
+    public sealed class AppConfigurationBuilder
     {
         private readonly Dictionary<string, object> _configuration = new();
 
@@ -85,7 +86,7 @@ namespace CaddyVpsToolkit.Configuration
     /// <summary>
     /// Configuration container with type-safe access
     /// </summary>
-    public class AppConfiguration
+    public sealed class AppConfiguration
     {
         private readonly Dictionary<string, object> _config;
 

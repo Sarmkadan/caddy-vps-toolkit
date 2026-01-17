@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace CaddyVpsToolkit.Core
     /// <summary>
     /// CLI command handler for the application
     /// </summary>
-    public class CliCommandHandler
+    public sealed class CliCommandHandler
     {
         private readonly ServiceManagementService _serviceManager;
         private readonly HealthMonitoringService _healthMonitor;
@@ -41,7 +42,7 @@ namespace CaddyVpsToolkit.Core
         /// </summary>
         public async Task HandleAsync(string[] args)
         {
-            if (args == null || args.Length == 0)
+            if (args is null || args.Length == 0)
             {
                 PrintUsage();
                 return;
@@ -171,7 +172,7 @@ namespace CaddyVpsToolkit.Core
         private async Task GetConfigAsync(string key)
         {
             var value = await _config.GetValueAsync(key);
-            if (value != null)
+            if (value is not null)
                 Console.WriteLine($"{key}={value}");
             else
                 Console.WriteLine($"Configuration key '{key}' not found");

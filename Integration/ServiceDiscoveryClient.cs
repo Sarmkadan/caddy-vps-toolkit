@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -25,7 +26,7 @@ namespace CaddyVpsToolkit.Integration
     /// <summary>
     /// In-memory implementation of service discovery for local development
     /// </summary>
-    public class InMemoryServiceDiscoveryClient : IServiceDiscoveryClient
+    public sealed class InMemoryServiceDiscoveryClient : IServiceDiscoveryClient
     {
         private readonly Dictionary<string, List<ServiceInstance>> _registry = new();
         private readonly object _lockObject = new();
@@ -48,7 +49,7 @@ namespace CaddyVpsToolkit.Integration
 
         public async Task RegisterAsync(ServiceInstance instance)
         {
-            if (instance == null)
+            if (instance is null)
                 throw new ArgumentNullException(nameof(instance));
 
             lock (_lockObject)
@@ -78,7 +79,7 @@ namespace CaddyVpsToolkit.Integration
     /// <summary>
     /// Service instance for service discovery
     /// </summary>
-    public class ServiceInstance
+    public sealed class ServiceInstance
     {
         public string Id { get; set; }
         public string ServiceName { get; set; }

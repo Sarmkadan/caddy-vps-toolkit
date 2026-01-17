@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Services
 {
-    public class HealthMonitoringServiceTests
+    public sealed class HealthMonitoringServiceTests
     {
         private readonly IHealthCheckRepository _repositoryMock;
         private readonly IServiceRepository _serviceRepositoryMock;

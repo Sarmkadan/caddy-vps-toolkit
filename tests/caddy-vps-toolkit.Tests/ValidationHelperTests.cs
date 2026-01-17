@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -10,7 +11,7 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests
 {
-    public class ValidationHelperTests
+    public sealed class ValidationHelperTests
     {
         [Fact]
         public void ValidatePort_PortZero_ReturnsInvalidResult()

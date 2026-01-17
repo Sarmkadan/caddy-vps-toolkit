@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace CaddyVpsToolkit.Cli
     /// Parses command-line arguments into structured command objects.
     /// Uses a simple key-value pattern for flags and supports positional arguments.
     /// </summary>
-    public class ArgumentParser
+    public sealed class ArgumentParser
     {
         // FrozenSet provides O(1) lookup with minimal overhead; constructed once at
         // startup so there is zero cost on the hot path that calls HasFlag/GetFlagValue.
@@ -29,7 +30,7 @@ namespace CaddyVpsToolkit.Cli
 
         public ArgumentParser(string[] args)
         {
-            _args = args ?? Array.Empty<string>();
+            _args = args ?? [];
         }
 
         /// <summary>

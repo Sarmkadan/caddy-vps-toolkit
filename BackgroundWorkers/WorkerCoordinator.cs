@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -15,7 +16,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
     /// Coordinator for managing multiple background workers.
     /// Provides start/stop all, status monitoring, and graceful shutdown.
     /// </summary>
-    public class WorkerCoordinator
+    public sealed class WorkerCoordinator
     {
         private readonly Dictionary<string, IBackgroundWorker> _workers = new();
         private readonly ILogger _logger;
@@ -28,7 +29,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
 
         public void Register(string name, IBackgroundWorker worker)
         {
-            if (string.IsNullOrEmpty(name) || worker == null)
+            if (string.IsNullOrEmpty(name) || worker is null)
                 throw new ArgumentException("Name and worker required");
 
             lock (_lockObject)

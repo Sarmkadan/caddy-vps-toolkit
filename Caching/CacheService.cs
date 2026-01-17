@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -27,7 +28,7 @@ namespace CaddyVpsToolkit.Caching
     /// Thread-safe implementation suitable for single-server deployments.
     /// For distributed systems, replace with Redis or similar.
     /// </summary>
-    public class MemoryCache : ICacheService
+    public sealed class MemoryCache : ICacheService
     {
         private sealed class CacheEntry
         {
@@ -88,7 +89,7 @@ namespace CaddyVpsToolkit.Caching
 
         public async ValueTask<bool> ExistsAsync(string key)
         {
-            return await GetAsync<object>(key) != null;
+            return await GetAsync<object>(key) is not null;
         }
 
         /// <summary>
@@ -122,7 +123,7 @@ namespace CaddyVpsToolkit.Caching
             TimeSpan? expiration = null)
         {
             var cached = await cache.GetAsync<T>(key);
-            if (cached != null)
+            if (cached is not null)
                 return cached;
 
             var value = await factory();

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <summary>
     /// Caddy reverse proxy global configuration
     /// </summary>
-    public class CaddyConfig
+    public sealed class CaddyConfig
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
 

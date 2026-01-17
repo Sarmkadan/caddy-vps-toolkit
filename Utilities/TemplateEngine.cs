@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ namespace CaddyVpsToolkit.Utilities
     /// Simple template engine for string substitution.
     /// Uses {{variable}} syntax for placeholder replacement.
     /// </summary>
-    public class TemplateEngine
+    public sealed class TemplateEngine
     {
         private readonly Dictionary<string, object> _variables;
 

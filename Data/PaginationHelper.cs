@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -24,7 +25,7 @@ namespace CaddyVpsToolkit.Data
             int page = 1,
             int pageSize = 10)
         {
-            if (items == null)
+            if (items is null)
                 items = new List<T>();
 
             if (page < 1) page = 1;
@@ -56,7 +57,7 @@ namespace CaddyVpsToolkit.Data
             string propertyName,
             bool ascending = true)
         {
-            if (items == null)
+            if (items is null)
                 return new List<T>();
 
             var list = items.ToList();
@@ -64,7 +65,7 @@ namespace CaddyVpsToolkit.Data
                 return list;
 
             var property = typeof(T).GetProperty(propertyName);
-            if (property == null)
+            if (property is null)
                 return list;
 
             return ascending
@@ -80,14 +81,14 @@ namespace CaddyVpsToolkit.Data
             string propertyName,
             object value)
         {
-            if (items == null)
+            if (items is null)
                 return new List<T>();
 
-            if (string.IsNullOrEmpty(propertyName) || value == null)
+            if (string.IsNullOrEmpty(propertyName) || value is null)
                 return items.ToList();
 
             var property = typeof(T).GetProperty(propertyName);
-            if (property == null)
+            if (property is null)
                 return items.ToList();
 
             return items
@@ -111,7 +112,7 @@ namespace CaddyVpsToolkit.Data
     /// <summary>
     /// Query builder for fluent data querying
     /// </summary>
-    public class QueryBuilder<T>
+    public sealed class QueryBuilder<T>
     {
         private IEnumerable<T> _data;
         private int _page = 1;
