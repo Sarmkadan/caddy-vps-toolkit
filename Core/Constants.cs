@@ -19,6 +19,7 @@ namespace CaddyVpsToolkit.Core
         public static readonly string CacheDirectory = Environment.ExpandEnvironmentVariables("%PROGRAMDATA%/caddy-vps-toolkit/cache");
         public static readonly string SystemdUnitsDirectory = "/etc/systemd/system";
         public static readonly string CaddyConfigDirectory = "/etc/caddy";
+        public static readonly string CaddyfilePath = "/etc/caddy/Caddyfile";
         public static readonly string DatabasePath = Environment.ExpandEnvironmentVariables("%PROGRAMDATA%/caddy-vps-toolkit/services.db");
 
         // Ports
