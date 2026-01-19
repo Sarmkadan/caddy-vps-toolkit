@@ -5,6 +5,7 @@
 
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace CaddyVpsToolkit.Utilities
@@ -146,9 +147,12 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Check if string starts with any of the provided prefixes
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool StartsWithAny(this string value, params string[] prefixes)
         {
-            return prefixes.Any(p => value.StartsWith(p));
+            // Fix: Handle null boundary cases for both value and prefixes arrays to prevent NullReferenceException
+            if (value == null || prefixes == null || prefixes.Length == 0) return false;
+            return prefixes.Any(p => p != null && value.StartsWith(p));
         }
     }
 }
