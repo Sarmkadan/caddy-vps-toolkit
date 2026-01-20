@@ -5,20 +5,21 @@ All notable changes to caddy-vps-toolkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2026-06-11
+## [2.0.0] - 2026-08-11
 ### Added
-- Add automatic SSL certificate monitoring and renewal alerts
-- Performance benchmarks with BenchmarkDotNet
-- Improved input validation and error messages
-
-### Fixed
-- Edge case handling for null/empty inputs
-- Resource cleanup in disposal paths
-- Thread safety improvements
+- Add dynamic upstream management with health-aware load balancing
+- Docker support with multi-stage builds
+- Health check endpoints (/health, /health/ready)
+- Integration test suite with xUnit
+- Migration guide from v1.x
 
 ### Changed
-- Optimized hot paths with Span<T> and object pooling
-- Better exception messages with parameter details
+- Upgraded to .NET 10.0
+- Modern C# features (records, primary constructors)
+- Improved API consistency
+
+### Fixed
+- Various edge cases found through testing
 
 ## [1.0.0] - 2025-10-13
 
