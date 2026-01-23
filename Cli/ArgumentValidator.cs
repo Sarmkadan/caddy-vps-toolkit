@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,13 +13,13 @@ namespace CaddyVpsToolkit.Cli
     /// Validates command-line arguments against command descriptors.
     /// Ensures required arguments are present and flags are recognized.
     /// </summary>
-    public class ArgumentValidator
+    public sealed class ArgumentValidator
     {
         public ValidationResult Validate(ArgumentParser parser, CommandDescriptor descriptor)
         {
             var errors = new List<string>();
 
-            if (descriptor == null)
+            if (descriptor is null)
                 return new ValidationResult { IsValid = false, Errors = new List<string> { "Command not found" } };
 
             // Check required arguments
@@ -57,7 +58,7 @@ namespace CaddyVpsToolkit.Cli
     /// <summary>
     /// Result of argument validation
     /// </summary>
-    public class ValidationResult
+    public sealed class ValidationResult
     {
         public bool IsValid { get; set; }
         public List<string> Errors { get; set; } = new();

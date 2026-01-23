@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -23,7 +24,7 @@ namespace CaddyVpsToolkit.Middleware
     /// Token bucket rate limiter - allows burst traffic up to bucket size,
     /// then enforces per-second rate limit. Common in production systems.
     /// </summary>
-    public class TokenBucketRateLimiter : IRateLimiter
+    public sealed class TokenBucketRateLimiter : IRateLimiter
     {
         private readonly Dictionary<string, TokenBucket> _buckets = new();
         private readonly int _capacity;
@@ -97,7 +98,7 @@ namespace CaddyVpsToolkit.Middleware
     /// Simple fixed-window rate limiter - counts requests in fixed time windows.
     /// Simpler than token bucket but can allow brief bursts at window boundaries.
     /// </summary>
-    public class FixedWindowRateLimiter : IRateLimiter
+    public sealed class FixedWindowRateLimiter : IRateLimiter
     {
         private readonly Dictionary<string, RequestWindow> _windows = new();
         private readonly int _maxRequestsPerWindow;

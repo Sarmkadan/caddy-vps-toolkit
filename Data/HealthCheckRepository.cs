@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ namespace CaddyVpsToolkit.Data
     /// <summary>
     /// SQLite-based repository for health check results
     /// </summary>
-    public class HealthCheckRepository : IHealthCheckRepository
+    public sealed class HealthCheckRepository : IHealthCheckRepository
     {
         private readonly string _connectionString;
 

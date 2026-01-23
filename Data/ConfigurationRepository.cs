@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace CaddyVpsToolkit.Data
     /// <summary>
     /// SQLite-based repository for application configuration
     /// </summary>
-    public class ConfigurationRepository : IConfigurationRepository
+    public sealed class ConfigurationRepository : IConfigurationRepository
     {
         private readonly string _connectionString;
 

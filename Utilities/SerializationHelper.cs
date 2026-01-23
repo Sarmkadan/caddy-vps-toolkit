@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -114,7 +115,7 @@ namespace CaddyVpsToolkit.Utilities
         public static Dictionary<string, object> ToDictionary<T>(T obj) where T : class
         {
             var dict = new Dictionary<string, object>();
-            if (obj == null)
+            if (obj is null)
                 return dict;
 
             var properties = typeof(T).GetProperties();

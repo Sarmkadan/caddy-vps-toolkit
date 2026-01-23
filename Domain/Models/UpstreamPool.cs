@@ -53,7 +53,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <see cref="ManagedService"/> and is the primary unit of Caddy config generation for v2
     /// dynamic upstream management.
     /// </summary>
-    public class UpstreamPool
+    public sealed class UpstreamPool
     {
         /// <summary>Gets or sets the unique identifier for this pool.</summary>
         [Required]
@@ -219,7 +219,7 @@ namespace CaddyVpsToolkit.Domain.Models
             if (string.IsNullOrWhiteSpace(ServiceId))
                 throw new ValidationException("Pool must be associated with a service identifier");
 
-            if (Servers == null || Servers.Count == 0)
+            if (Servers is null || Servers.Count == 0)
                 throw new ValidationException("Pool must contain at least one upstream server");
 
             foreach (var server in Servers)

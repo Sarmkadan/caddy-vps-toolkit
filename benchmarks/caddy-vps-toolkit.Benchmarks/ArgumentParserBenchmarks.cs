@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ namespace CaddyVpsToolkit.Benchmarks;
 /// </summary>
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
-public class ArgumentParserBenchmarks
+public sealed class ArgumentParserBenchmarks
 {
     private static readonly string[] SmallArgs =
         ["add-service", "--name", "my-api", "--port", "8080", "--verbose"];

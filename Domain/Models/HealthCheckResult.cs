@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -11,7 +12,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <summary>
     /// Result of a health check for a service
     /// </summary>
-    public class HealthCheckResult
+    public sealed class HealthCheckResult
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
 

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -22,7 +23,7 @@ namespace CaddyVpsToolkit.Formatters
     /// <summary>
     /// Table formatter for console output with aligned columns
     /// </summary>
-    public class TableFormatter : IOutputFormatter
+    public sealed class TableFormatter : IOutputFormatter
     {
         private readonly int[] _columnWidths;
         private readonly string[] _headers;
@@ -37,7 +38,7 @@ namespace CaddyVpsToolkit.Formatters
 
         public string Format<T>(List<T> items)
         {
-            if (items == null || items.Count == 0)
+            if (items is null || items.Count == 0)
                 return "No items";
 
             var lines = new List<string>();
@@ -58,7 +59,7 @@ namespace CaddyVpsToolkit.Formatters
 
         public string Format<T>(T item)
         {
-            if (item == null)
+            if (item is null)
                 return "No item";
 
             var values = GetPropertyValues(item);
@@ -94,11 +95,11 @@ namespace CaddyVpsToolkit.Formatters
     /// <summary>
     /// CSV formatter for Excel/spreadsheet compatibility
     /// </summary>
-    public class CsvFormatter : IOutputFormatter
+    public sealed class CsvFormatter : IOutputFormatter
     {
         public string Format<T>(List<T> items)
         {
-            if (items == null || items.Count == 0)
+            if (items is null || items.Count == 0)
                 return "";
 
             var lines = new List<string>();
@@ -127,7 +128,7 @@ namespace CaddyVpsToolkit.Formatters
 
         public string Format<T>(T item)
         {
-            if (item == null)
+            if (item is null)
                 return "";
 
             return Format(new List<T> { item });
@@ -136,7 +137,7 @@ namespace CaddyVpsToolkit.Formatters
         private string EscapeCsv(string value)
         {
             if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
-                return "\"" + value.Replace("\"", "\"\"") + "\"";
+                return $"\"{value.Replace("\"", "\"\"")}\"";
             return value;
         }
     }
@@ -144,11 +145,11 @@ namespace CaddyVpsToolkit.Formatters
     /// <summary>
     /// JSON formatter for API responses
     /// </summary>
-    public class JsonFormatter : IOutputFormatter
+    public sealed class JsonFormatter : IOutputFormatter
     {
         public string Format<T>(List<T> items)
         {
-            if (items == null)
+            if (items is null)
                 items = new List<T>();
 
             return JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true });
@@ -156,7 +157,7 @@ namespace CaddyVpsToolkit.Formatters
 
         public string Format<T>(T item)
         {
-            if (item == null)
+            if (item is null)
                 return "null";
 
             return JsonSerializer.Serialize(item, new JsonSerializerOptions { WriteIndented = true });
@@ -166,11 +167,11 @@ namespace CaddyVpsToolkit.Formatters
     /// <summary>
     /// Plain text key-value formatter
     /// </summary>
-    public class TextFormatter : IOutputFormatter
+    public sealed class TextFormatter : IOutputFormatter
     {
         public string Format<T>(List<T> items)
         {
-            if (items == null || items.Count == 0)
+            if (items is null || items.Count == 0)
                 return "No items";
 
             var lines = new List<string>();
@@ -189,7 +190,7 @@ namespace CaddyVpsToolkit.Formatters
 
         public string Format<T>(T item)
         {
-            if (item == null)
+            if (item is null)
                 return "No item";
 
             var lines = FormatObject(item);

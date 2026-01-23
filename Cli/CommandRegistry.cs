@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,13 +15,13 @@ namespace CaddyVpsToolkit.Cli
     /// Supports command registration, lookup, and help text generation.
     /// This design allows dynamic command registration and extensibility.
     /// </summary>
-    public class CommandRegistry
+    public sealed class CommandRegistry
     {
         private readonly Dictionary<string, CommandDescriptor> _commands = new(StringComparer.OrdinalIgnoreCase);
 
         public void Register(CommandDescriptor descriptor)
         {
-            if (descriptor == null)
+            if (descriptor is null)
                 throw new ArgumentNullException(nameof(descriptor));
 
             _commands[descriptor.Name] = descriptor;
@@ -65,7 +66,7 @@ namespace CaddyVpsToolkit.Cli
     /// <summary>
     /// Describes a CLI command with its metadata and validation rules.
     /// </summary>
-    public class CommandDescriptor
+    public sealed class CommandDescriptor
     {
         public string Name { get; set; }
         public string Description { get; set; }

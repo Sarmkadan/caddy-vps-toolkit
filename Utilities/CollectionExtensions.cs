@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -20,7 +21,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static T SafeGet<T>(this IList<T> list, int index, T defaultValue = default)
         {
-            return (list != null && index >= 0 && index < list.Count) ? list[index] : defaultValue;
+            return (list is not null && index >= 0 && index < list.Count) ? list[index] : defaultValue;
         }
 
         /// <summary>
@@ -28,7 +29,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static bool IsNullOrEmpty<T>(this IEnumerable<T> collection)
         {
-            return collection == null || !collection.Any();
+            return collection is null || !collection.Any();
         }
 
         /// <summary>
@@ -36,7 +37,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static T FirstOrDefault<T>(this IEnumerable<T> collection)
         {
-            return collection == null ? default! : collection.FirstOrDefault()!;
+            return collection is null ? default! : collection.FirstOrDefault()!;
         }
 
         /// <summary>
@@ -44,7 +45,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static List<List<T>> Batch<T>(this IEnumerable<T> collection, int batchSize)
         {
-            if (collection == null)
+            if (collection is null)
                 throw new ArgumentNullException(nameof(collection));
             if (batchSize <= 0)
                 throw new ArgumentException("Batch size must be positive", nameof(batchSize));

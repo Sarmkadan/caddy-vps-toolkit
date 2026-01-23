@@ -19,7 +19,7 @@ namespace CaddyVpsToolkit.LoadBalancing
     /// These options govern behaviour when a pool does not specify its own override, and control
     /// features (e.g. circuit breaker) that span all pools.
     /// </remarks>
-    public class LoadBalancingOptions
+    public sealed class LoadBalancingOptions
     {
         // ─── Strategy ─────────────────────────────────────────────────────────
 

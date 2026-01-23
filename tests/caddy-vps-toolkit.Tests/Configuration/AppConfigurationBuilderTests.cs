@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Configuration
 {
-    public class AppConfigurationBuilderTests
+    public sealed class AppConfigurationBuilderTests
     {
         [Fact]
         public void WithSetting_WithValidKey_ShouldAddSetting()

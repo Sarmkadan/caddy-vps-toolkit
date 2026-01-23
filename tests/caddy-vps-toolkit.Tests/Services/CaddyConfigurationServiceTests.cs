@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Services
 {
-    public class CaddyConfigurationServiceTests
+    public sealed class CaddyConfigurationServiceTests
     {
         private readonly IServiceRepository _serviceRepositoryMock;
         private readonly ServiceManagementService _serviceManager;
