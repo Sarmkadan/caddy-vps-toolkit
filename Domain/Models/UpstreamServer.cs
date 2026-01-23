@@ -34,7 +34,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// Tracks its own health state, connection metrics, and availability so that the load-balancer
     /// can make informed routing decisions at runtime.
     /// </summary>
-    public class UpstreamServer
+    public sealed class UpstreamServer
     {
         /// <summary>Gets or sets the unique identifier for this upstream server.</summary>
         [Required]

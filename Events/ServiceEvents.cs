@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -11,7 +12,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Raised when a new service is created
     /// </summary>
-    public class ServiceCreatedEvent : DomainEvent
+    public sealed class ServiceCreatedEvent : DomainEvent
     {
         public string ServiceName { get; set; }
         public ServiceType ServiceType { get; set; }
@@ -22,7 +23,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Raised when a service is deleted
     /// </summary>
-    public class ServiceDeletedEvent : DomainEvent
+    public sealed class ServiceDeletedEvent : DomainEvent
     {
         public string ServiceName { get; set; }
         public ServiceType ServiceType { get; set; }
@@ -31,7 +32,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Raised when a service status changes
     /// </summary>
-    public class ServiceStatusChangedEvent : DomainEvent
+    public sealed class ServiceStatusChangedEvent : DomainEvent
     {
         public string ServiceName { get; set; }
         public ServiceStatus OldStatus { get; set; }
@@ -42,7 +43,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Raised when service configuration is updated
     /// </summary>
-    public class ServiceConfigurationUpdatedEvent : DomainEvent
+    public sealed class ServiceConfigurationUpdatedEvent : DomainEvent
     {
         public string ServiceName { get; set; }
         public string ConfigurationKey { get; set; }
@@ -53,7 +54,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Raised when a service health check fails
     /// </summary>
-    public class ServiceHealthCheckFailedEvent : DomainEvent
+    public sealed class ServiceHealthCheckFailedEvent : DomainEvent
     {
         public string ServiceName { get; set; }
         public string ErrorMessage { get; set; }
@@ -63,7 +64,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Raised when a previously unhealthy service recovers
     /// </summary>
-    public class ServiceHealthRecoveredEvent : DomainEvent
+    public sealed class ServiceHealthRecoveredEvent : DomainEvent
     {
         public string ServiceName { get; set; }
         public int ResponseTimeMs { get; set; }

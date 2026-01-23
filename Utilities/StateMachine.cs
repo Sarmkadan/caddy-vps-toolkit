@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -12,7 +13,7 @@ namespace CaddyVpsToolkit.Utilities
     /// Simple state machine implementation with transitions and callbacks.
     /// Useful for managing state workflows and validating allowed transitions.
     /// </summary>
-    public class StateMachine<TState, TTrigger>
+    public sealed class StateMachine<TState, TTrigger>
     {
         private TState _currentState;
         private readonly Dictionary<(TState, TTrigger), TState> _transitions = new();

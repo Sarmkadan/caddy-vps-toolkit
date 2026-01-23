@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -15,7 +16,7 @@ namespace CaddyVpsToolkit.Services
     /// <summary>
     /// Service for managing VPS services (CRUD + status operations)
     /// </summary>
-    public class ServiceManagementService
+    public sealed class ServiceManagementService
     {
         private readonly IServiceRepository _repository;
 
@@ -29,13 +30,13 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task<string> CreateServiceAsync(ManagedService service)
         {
-            if (service == null)
+            if (service is null)
                 throw new ArgumentNullException(nameof(service));
 
             service.Validate();
 
             var existing = await _repository.GetByNameAsync(service.Name);
-            if (existing != null)
+            if (existing is not null)
                 throw new ServiceConfigurationException($"Service '{service.Name}' already exists");
 
             return await _repository.AddAsync(service);
@@ -50,7 +51,7 @@ namespace CaddyVpsToolkit.Services
                 throw new ArgumentException("Service ID is required", nameof(serviceId));
 
             var existing = await _repository.GetByIdAsync(serviceId);
-            if (existing == null)
+            if (existing is null)
                 throw new ServiceNotFoundException(serviceId);
 
             // Preserve immutable fields
@@ -70,7 +71,7 @@ namespace CaddyVpsToolkit.Services
                 throw new ArgumentException("Service ID is required", nameof(serviceId));
 
             var service = await _repository.GetByIdAsync(serviceId);
-            if (service == null)
+            if (service is null)
                 throw new ServiceNotFoundException(serviceId);
 
             // Prevent deletion of running services
@@ -89,7 +90,7 @@ namespace CaddyVpsToolkit.Services
                 throw new ArgumentException("Service ID is required", nameof(serviceId));
 
             var service = await _repository.GetByIdAsync(serviceId);
-            if (service == null)
+            if (service is null)
                 throw new ServiceNotFoundException(serviceId);
 
             return service;

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
     /// Removes old health check records and performs database optimization.
     /// Runs periodically to maintain system performance.
     /// </summary>
-    public class MaintenanceWorker : IBackgroundWorker
+    public sealed class MaintenanceWorker : IBackgroundWorker
     {
         private readonly IHealthCheckRepository _healthCheckRepo;
         private readonly ILogger _logger;
@@ -39,7 +40,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
 
         public async Task StartAsync()
         {
-            if (_cancellationTokenSource != null)
+            if (_cancellationTokenSource is not null)
                 return;
 
             _cancellationTokenSource = new CancellationTokenSource();
@@ -50,7 +51,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
 
         public async Task StopAsync()
         {
-            if (_cancellationTokenSource == null)
+            if (_cancellationTokenSource is null)
                 return;
 
             _cancellationTokenSource.Cancel();
@@ -111,7 +112,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
             }
         }
 
-        public bool IsRunning => _cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested;
+        public bool IsRunning => _cancellationTokenSource is not null && !_cancellationTokenSource.Token.IsCancellationRequested;
 
         public string WorkerName => "MaintenanceWorker";
     }

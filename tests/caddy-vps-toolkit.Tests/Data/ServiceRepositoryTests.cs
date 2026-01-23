@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -14,7 +15,7 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Data
 {
-    public class ServiceRepositoryTests : IDisposable
+    public sealed class ServiceRepositoryTests : IDisposable
     {
         private readonly ServiceRepository _sut;
         private readonly string _tempDbPath;

@@ -135,7 +135,7 @@ namespace CaddyVpsToolkit.LoadBalancing
             {
                 return new PoolRoutingEvaluation(
                     PoolId:             context.PoolId,
-                    Scores:             Array.Empty<UpstreamRoutingScore>(),
+                    Scores:             [],
                     SelectedUpstreamId: null,
                     EvaluatedAt:        DateTime.UtcNow);
             }

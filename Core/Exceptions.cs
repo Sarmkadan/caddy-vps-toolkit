@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -32,7 +33,7 @@ namespace CaddyVpsToolkit.Core
     /// <summary>
     /// Thrown when a service cannot be found
     /// </summary>
-    public class ServiceNotFoundException : CaddyVpsException
+    public sealed class ServiceNotFoundException : CaddyVpsException
     {
         public ServiceNotFoundException(string serviceId)
             : base($"Service '{serviceId}' not found", "SERVICE_NOT_FOUND", serviceId)
@@ -43,7 +44,7 @@ namespace CaddyVpsToolkit.Core
     /// <summary>
     /// Thrown when service configuration is invalid
     /// </summary>
-    public class ServiceConfigurationException : CaddyVpsException
+    public sealed class ServiceConfigurationException : CaddyVpsException
     {
         public ServiceConfigurationException(string message, object details = null)
             : base(message, "SERVICE_CONFIG_ERROR", details)
@@ -54,7 +55,7 @@ namespace CaddyVpsToolkit.Core
     /// <summary>
     /// Thrown when systemd operation fails
     /// </summary>
-    public class SystemdOperationException : CaddyVpsException
+    public sealed class SystemdOperationException : CaddyVpsException
     {
         public SystemdOperationException(string message, Exception innerException = null)
             : base(message, "SYSTEMD_ERROR", null, innerException)
@@ -65,7 +66,7 @@ namespace CaddyVpsToolkit.Core
     /// <summary>
     /// Thrown when Caddy operation fails
     /// </summary>
-    public class CaddyOperationException : CaddyVpsException
+    public sealed class CaddyOperationException : CaddyVpsException
     {
         public CaddyOperationException(string message, Exception innerException = null)
             : base(message, "CADDY_ERROR", null, innerException)
@@ -76,7 +77,7 @@ namespace CaddyVpsToolkit.Core
     /// <summary>
     /// Thrown when health check fails
     /// </summary>
-    public class HealthCheckException : CaddyVpsException
+    public sealed class HealthCheckException : CaddyVpsException
     {
         public HealthCheckException(string serviceId, string message)
             : base(message, "HEALTH_CHECK_ERROR", serviceId)
@@ -87,7 +88,7 @@ namespace CaddyVpsToolkit.Core
     /// <summary>
     /// Thrown when database operation fails
     /// </summary>
-    public class DatabaseException : CaddyVpsException
+    public sealed class DatabaseException : CaddyVpsException
     {
         public DatabaseException(string message, Exception innerException = null)
             : base(message, "DATABASE_ERROR", null, innerException)
@@ -98,7 +99,7 @@ namespace CaddyVpsToolkit.Core
     /// <summary>
     /// Thrown when validation fails
     /// </summary>
-    public class ValidationException : CaddyVpsException
+    public sealed class ValidationException : CaddyVpsException
     {
         public ValidationException(string message, object details = null)
             : base(message, "VALIDATION_ERROR", details)
@@ -109,7 +110,7 @@ namespace CaddyVpsToolkit.Core
     /// <summary>
     /// Thrown when operation is not supported
     /// </summary>
-    public class NotSupportedException : CaddyVpsException
+    public sealed class NotSupportedException : CaddyVpsException
     {
         public NotSupportedException(string message)
             : base(message, "NOT_SUPPORTED")

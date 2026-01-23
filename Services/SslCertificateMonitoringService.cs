@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -37,7 +38,7 @@ namespace CaddyVpsToolkit.Services
     /// Monitors SSL/TLS certificates for managed services and dispatches renewal alerts
     /// through the notification pipeline when certificates are approaching expiry or have expired.
     /// </summary>
-    public class SslCertificateMonitoringService : ISslCertificateMonitoringService
+    public sealed class SslCertificateMonitoringService : ISslCertificateMonitoringService
     {
         private const int DefaultHttpsPort = 443;
 

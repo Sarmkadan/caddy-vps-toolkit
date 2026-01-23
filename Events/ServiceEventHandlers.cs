@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Handler for when a service is created - logs and triggers webhook
     /// </summary>
-    public class ServiceCreatedEventHandler : IEventHandler<ServiceCreatedEvent>
+    public sealed class ServiceCreatedEventHandler : IEventHandler<ServiceCreatedEvent>
     {
         private readonly ILogger _logger;
         private readonly IWebhookHandler _webhookHandler;
@@ -44,7 +45,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Handler for when service status changes
     /// </summary>
-    public class ServiceStatusChangedEventHandler : IEventHandler<ServiceStatusChangedEvent>
+    public sealed class ServiceStatusChangedEventHandler : IEventHandler<ServiceStatusChangedEvent>
     {
         private readonly ILogger _logger;
         private readonly IWebhookHandler _webhookHandler;
@@ -76,7 +77,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Handler for health check failures
     /// </summary>
-    public class ServiceHealthCheckFailedEventHandler : IEventHandler<ServiceHealthCheckFailedEvent>
+    public sealed class ServiceHealthCheckFailedEventHandler : IEventHandler<ServiceHealthCheckFailedEvent>
     {
         private readonly ILogger _logger;
         private readonly IWebhookHandler _webhookHandler;
@@ -107,7 +108,7 @@ namespace CaddyVpsToolkit.Events
     /// <summary>
     /// Handler for when a service recovers from health issues
     /// </summary>
-    public class ServiceHealthRecoveredEventHandler : IEventHandler<ServiceHealthRecoveredEvent>
+    public sealed class ServiceHealthRecoveredEventHandler : IEventHandler<ServiceHealthRecoveredEvent>
     {
         private readonly ILogger _logger;
         private readonly IWebhookHandler _webhookHandler;

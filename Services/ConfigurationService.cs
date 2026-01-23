@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -17,7 +18,7 @@ namespace CaddyVpsToolkit.Services
     /// <summary>
     /// Service for managing application configuration
     /// </summary>
-    public class ConfigurationService
+    public sealed class ConfigurationService
     {
         private readonly IConfigurationRepository _repository;
         // Fix: Use ConcurrentDictionary to prevent thread-safety issues during concurrent cache access
@@ -134,7 +135,7 @@ namespace CaddyVpsToolkit.Services
                 var json = await File.ReadAllTextAsync(filePath);
                 var config = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
 
-                if (config != null)
+                if (config is not null)
                 {
                     foreach (var kvp in config)
                     {

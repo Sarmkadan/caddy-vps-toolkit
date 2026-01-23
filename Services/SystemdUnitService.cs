@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -16,7 +17,7 @@ namespace CaddyVpsToolkit.Services
     /// <summary>
     /// Service for managing systemd unit files and service operations
     /// </summary>
-    public class SystemdUnitService
+    public sealed class SystemdUnitService
     {
         public SystemdUnitService()
         {
@@ -29,10 +30,10 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task<bool> CreateUnitFileAsync(SystemdUnitConfig config, ManagedService service)
         {
-            if (config == null)
+            if (config is null)
                 throw new ArgumentNullException(nameof(config));
 
-            if (service == null)
+            if (service is null)
                 throw new ArgumentNullException(nameof(service));
 
             config.Validate();
@@ -328,7 +329,7 @@ namespace CaddyVpsToolkit.Services
         }
     }
 
-    public class SystemdUnitStatus
+    public sealed class SystemdUnitStatus
     {
         public string UnitName { get; set; }
         public string ActiveState { get; set; }
