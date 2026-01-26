@@ -8,10 +8,17 @@ using System;
 
 namespace CaddyVpsToolkit.Core
 {
+    /// <summary>
+    /// Application-wide constants including default paths, ports, timeouts, and validation limits.
+    /// All filesystem paths assume a Linux environment with Caddy installed via package manager.
+    /// </summary>
     public static class AppConstants
     {
+        /// <summary>Human-readable application name for display purposes.</summary>
         public const string AppName = "Caddy VPS Toolkit";
+        /// <summary>Current application version following semantic versioning.</summary>
         public const string AppVersion = "1.0.0";
+        /// <summary>Machine-readable application identifier used in logs and configuration.</summary>
         public const string ApplicationId = "caddy-vps-toolkit";
 
         // Directories
@@ -55,6 +62,10 @@ namespace CaddyVpsToolkit.Core
         public const int CaddyAdminApiTimeoutSeconds = 5;
     }
 
+    /// <summary>
+    /// Standardized error message constants used in exception messages and error responses.
+    /// These provide consistent messaging across the application.
+    /// </summary>
     public static class ErrorMessages
     {
         public const string ServiceNotFound = "Service not found";
