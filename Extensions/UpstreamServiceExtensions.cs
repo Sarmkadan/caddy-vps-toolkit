@@ -72,6 +72,10 @@ namespace CaddyVpsToolkit.Extensions
             // Sliding-window metrics aggregator with the configured per-upstream capacity.
             services.AddSingleton<IMetricsAggregator>(
                 new SlidingWindowMetricsAggregator(options.MetricsWindowSize));
+            
+            services.AddSingleton<IUpstreamPoolRepository, CaddyVpsToolkit.Data.UpstreamPoolRepository>();
+            services.AddSingleton<IUpstreamHealthTracker, UpstreamHealthTracker>();
+            services.AddSingleton<IUpstreamSelector, UpstreamSelector>();
 
             // Adaptive load balancer — resolves UpstreamManagerService from the container.
             services.AddSingleton<IAdaptiveLoadBalancer>(sp => new AdaptiveLoadBalancer(
