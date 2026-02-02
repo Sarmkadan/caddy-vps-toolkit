@@ -63,6 +63,14 @@ namespace CaddyVpsToolkit.Domain.Models
         /// <summary>Bcrypt-hashed password for Basic Authentication.</summary>
         public string BasicAuthPasswordHash { get; set; }
 
+        /// <summary>
+        /// DNS-01 challenge provider name for Let's Encrypt wildcard certificates
+        /// (e.g., "cloudflare", "route53"). When set, the generated Caddyfile site block
+        /// will include a <c>tls { dns &lt;provider&gt; }</c> directive instead of the
+        /// default HTTP-01 challenge. Leave null/empty to use the default HTTP-01 challenge.
+        /// </summary>
+        public string TlsDnsProvider { get; set; }
+
         /// <summary>UTC timestamp when the route was created.</summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -93,6 +101,17 @@ namespace CaddyVpsToolkit.Domain.Models
         public string GetCaddyPathMatcher()
         {
             return string.IsNullOrWhiteSpace(Path) || Path == "/" ? "" : Path;
+        }
+
+        /// <summary>
+        /// Returns an identifier safe for use as a Caddy named matcher (e.g., <c>@name</c>).
+        /// Hyphens are not allowed in Caddy matcher/snippet identifiers; they are replaced with underscores.
+        /// Uses <see cref="ServiceId"/> when available, otherwise falls back to <see cref="Id"/>.
+        /// </summary>
+        public string GetCaddyMatcherName()
+        {
+            var id = string.IsNullOrWhiteSpace(ServiceId) ? Id : ServiceId;
+            return id.Replace("-", "_");
         }
 
         public string GenerateRoutePath()
