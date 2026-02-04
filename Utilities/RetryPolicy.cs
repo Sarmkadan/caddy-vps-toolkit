@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -18,7 +19,7 @@ namespace CaddyVpsToolkit.Utilities
         Task ExecuteAsync(Func<Task> operation);
     }
 
-    public class ExponentialBackoffRetryPolicy : IRetryPolicy
+    public sealed class ExponentialBackoffRetryPolicy : IRetryPolicy
     {
         private readonly int _maxRetries;
         private readonly int _initialDelayMs;
@@ -41,7 +42,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
         {
-            if (operation == null)
+            if (operation is null)
                 throw new ArgumentNullException(nameof(operation));
 
             int delayMs = _initialDelayMs;
@@ -74,7 +75,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public async Task ExecuteAsync(Func<Task> operation)
         {
-            if (operation == null)
+            if (operation is null)
                 throw new ArgumentNullException(nameof(operation));
 
             await ExecuteAsync(async () =>
@@ -88,7 +89,7 @@ namespace CaddyVpsToolkit.Utilities
     /// <summary>
     /// Linear backoff retry policy - increases delay by fixed amount
     /// </summary>
-    public class LinearBackoffRetryPolicy : IRetryPolicy
+    public sealed class LinearBackoffRetryPolicy : IRetryPolicy
     {
         private readonly int _maxRetries;
         private readonly int _delayIncrement;
@@ -130,7 +131,7 @@ namespace CaddyVpsToolkit.Utilities
     /// <summary>
     /// No retry policy - execute once only
     /// </summary>
-    public class NoRetryPolicy : IRetryPolicy
+    public sealed class NoRetryPolicy : IRetryPolicy
     {
         public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
         {

@@ -17,7 +17,7 @@ namespace CaddyVpsToolkit.Auditing
     /// <summary>
     /// Audit log entry for tracking important operations
     /// </summary>
-    public class AuditLogEntry
+    public sealed class AuditLogEntry
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
@@ -40,7 +40,7 @@ namespace CaddyVpsToolkit.Auditing
     /// <summary>
     /// File-based audit log implementation
     /// </summary>
-    public class FileAuditLog : IAuditLog
+    public sealed class FileAuditLog : IAuditLog
     {
         private readonly string _logPath;
         private readonly List<AuditLogEntry> _entries = new();

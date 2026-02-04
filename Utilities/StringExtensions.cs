@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -152,7 +153,7 @@ namespace CaddyVpsToolkit.Utilities
             if (string.IsNullOrWhiteSpace(value))
                 return value;
 
-            return "'" + value.Replace("'", "'\\''") + "'";
+            return $"'{value.Replace("'", "'\\''")}'";
         }
 
         /// <summary>

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -20,7 +21,7 @@ namespace CaddyVpsToolkit.Middleware
         Task<ErrorResponse> HandleAsync(Exception ex);
     }
 
-    public class ErrorHandlingPipeline : IErrorHandler
+    public sealed class ErrorHandlingPipeline : IErrorHandler
     {
         private readonly ILogger _logger;
         private readonly List<Func<Exception, Task<ErrorResponse>>> _handlers;
@@ -84,7 +85,7 @@ namespace CaddyVpsToolkit.Middleware
             foreach (var handler in _handlers)
             {
                 var result = await handler(ex);
-                if (result != null)
+                if (result is not null)
                     return result;
             }
 
@@ -103,7 +104,7 @@ namespace CaddyVpsToolkit.Middleware
     /// <summary>
     /// Structured error response
     /// </summary>
-    public class ErrorResponse
+    public sealed class ErrorResponse
     {
         public int ExitCode { get; set; }
         public string Code { get; set; }

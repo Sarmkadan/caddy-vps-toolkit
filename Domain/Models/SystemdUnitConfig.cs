@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -13,7 +14,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <summary>
     /// Systemd unit configuration for service management
     /// </summary>
-    public class SystemdUnitConfig
+    public sealed class SystemdUnitConfig
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
@@ -87,11 +88,11 @@ namespace CaddyVpsToolkit.Domain.Models
             {
                 "[Unit]",
                 $"Description=Service unit for {UnitName}",
-                "After=" + string.Join(" ", After),
+                $"After={string.Join(" ", After)}",
             };
 
             if (Wants.Any())
-                lines.Add("Wants=" + string.Join(" ", Wants));
+                lines.Add($"Wants={string.Join(" ", Wants)}");
 
             lines.Add("");
             lines.Add("[Service]");

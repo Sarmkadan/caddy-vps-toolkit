@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -17,7 +18,7 @@ namespace CaddyVpsToolkit.Services
     /// <summary>
     /// Service for monitoring health of managed services
     /// </summary>
-    public class HealthMonitoringService
+    public sealed class HealthMonitoringService
     {
         private readonly IHealthCheckRepository _repository;
         private readonly ServiceManagementService _serviceManager;
@@ -38,7 +39,7 @@ namespace CaddyVpsToolkit.Services
             try
             {
                 var service = await _serviceManager.GetServiceAsync(serviceId);
-                if (service?.HealthCheck == null)
+                if (service?.HealthCheck is null)
                     throw new HealthCheckException(serviceId, "No health check configured for this service");
 
                 service.HealthCheck.Validate();
@@ -154,7 +155,7 @@ namespace CaddyVpsToolkit.Services
                 }
 
                 var latestCheck = await _repository.GetLatestAsync(service.Id);
-                if (latestCheck == null)
+                if (latestCheck is null)
                 {
                     summary.UncheckedServices++;
                 }
@@ -248,7 +249,7 @@ namespace CaddyVpsToolkit.Services
         }
     }
 
-    public class HealthSummary
+    public sealed class HealthSummary
     {
         public int TotalServices { get; set; }
         public int HealthyServices { get; set; }

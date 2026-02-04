@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -40,14 +41,14 @@ namespace CaddyVpsToolkit.Events
         Task PublishAsync<TEvent>(TEvent @event) where TEvent : DomainEvent;
     }
 
-    public class EventBus : IEventBus
+    public sealed class EventBus : IEventBus
     {
         private readonly Dictionary<Type, List<object>> _handlers = new();
         private readonly object _lockObject = new();
 
         public void Subscribe<TEvent>(IEventHandler<TEvent> handler) where TEvent : DomainEvent
         {
-            if (handler == null)
+            if (handler is null)
                 throw new ArgumentNullException(nameof(handler));
 
             lock (_lockObject)
@@ -62,7 +63,7 @@ namespace CaddyVpsToolkit.Events
 
         public void Unsubscribe<TEvent>(IEventHandler<TEvent> handler) where TEvent : DomainEvent
         {
-            if (handler == null)
+            if (handler is null)
                 return;
 
             lock (_lockObject)
@@ -75,7 +76,7 @@ namespace CaddyVpsToolkit.Events
 
         public async Task PublishAsync<TEvent>(TEvent @event) where TEvent : DomainEvent
         {
-            if (@event == null)
+            if (@event is null)
                 throw new ArgumentNullException(nameof(@event));
 
             List<IEventHandler<TEvent>> handlers;

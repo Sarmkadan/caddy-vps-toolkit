@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -28,7 +29,7 @@ namespace CaddyVpsToolkit.Utilities
     /// <summary>
     /// Generic observable implementation
     /// </summary>
-    public class Observable<T> : IObservable<T> where T : class
+    public sealed class Observable<T> : IObservable<T> where T : class
     {
         private readonly List<IObserver<T>> _observers = new();
         private readonly object _lockObject = new();
@@ -41,7 +42,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public void Attach(IObserver<T> observer)
         {
-            if (observer == null)
+            if (observer is null)
                 throw new ArgumentNullException(nameof(observer));
 
             lock (_lockObject)
@@ -53,7 +54,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public void Detach(IObserver<T> observer)
         {
-            if (observer == null)
+            if (observer is null)
                 return;
 
             lock (_lockObject)
@@ -105,14 +106,14 @@ namespace CaddyVpsToolkit.Utilities
     /// <summary>
     /// Simple subscription-based observer alternative to interfaces
     /// </summary>
-    public class Subject<T>
+    public sealed class Subject<T>
     {
         private readonly List<Action<T>> _subscribers = new();
         private readonly object _lockObject = new();
 
         public void Subscribe(Action<T> handler)
         {
-            if (handler == null)
+            if (handler is null)
                 return;
 
             lock (_lockObject)
@@ -123,7 +124,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public void Unsubscribe(Action<T> handler)
         {
-            if (handler == null)
+            if (handler is null)
                 return;
 
             lock (_lockObject)
