@@ -6,6 +6,12 @@ using CaddyVpsToolkit.Domain.Models;
 
 namespace CaddyVpsToolkit.LoadBalancing
 {
+    /// <summary>
+    /// Default implementation of <see cref="IUpstreamHealthTracker"/> that persists health state
+    /// through the <see cref="IUpstreamPoolRepository"/>. Probe results are applied against the
+    /// unhealthy/healthy thresholds configured on each <see cref="UpstreamPool"/> and the updated
+    /// pool state is flushed to the repository after every state transition.
+    /// </summary>
     public sealed class UpstreamHealthTracker : IUpstreamHealthTracker
     {
         private readonly IUpstreamPoolRepository _poolRepository;
