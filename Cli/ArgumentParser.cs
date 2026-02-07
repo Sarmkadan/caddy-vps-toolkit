@@ -103,10 +103,10 @@ namespace CaddyVpsToolkit.Cli
                 if (argSpan.Length < 4 || argSpan[0] != '-' || argSpan[1] != '-') continue;
                 var rest = argSpan[2..];
 
-                if (rest.SequenceEqual(fnSpan)) return true;
+                if (rest.Equals(fnSpan, StringComparison.OrdinalIgnoreCase)) return true;
                 if (rest.Length > fnSpan.Length
                     && rest[fnSpan.Length] == '='
-                    && rest.StartsWith(fnSpan, StringComparison.Ordinal))
+                    && rest.StartsWith(fnSpan, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
             return false;
