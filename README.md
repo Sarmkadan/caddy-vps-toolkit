@@ -34,6 +34,9 @@ A comprehensive .NET CLI tool for managing multiple services on a single VPS wit
 - **Health Monitoring**: Continuous health checks with configurable thresholds and actions
 - **Service Orchestration**: Manage service lifecycle, dependencies, and startup order
 - **Configuration Management**: Centralized configuration repository with validation and versioning
+- **Backup & Restore**: Full JSON backups of all service configurations and the Caddyfile
+- **Log Aggregation**: Unified log viewer that merges and filters entries across all service logs
+- **SSL Certificate Checker**: Real-time TLS certificate status with expiry warnings
 - **Audit Logging**: Complete audit trail of all service changes and health events
 - **Webhook Integration**: External system integration and event notifications
 - **Performance Monitoring**: Real-time metrics collection and reporting
@@ -487,6 +490,76 @@ caddy-vps-toolkit audit log \
 ```bash
 caddy-vps-toolkit audit export --format json --output FILE
 ```
+
+#### backup
+
+Create and restore full configuration backups.
+
+**Create a Backup**
+```bash
+caddy-vps-toolkit backup-create [--output <path>] [--description "weekly snapshot"]
+```
+Creates a JSON backup containing all managed service configurations, application
+settings, and the current Caddyfile. If `--output` is omitted the file is written
+to the config directory with an auto-generated timestamped name.
+
+**Restore a Backup**
+```bash
+caddy-vps-toolkit backup-restore /path/to/backup-20250115_120000.backup.json
+```
+Re-creates any services and configuration keys missing from the current database
+and writes the Caddyfile back to disk. Existing records are updated in place.
+
+**List Backups**
+```bash
+caddy-vps-toolkit backup-list [--dir /path/to/backups]
+```
+Prints all `*.backup.json` files found in the configured (or specified) directory.
+
+#### logs-view
+
+Aggregate and filter application logs from all service log files.
+
+```bash
+caddy-vps-toolkit logs-view \
+  [--lines N]         # Number of entries to show (default: 100)
+  [--level LEVEL]     # Minimum level: Debug, Info, Warning, Error
+  [--service ID]      # Filter to a specific service ID
+  [--since DATETIME]  # Only show entries on or after this timestamp
+```
+
+Entries are parsed from the structured `[timestamp] [level] message` format
+written by the application logger and sorted newest-first.
+
+**Examples**
+```bash
+# Last 50 warning-or-above entries
+caddy-vps-toolkit logs-view --lines 50 --level Warning
+
+# Errors from a specific service since yesterday
+caddy-vps-toolkit logs-view --level Error --service my-api --since 2025-05-25
+```
+
+#### ssl-check
+
+Check the SSL/TLS certificate status for one domain or all services.
+
+**Single domain**
+```bash
+caddy-vps-toolkit ssl-check example.com
+```
+
+**All registered services**
+```bash
+caddy-vps-toolkit ssl-check
+```
+
+Output includes expiry date, days remaining, and a status classification:
+- `Valid` — certificate is healthy
+- `ExpiringSoon` — expires within 30 days
+- `Critical` — expires within 7 days
+- `Expired` — certificate has already expired
+- `Error` — could not connect or retrieve the certificate
 
 ## Configuration Reference
 
