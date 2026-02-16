@@ -14,6 +14,8 @@ using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Domain.Models;
 using CaddyVpsToolkit.Services;
 using CaddyVpsToolkit.Data;
+using CaddyVpsToolkit.Middleware;
+using CaddyVpsToolkit.Notifications;
 
 namespace CaddyVpsToolkit
 {
@@ -57,6 +59,15 @@ namespace CaddyVpsToolkit
             services.AddSingleton<SystemdUnitService>();
             services.AddSingleton<HealthMonitoringService>();
             services.AddSingleton<ConfigurationService>();
+
+            // Logging (for SSL monitoring and notifications)
+            services.AddSingleton<ILogger>(new MemoryLogger(LogLevel.Debug));
+            services.AddSingleton<NotificationService>();
+
+            // New feature services
+            services.AddSingleton<IBackupService, BackupService>();
+            services.AddSingleton<ILogAggregationService, LogAggregationService>();
+            services.AddSingleton<ISslCertificateMonitoringService, SslCertificateMonitoringService>();
 
             // CLI
             services.AddSingleton<CliCommandHandler>();
