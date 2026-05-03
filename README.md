@@ -987,6 +987,94 @@ Console.WriteLine("Arguments are valid!");
 
 `EventBusTests` validates the `EventBus` class, a lightweight publish-subscribe event bus implementation that enables decoupled communication between components. The tests cover core functionality including event publishing with subscribers, null event handling, multiple subscriber scenarios, handler management (subscribe/unsubscribe), subscriber counting, event type isolation, and concurrent publishing.
 
+## HealthCheckConfigTests
+
+`HealthCheckConfigTests` validates the `HealthCheckConfig` class, which provides configuration validation and URL generation for health check monitoring. The test suite verifies validation logic for health check intervals, timeouts, endpoint requirements, and URL construction for different health check types (HTTP, TCP). It ensures that health monitoring configurations meet minimum requirements and properly construct health check URLs based on the configured type.
+
+```csharp
+// Example: Validating and using health check configuration
+var config = new HealthCheckConfig
+{
+    Type = HealthCheckType.Http,
+    Endpoint = "http://localhost:8080/health",
+    Interval = TimeSpan.FromSeconds(30),
+    Timeout = TimeSpan.FromSeconds(5),
+    Retries = 3
+};
+
+// Validate configuration - throws ValidationException if invalid
+var validator = new HealthCheckConfigTests();
+validator.Validate_WithValidData_ShouldNotThrow(config);
+
+// Generate health check URL
+string healthCheckUrl = config.GetHealthCheckUrl();
+Console.WriteLine($"Health check URL: {healthCheckUrl}"); // Outputs: Health check URL: http://localhost:8080/health
+
+// Example with TCP type (returns null for URL)
+var tcpConfig = new HealthCheckConfig
+{
+    Type = HealthCheckType.Tcp,
+    Endpoint = "localhost:5432",
+    Interval = TimeSpan.FromSeconds(10),
+    Timeout = TimeSpan.FromSeconds(2)
+};
+
+string tcpUrl = tcpConfig.GetHealthCheckUrl();
+Console.WriteLine(tcpUrl); // Outputs: (null)
+
+// Example: Configuration validation scenarios
+try
+{
+    // This will throw ValidationException - interval less than 5 seconds
+    var invalidIntervalConfig = new HealthCheckConfig
+    {
+        Type = HealthCheckType.Http,
+        Endpoint = "http://localhost:8080/health",
+        Interval = TimeSpan.FromSeconds(3), // Too short
+        Timeout = TimeSpan.FromSeconds(5)
+    };
+    validator.Validate_WithIntervalLessThan5_ShouldThrowValidationException(invalidIntervalConfig);
+}
+catch (ValidationException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+}
+
+try
+{
+    // This will throw ValidationException - timeout greater than interval
+    var invalidTimeoutConfig = new HealthCheckConfig
+    {
+        Type = HealthCheckType.Http,
+        Endpoint = "http://localhost:8080/health",
+        Interval = TimeSpan.FromSeconds(10),
+        Timeout = TimeSpan.FromSeconds(15) // Greater than interval
+    };
+    validator.Validate_WithTimeoutGreaterThanInterval_ShouldThrowValidationException(invalidTimeoutConfig);
+}
+catch (ValidationException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+}
+
+try
+{
+    // This will throw ValidationException - missing endpoint for HTTP type
+    var missingEndpointConfig = new HealthCheckConfig
+    {
+        Type = HealthCheckType.Http,
+        Interval = TimeSpan.FromSeconds(30),
+        Timeout = TimeSpan.FromSeconds(5)
+        // Missing Endpoint property
+    };
+    validator.Validate_WithMissingEndpointForHttp_ShouldThrowValidationException(missingEndpointConfig);
+}
+catch (ValidationException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+}
+```
+
 ## ArgumentParserEdgeCaseTests
 
 `ArgumentParserEdgeCaseTests` validates the edge case behavior of the CLI argument parser, ensuring robust handling of null values, empty argument lists, out-of-bounds access, and various flag parsing scenarios. These tests verify that the parser gracefully handles malformed inputs and edge cases without throwing exceptions, maintaining application stability in production environments.
