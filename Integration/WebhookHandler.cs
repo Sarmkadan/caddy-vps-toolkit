@@ -5,8 +5,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace CaddyVpsToolkit.Integration
 {
@@ -110,13 +110,13 @@ namespace CaddyVpsToolkit.Integration
     /// </summary>
     public class WebhookPayload
     {
-        [JsonProperty("event_type")]
+        [JsonPropertyName("event_type")]
         public string EventType { get; set; }
 
-        [JsonProperty("timestamp")]
+        [JsonPropertyName("timestamp")]
         public DateTime Timestamp { get; set; }
 
-        [JsonProperty("data")]
+        [JsonPropertyName("data")]
         public Dictionary<string, object> Data { get; set; }
 
         public WebhookPayload()
