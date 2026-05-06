@@ -13,9 +13,13 @@
 
 **Do not open public issues for security vulnerabilities.**
 
-If you discover a security vulnerability in caddy-vps-toolkit, please email security details to:
+If you discover a security vulnerability in caddy-vps-toolkit, please report it using one of these methods:
 
-**https://sarmkadan.com** (Contact form)
+1. **GitHub Private Vulnerability Reporting** (Preferred):
+   https://github.com/sarmkadan/caddy-vps-toolkit/security/advisories/new
+
+2. **Email**:
+   rutova2@gmail.com
 
 Please include:
 
@@ -23,7 +27,7 @@ Please include:
 2. **Impact**: Potential impact on users
 3. **Steps to Reproduce**: How to reproduce the issue
 4. **Suggested Fix**: If available
-5. **Your Name**: For acknowledgment
+5. **Your Name**: For acknowledgment (optional)
 
 We will:
 - Acknowledge receipt within 48 hours
@@ -218,7 +222,7 @@ Monitor advisories from:
 
 ## Contact
 
-Security inquiries: https://sarmkadan.com
+Security inquiries: https://github.com/sarmkadan/caddy-vps-toolkit/security/advisories/new or rutova2@gmail.com
 
 ---
 
