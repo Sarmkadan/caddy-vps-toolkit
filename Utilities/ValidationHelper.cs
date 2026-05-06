@@ -32,7 +32,7 @@ namespace CaddyVpsToolkit.Utilities
 
             if (string.IsNullOrWhiteSpace(domain))
                 errors.Add("Domain cannot be empty");
-            else if (!Regex.IsMatch(domain, @"^([a-z0-9](-[a-z0-9])*\.)+[a-z0-9]{2,}$", RegexOptions.IgnoreCase))
+            else if (!Regex.IsMatch(domain, @"^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$", RegexOptions.IgnoreCase))
                 errors.Add($"Invalid domain format: {domain}");
 
             return new ValidationResult { IsValid = errors.Count == 0, Errors = errors };

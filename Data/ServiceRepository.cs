@@ -252,7 +252,7 @@ namespace CaddyVpsToolkit.Data
             return services;
         }
 
-        private ManagedService MapReaderToService(SQLiteDataReader reader)
+        private ManagedService MapReaderToService(System.Data.Common.DbDataReader reader)
         {
             return new ManagedService
             {

@@ -186,7 +186,7 @@ namespace CaddyVpsToolkit.Data
             return new HealthCheckStatistics { TotalChecks = 0, SuccessRate = 0 };
         }
 
-        private HealthCheckResult MapReaderToResult(SQLiteDataReader reader)
+        private HealthCheckResult MapReaderToResult(System.Data.Common.DbDataReader reader)
         {
             return new HealthCheckResult
             {

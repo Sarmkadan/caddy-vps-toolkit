@@ -99,10 +99,10 @@ namespace CaddyVpsToolkit.BackgroundWorkers
             try
             {
                 // Clean old health check records
-                var deletedCount = await _healthCheckRepo.DeleteOlderThanAsync(cutoffDate);
-                if (deletedCount > 0)
+                var deleted = await _healthCheckRepo.DeleteOlderThanAsync(cutoffDate);
+                if (deleted)
                 {
-                    await _logger.LogInfoAsync($"Cleaned {deletedCount} old health check records");
+                    await _logger.LogInfoAsync("Cleaned old health check records");
                 }
             }
             catch (Exception ex)
