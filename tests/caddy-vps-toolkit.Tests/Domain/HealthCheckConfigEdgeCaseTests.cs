@@ -1,12 +1,14 @@
 #nullable enable
 using System.ComponentModel.DataAnnotations;
 using CaddyVpsToolkit.Core;
+using System;
+using System.ComponentModel.DataAnnotations;
 using CaddyVpsToolkit.Domain.Models;
 using FluentAssertions;
 using Xunit;
+using ValidationException = System.ComponentModel.DataAnnotations.ValidationException;
 
 namespace CaddyVpsToolkit.Tests.Domain;
-
 /// <summary>
 /// Edge-case tests for HealthCheckConfig validation and URL generation boundaries.
 /// </summary>
