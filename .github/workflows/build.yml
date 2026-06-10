@@ -34,7 +34,7 @@ jobs:
       run: dotnet test -c Release --no-build --verbosity normal
 
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v7
       if: always()
       with:
         files: ./coverage.xml
