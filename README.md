@@ -1,10 +1,9 @@
-![CI](https://github.com/sarmkadan/caddy-vps-toolkit/actions/workflows/ci.yml/badge.svg)
+![Build](https://github.com/sarmkadan/caddy-vps-toolkit/actions/workflows/build.yml/badge.svg)
 ![License](https://img.shields.io/github/license/sarmkadan/caddy-vps-toolkit)
-![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
 
 # caddy-vps-toolkit
 
-A comprehensive .NET CLI tool for managing multiple services on a single VPS with integrated Caddy configuration generation, systemd unit management, and real-time health monitoring.
+A .NET CLI tool for managing multiple services on a single VPS with integrated Caddy configuration generation, systemd unit management, and real-time health monitoring.
 
 ## Table of Contents
 

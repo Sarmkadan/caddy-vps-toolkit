@@ -14,20 +14,26 @@ using CaddyVpsToolkit.Domain.Models;
 namespace CaddyVpsToolkit.Services
 {
     /// <summary>
-    /// Service for managing VPS services (CRUD + status operations)
+    /// Service for managing VPS services (CRUD + status operations).
     /// </summary>
     public sealed class ServiceManagementService
     {
         private readonly IServiceRepository _repository;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceManagementService"/> class.
+        /// </summary>
+        /// <param name="repository">The service repository.</param>
         public ServiceManagementService(IServiceRepository repository)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
         /// <summary>
-        /// Create a new managed service
+        /// Create a new managed service.
         /// </summary>
+        /// <param name="service">The service to create.</param>
+        /// <returns>The ID of the created service.</returns>
         public async Task<string> CreateServiceAsync(ManagedService service)
         {
             if (service is null)
@@ -43,8 +49,11 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Update an existing service
+        /// Update an existing service.
         /// </summary>
+        /// <param name="serviceId">The ID of the service to update.</param>
+        /// <param name="updates">The updated service model.</param>
+        /// <returns>True if the update was successful, otherwise false.</returns>
         public async Task<bool> UpdateServiceAsync(string serviceId, ManagedService updates)
         {
             if (string.IsNullOrWhiteSpace(serviceId))
@@ -63,8 +72,10 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Delete a service
+        /// Delete a service.
         /// </summary>
+        /// <param name="serviceId">The ID of the service to delete.</param>
+        /// <returns>True if the deletion was successful, otherwise false.</returns>
         public async Task<bool> DeleteServiceAsync(string serviceId)
         {
             if (string.IsNullOrWhiteSpace(serviceId))
@@ -82,8 +93,10 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Get service by ID
+        /// Get service by ID.
         /// </summary>
+        /// <param name="serviceId">The ID of the service to retrieve.</param>
+        /// <returns>The managed service.</returns>
         public async Task<ManagedService> GetServiceAsync(string serviceId)
         {
             if (string.IsNullOrWhiteSpace(serviceId))
@@ -97,32 +110,39 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Get all services
+        /// Get all services.
         /// </summary>
+        /// <returns>A list of all managed services.</returns>
         public async Task<List<ManagedService>> GetAllServicesAsync()
         {
             return await _repository.GetAllAsync();
         }
 
         /// <summary>
-        /// Get services by type
+        /// Get services by type.
         /// </summary>
+        /// <param name="type">The service type to filter by.</param>
+        /// <returns>A list of services of the specified type.</returns>
         public async Task<List<ManagedService>> GetServicesByTypeAsync(ServiceType type)
         {
             return await _repository.GetByTypeAsync(type);
         }
 
         /// <summary>
-        /// Get enabled services only
+        /// Get enabled services only.
         /// </summary>
+        /// <returns>A list of enabled managed services.</returns>
         public async Task<List<ManagedService>> GetEnabledServicesAsync()
         {
             return await _repository.GetEnabledServicesAsync();
         }
 
         /// <summary>
-        /// Update service status
+        /// Update service status.
         /// </summary>
+        /// <param name="serviceId">The ID of the service.</param>
+        /// <param name="status">The new service status.</param>
+        /// <returns>True if the update was successful, otherwise false.</returns>
         public async Task<bool> UpdateServiceStatusAsync(string serviceId, ServiceStatus status)
         {
             var service = await GetServiceAsync(serviceId);
@@ -131,8 +151,11 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Enable or disable a service
+        /// Enable or disable a service.
         /// </summary>
+        /// <param name="serviceId">The ID of the service.</param>
+        /// <param name="enabled">True to enable, false to disable.</param>
+        /// <returns>True if the update was successful, otherwise false.</returns>
         public async Task<bool> SetServiceEnabledAsync(string serviceId, bool enabled)
         {
             var service = await GetServiceAsync(serviceId);
@@ -142,8 +165,11 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Set auto-start flag for a service
+        /// Set auto-start flag for a service.
         /// </summary>
+        /// <param name="serviceId">The ID of the service.</param>
+        /// <param name="autoStart">True to enable auto-start, false to disable.</param>
+        /// <returns>True if the update was successful, otherwise false.</returns>
         public async Task<bool> SetAutoStartAsync(string serviceId, bool autoStart)
         {
             var service = await GetServiceAsync(serviceId);
@@ -153,8 +179,10 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Search services by name or description
+        /// Search services by name or description.
         /// </summary>
+        /// <param name="query">The search query.</param>
+        /// <returns>A list of services matching the query.</returns>
         public async Task<List<ManagedService>> SearchServicesAsync(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
@@ -164,24 +192,28 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Get service count
+        /// Get service count.
         /// </summary>
+        /// <returns>The total number of managed services.</returns>
         public async Task<int> GetServiceCountAsync()
         {
             return await _repository.GetCountAsync();
         }
 
         /// <summary>
-        /// Check if service exists
+        /// Check if service exists.
         /// </summary>
+        /// <param name="serviceId">The ID of the service.</param>
+        /// <returns>True if the service exists, otherwise false.</returns>
         public async Task<bool> ServiceExistsAsync(string serviceId)
         {
             return await _repository.ExistsAsync(serviceId);
         }
 
         /// <summary>
-        /// Get running services count
+        /// Get running services count.
         /// </summary>
+        /// <returns>The number of currently running services.</returns>
         public async Task<int> GetRunningServicesCountAsync()
         {
             var services = await _repository.GetAllAsync();
@@ -195,8 +227,11 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Update service priority
+        /// Update service priority.
         /// </summary>
+        /// <param name="serviceId">The ID of the service.</param>
+        /// <param name="priority">The new priority (0-100).</param>
+        /// <returns>True if the update was successful, otherwise false.</returns>
         public async Task<bool> UpdateServicePriorityAsync(string serviceId, int priority)
         {
             if (priority < 0 || priority > 100)
