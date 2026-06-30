@@ -20,6 +20,24 @@ services:
       - dev-network
     restart: unless-stopped
 
+  # Caddy VPS Toolkit
+  caddy-vps-toolkit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: caddy-vps-toolkit-dev
+    volumes:
+      - .:/app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - dev-network
+    depends_on:
+      - postgres
+      - redis
+    command: tail -f /dev/null
+    restart: unless-stopped
+
   # Test API service
   test-api:
     image: mcr.microsoft.com/dotnet/samples:aspnetapp-nanoserver-ltsc2022
