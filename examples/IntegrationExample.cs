@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using CaddyVpsToolkit.Services;
 using CaddyVpsToolkit.Data;
 using CaddyVpsToolkit.Notifications;
