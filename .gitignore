@@ -83,3 +83,8 @@ Thumbs.db
 /config/
 /cache/
 .claude/
+bin/
+obj/
+TestResults/
+BenchmarkDotNet.Artifacts/
+.aider*
