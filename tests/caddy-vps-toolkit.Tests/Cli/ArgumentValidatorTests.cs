@@ -11,15 +11,24 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Cli
 {
+    /// <summary>
+    /// Tests for the <see cref="ArgumentValidator"/> class.
+    /// </summary>
     public sealed class ArgumentValidatorTests
     {
         private readonly ArgumentValidator _sut;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ArgumentValidatorTests"/> class.
+        /// </summary>
         public ArgumentValidatorTests()
         {
             _sut = new ArgumentValidator();
         }
 
+        /// <summary>
+        /// Validates that a null descriptor results in an invalid result with the error "Command not found".
+        /// </summary>
         [Fact]
         public void Validate_WithNullDescriptor_ShouldReturnInvalid()
         {
@@ -34,6 +43,9 @@ namespace CaddyVpsToolkit.Tests.Cli
             result.Errors.Should().Contain("Command not found");
         }
 
+        /// <summary>
+        /// Validates that missing required positional arguments cause an invalid result.
+        /// </summary>
         [Fact]
         public void Validate_WithMissingRequiredPositionalArgs_ShouldReturnInvalid()
         {
@@ -53,6 +65,9 @@ namespace CaddyVpsToolkit.Tests.Cli
             result.Errors.Should().Contain(e => e.Contains("Missing required argument"));
         }
 
+        /// <summary>
+        /// Validates that an unknown flag results in an invalid result.
+        /// </summary>
         [Fact]
         public void Validate_WithUnknownFlag_ShouldReturnInvalid()
         {
@@ -73,6 +88,9 @@ namespace CaddyVpsToolkit.Tests.Cli
             result.Errors.Should().Contain("Unknown flag: --unknown");
         }
 
+        /// <summary>
+        /// Validates that a command with all required arguments and optional flags passes validation.
+        /// </summary>
         [Fact]
         public void Validate_WithValidArguments_ShouldReturnValid()
         {
@@ -94,6 +112,9 @@ namespace CaddyVpsToolkit.Tests.Cli
             result.Errors.Should().BeEmpty();
         }
 
+        /// <summary>
+        /// Validates that ValidationResult.GetErrorMessage joins errors with a newline.
+        /// </summary>
         [Fact]
         public void ValidationResult_GetErrorMessage_ShouldJoinErrors()
         {
