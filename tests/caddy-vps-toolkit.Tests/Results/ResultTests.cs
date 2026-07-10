@@ -10,8 +10,14 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Results
 {
+    /// <summary>
+    /// Tests for the generic Result class.
+    /// </summary>
     public sealed class ResultGenericTests
     {
+        /// <summary>
+        /// Verifies that a successful result with data sets IsSuccess to true and Data to the provided value.
+        /// </summary>
         [Fact]
         public void Success_WithData_SetsIsSuccessTrueAndData()
         {
@@ -22,6 +28,9 @@ namespace CaddyVpsToolkit.Tests.Results
             result.ErrorMessage.Should().BeNull();
         }
 
+        /// <summary>
+        /// Verifies that a successful result without an argument sets IsSuccess to true and Data to the default value.
+        /// </summary>
         [Fact]
         public void Success_WithoutArgument_SetsIsSuccessTrueAndDefaultData()
         {
@@ -31,6 +40,9 @@ namespace CaddyVpsToolkit.Tests.Results
             result.Data.Should().Be(default(int));
         }
 
+        /// <summary>
+        /// Verifies that a failed result with a message sets IsSuccess to false and ErrorMessage to the provided value.
+        /// </summary>
         [Fact]
         public void Failure_WithMessage_SetsIsSuccessFalseAndMessage()
         {
@@ -41,6 +53,9 @@ namespace CaddyVpsToolkit.Tests.Results
             result.Data.Should().BeNull();
         }
 
+        /// <summary>
+        /// Verifies that a failed result with a message and code sets ErrorCode to the provided value.
+        /// </summary>
         [Fact]
         public void Failure_WithMessageAndCode_SetsErrorCode()
         {
@@ -50,6 +65,9 @@ namespace CaddyVpsToolkit.Tests.Results
             result.IsSuccess.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Verifies that a failed result without a code defaults to UNKNOWN_ERROR.
+        /// </summary>
         [Fact]
         public void Failure_WithoutCode_DefaultsToUnknownError()
         {
@@ -59,8 +77,14 @@ namespace CaddyVpsToolkit.Tests.Results
         }
     }
 
+    /// <summary>
+    /// Tests for the non-generic Result class.
+    /// </summary>
     public sealed class ResultNonGenericTests
     {
+        /// <summary>
+        /// Verifies that a successful result sets IsSuccess to true.
+        /// </summary>
         [Fact]
         public void Success_SetsIsSuccessTrue()
         {
@@ -70,6 +94,9 @@ namespace CaddyVpsToolkit.Tests.Results
             result.ErrorMessage.Should().BeNull();
         }
 
+        /// <summary>
+        /// Verifies that a failed result sets IsSuccess to false and ErrorMessage to the provided value.
+        /// </summary>
         [Fact]
         public void Failure_SetsIsSuccessFalseAndMessage()
         {
@@ -79,6 +106,9 @@ namespace CaddyVpsToolkit.Tests.Results
             result.ErrorMessage.Should().Be("failed");
         }
 
+        /// <summary>
+        /// Verifies that a failed result without a code defaults to UNKNOWN_ERROR.
+        /// </summary>
         [Fact]
         public void Failure_WithoutCode_DefaultsToUnknownError()
         {
@@ -88,8 +118,14 @@ namespace CaddyVpsToolkit.Tests.Results
         }
     }
 
+    /// <summary>
+    /// Tests for the PaginatedResult class.
+    /// </summary>
     public sealed class PaginatedResultTests
     {
+        /// <summary>
+        /// Verifies that TotalPages calculates correctly for even division.
+        /// </summary>
         [Fact]
         public void TotalPages_CalculatesCorrectlyForEvenDivision()
         {
@@ -103,6 +139,9 @@ namespace CaddyVpsToolkit.Tests.Results
             paged.TotalPages.Should().Be(4);
         }
 
+        /// <summary>
+        /// Verifies that TotalPages rounds up for remainder.
+        /// </summary>
         [Fact]
         public void TotalPages_RoundsUpForRemainder()
         {
@@ -116,6 +155,9 @@ namespace CaddyVpsToolkit.Tests.Results
             paged.TotalPages.Should().Be(5);
         }
 
+        /// <summary>
+        /// Verifies that HasNextPage returns true when not on the last page.
+        /// </summary>
         [Fact]
         public void HasNextPage_WhenNotOnLastPage_ReturnsTrue()
         {
@@ -129,6 +171,9 @@ namespace CaddyVpsToolkit.Tests.Results
             paged.HasNextPage.Should().BeTrue();
         }
 
+        /// <summary>
+        /// Verifies that HasNextPage returns false when on the last page.
+        /// </summary>
         [Fact]
         public void HasNextPage_WhenOnLastPage_ReturnsFalse()
         {
@@ -142,6 +187,9 @@ namespace CaddyVpsToolkit.Tests.Results
             paged.HasNextPage.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Verifies that HasPreviousPage returns false when on the first page.
+        /// </summary>
         [Fact]
         public void HasPreviousPage_WhenOnFirstPage_ReturnsFalse()
         {
@@ -155,6 +203,9 @@ namespace CaddyVpsToolkit.Tests.Results
             paged.HasPreviousPage.Should().BeFalse();
         }
 
+        /// <summary>
+        /// Verifies that HasPreviousPage returns true when past the first page.
+        /// </summary>
         [Fact]
         public void HasPreviousPage_WhenPastFirstPage_ReturnsTrue()
         {
@@ -168,6 +219,9 @@ namespace CaddyVpsToolkit.Tests.Results
             paged.HasPreviousPage.Should().BeTrue();
         }
 
+        /// <summary>
+        /// Verifies that TotalPages returns 0 when TotalCount is 0.
+        /// </summary>
         [Fact]
         public void TotalPages_WhenTotalCountIsZero_ReturnsZero()
         {
