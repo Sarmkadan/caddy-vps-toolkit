@@ -10,10 +10,16 @@ using CaddyVpsToolkit.Domain.Models;
 using FluentAssertions;
 using Xunit;
 
+/// <summary>
+/// Tests for the ManagedService class.
+/// </summary>
 namespace CaddyVpsToolkit.Tests.Domain
 {
     public sealed class ManagedServiceTests
     {
+        /// <summary>
+        /// Verifies that a valid ManagedService instance does not throw a ValidationException.
+        /// </summary>
         [Fact]
         public void Validate_WithValidData_ShouldNotThrow()
         {
@@ -33,6 +39,9 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().NotThrow();
         }
 
+        /// <summary>
+        /// Verifies that a ManagedService instance with a missing Name property throws a ValidationException.
+        /// </summary>
         [Fact]
         public void Validate_WithMissingName_ShouldThrowValidationException()
         {
@@ -51,6 +60,10 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().Throw<System.ComponentModel.DataAnnotations.ValidationException>().WithMessage("*name is required*");
         }
 
+        /// <summary>
+        /// Verifies that a ManagedService instance with an invalid Port property throws a ValidationException.
+        /// </summary>
+        /// <param name="port">The Port value to test.</param>
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
@@ -73,6 +86,9 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().Throw<System.ComponentModel.DataAnnotations.ValidationException>().WithMessage("*Port must be between 1 and 65535*");
         }
 
+        /// <summary>
+        /// Verifies that the UpdateStatus method changes the Status and UpdatedAt properties.
+        /// </summary>
         [Fact]
         public void UpdateStatus_ShouldChangeStatusAndUpdatedAt()
         {
@@ -91,6 +107,9 @@ namespace CaddyVpsToolkit.Tests.Domain
             service.UpdatedAt.Should().BeAfter(originalTime);
         }
 
+        /// <summary>
+        /// Verifies that the GetSystemdUnitName method returns the explicit name when provided.
+        /// </summary>
         [Fact]
         public void GetSystemdUnitName_WithExplicitName_ShouldReturnExplicitName()
         {
@@ -104,6 +123,9 @@ namespace CaddyVpsToolkit.Tests.Domain
             name.Should().Be("custom.service");
         }
 
+        /// <summary>
+        /// Verifies that the GetSystemdUnitName method generates a name from the Name property when not provided.
+        /// </summary>
         [Fact]
         public void GetSystemdUnitName_WithNoExplicitName_ShouldGenerateFromName()
         {
