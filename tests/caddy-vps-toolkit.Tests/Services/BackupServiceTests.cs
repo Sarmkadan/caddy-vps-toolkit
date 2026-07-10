@@ -17,6 +17,9 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Services
 {
+    /// <summary>
+    /// Tests for the BackupService class.
+    /// </summary>
     public sealed class BackupServiceTests
     {
         private readonly IServiceRepository _serviceRepo;
@@ -24,6 +27,9 @@ namespace CaddyVpsToolkit.Tests.Services
         private readonly BackupService _sut;
         private readonly string _tempDir;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BackupServiceTests"/> class.
+        /// </summary>
         public BackupServiceTests()
         {
             _serviceRepo = Substitute.For<IServiceRepository>();
@@ -36,6 +42,11 @@ namespace CaddyVpsToolkit.Tests.Services
         [Fact]
         public async Task CreateBackupAsync_WritesJsonFileToOutputPath()
         {
+            /// <summary>
+            /// Verifies that the CreateBackupAsync method writes a JSON file to the specified output path.
+            /// </summary>
+            /// <param name="outputPath">The path to write the backup file to.</param>
+            /// <returns>The path to the written backup file.</returns>
             // Arrange
             _serviceRepo.GetAllAsync().Returns(new List<ManagedService>
             {
@@ -67,6 +78,11 @@ namespace CaddyVpsToolkit.Tests.Services
         [Fact]
         public async Task CreateBackupAsync_WithNullOutputPath_GeneratesTimestampedFilename()
         {
+            /// <summary>
+            /// Verifies that the CreateBackupAsync method generates a timestamped filename when the output path is null.
+            /// </summary>
+            /// <param name="outputPath">The output path to write the backup file to. May be null.</param>
+            /// <returns>The path to the written backup file.</returns>
             // Arrange
             _serviceRepo.GetAllAsync().Returns(new List<ManagedService>());
             _configRepo.GetAllAsync().Returns(new Dictionary<string, string>());
@@ -85,6 +101,11 @@ namespace CaddyVpsToolkit.Tests.Services
         [Fact]
         public async Task RestoreBackupAsync_WithMissingFile_ThrowsCaddyVpsException()
         {
+            /// <summary>
+            /// Verifies that the RestoreBackupAsync method throws a CaddyVpsException when the backup file is missing.
+            /// </summary>
+            /// <param name="backupPath">The path to the backup file to restore.</param>
+            /// <returns>A task that completes when the exception is thrown.</returns>
             // Act
             Func<Task> act = async () => await _sut.RestoreBackupAsync("/nonexistent/path/backup.json");
 
@@ -96,6 +117,11 @@ namespace CaddyVpsToolkit.Tests.Services
         [Fact]
         public async Task RestoreBackupAsync_WithValidBackup_RestoresServicesAndConfig()
         {
+            /// <summary>
+            /// Verifies that the RestoreBackupAsync method restores services and configuration from a valid backup.
+            /// </summary>
+            /// <param name="backupPath">The path to the backup file to restore.</param>
+            /// <returns>The restored backup manifest.</returns>
             // Arrange
             var serviceId = Guid.NewGuid().ToString();
             _serviceRepo.GetAllAsync().Returns(new List<ManagedService>
@@ -134,6 +160,11 @@ namespace CaddyVpsToolkit.Tests.Services
         [Fact]
         public async Task ListBackupsAsync_WithNonExistentDirectory_ReturnsEmptyList()
         {
+            /// <summary>
+            /// Verifies that the ListBackupsAsync method returns an empty list when the specified directory does not exist.
+            /// </summary>
+            /// <param name="directoryPath">The path to the directory to list backups from.</param>
+            /// <returns>A list of backup paths.</returns>
             // Act
             var result = await _sut.ListBackupsAsync("/nonexistent/dir");
 
@@ -144,6 +175,11 @@ namespace CaddyVpsToolkit.Tests.Services
         [Fact]
         public async Task ListBackupsAsync_WithBackupsPresent_ReturnsSortedPaths()
         {
+            /// <summary>
+            /// Verifies that the ListBackupsAsync method returns a sorted list of backup paths when backups are present.
+            /// </summary>
+            /// <param name="directoryPath">The path to the directory to list backups from.</param>
+            /// <returns>A list of backup paths.</returns>
             // Arrange
             _serviceRepo.GetAllAsync().Returns(new List<ManagedService>());
             _configRepo.GetAllAsync().Returns(new Dictionary<string, string>());
