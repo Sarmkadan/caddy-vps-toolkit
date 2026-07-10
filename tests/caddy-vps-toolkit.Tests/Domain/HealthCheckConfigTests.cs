@@ -10,10 +10,16 @@ using CaddyVpsToolkit.Domain.Models;
 using FluentAssertions;
 using Xunit;
 
+/// <summary>
+/// Tests for the HealthCheckConfig class.
+/// </summary>
 namespace CaddyVpsToolkit.Tests.Domain
 {
     public sealed class HealthCheckConfigTests
     {
+        /// <summary>
+        /// Verifies that a valid HealthCheckConfig instance does not throw an exception when validated.
+        /// </summary>
         [Fact]
         public void Validate_WithValidData_ShouldNotThrow()
         {
@@ -35,6 +41,10 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().NotThrow();
         }
 
+        /// <summary>
+        /// Verifies that a HealthCheckConfig instance with an interval less than 5 seconds throws a ValidationException.
+        /// </summary>
+        /// <param name="config">The HealthCheckConfig instance to validate.</param>
         [Fact]
         public void Validate_WithIntervalLessThan5_ShouldThrowValidationException()
         {
@@ -48,6 +58,10 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().Throw<System.ComponentModel.DataAnnotations.ValidationException>().WithMessage("*interval must be at least 5 seconds*");
         }
 
+        /// <summary>
+        /// Verifies that a HealthCheckConfig instance with a timeout greater than the interval throws a ValidationException.
+        /// </summary>
+        /// <param name="config">The HealthCheckConfig instance to validate.</param>
         [Fact]
         public void Validate_WithTimeoutGreaterThanInterval_ShouldThrowValidationException()
         {
@@ -61,6 +75,10 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().Throw<System.ComponentModel.DataAnnotations.ValidationException>().WithMessage("*Timeout cannot be greater than interval*");
         }
 
+        /// <summary>
+        /// Verifies that a HealthCheckConfig instance with a missing endpoint for HTTP throws a ValidationException.
+        /// </summary>
+        /// <param name="config">The HealthCheckConfig instance to validate.</param>
         [Fact]
         public void Validate_WithMissingEndpointForHttp_ShouldThrowValidationException()
         {
@@ -80,6 +98,11 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().Throw<System.ComponentModel.DataAnnotations.ValidationException>().WithMessage("*HTTP health check requires an endpoint*");
         }
 
+        /// <summary>
+        /// Verifies that the GetHealthCheckUrl method constructs the correct URL for HTTP health checks.
+        /// </summary>
+        /// <param name="endpoint">The endpoint to use in the URL.</param>
+        /// <param name="expected">The expected URL.</param>
         [Theory]
         [InlineData("/health", "http://localhost:8080/health")]
         [InlineData("api/status", "http://localhost:8080api/status")]
@@ -95,6 +118,10 @@ namespace CaddyVpsToolkit.Tests.Domain
             url.Should().Be(expected);
         }
 
+        /// <summary>
+        /// Verifies that the GetHealthCheckUrl method returns null for TCP health checks.
+        /// </summary>
+        /// <param name="config">The HealthCheckConfig instance to use.</param>
         [Fact]
         public void GetHealthCheckUrl_WithTcpType_ShouldReturnNull()
         {
