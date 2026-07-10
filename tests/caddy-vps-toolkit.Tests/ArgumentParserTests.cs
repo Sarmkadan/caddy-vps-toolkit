@@ -14,10 +14,16 @@ using FluentAssertions;
 using NSubstitute;
 using Xunit;
 
+/// <summary>
+/// Tests for the ArgumentParser class.
+/// </summary>
 namespace CaddyVpsToolkit.Tests
 {
     public sealed class ArgumentParserTests
     {
+        /// <summary>
+        /// Tests that the GetCommand method returns the lowercase command name.
+        /// </summary>
         [Fact]
         public void GetCommand_CommandWithMixedCase_ReturnsLowercaseCommand()
         {
@@ -31,6 +37,9 @@ namespace CaddyVpsToolkit.Tests
             command.Should().Be("add");
         }
 
+        /// <summary>
+        /// Tests that the GetFlagValue method extracts the value correctly when using the equals sign format.
+        /// </summary>
         [Fact]
         public void GetFlagValue_EqualsSignFormat_ExtractsValueCorrectly()
         {
@@ -42,6 +51,9 @@ namespace CaddyVpsToolkit.Tests
             parser.GetFlagValue("port").Should().Be("8080");
         }
 
+        /// <summary>
+        /// Tests that the GetFlagValue method extracts the value correctly when using the space-separated format.
+        /// </summary>
         [Fact]
         public void GetFlagValue_SpaceSeparatedFormat_ExtractsValueCorrectly()
         {
@@ -55,6 +67,9 @@ namespace CaddyVpsToolkit.Tests
             value.Should().Be("my-api");
         }
 
+        /// <summary>
+        /// Tests that the ServiceRepository GetByIdAsync method returns the expected service when using a mocked repository.
+        /// </summary>
         [Fact]
         public async Task ServiceRepository_GetByIdAsync_WithMockedRepository_ReturnsExpectedService()
         {
