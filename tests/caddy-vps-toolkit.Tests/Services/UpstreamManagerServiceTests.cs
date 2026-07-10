@@ -1,8 +1,3 @@
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
-
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -18,11 +13,17 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Services
 {
+    /// <summary>
+    /// Contains unit tests for <see cref="UpstreamManagerService"/>.
+    /// </summary>
     public sealed class UpstreamManagerServiceTests
     {
         private readonly IServiceRepository _serviceRepo;
         private readonly UpstreamManagerService _sut;
 
+        /// <summary>
+        /// Initializes test dependencies and the system under test.
+        /// </summary>
         public UpstreamManagerServiceTests()
         {
             _serviceRepo = Substitute.For<IServiceRepository>();
@@ -37,12 +38,20 @@ namespace CaddyVpsToolkit.Tests.Services
             _sut = new UpstreamManagerService(serviceManager, healthMonitor, caddyConfig, options);
         }
 
+        /// <summary>
+        /// Verifies that registering a null pool throws <see cref="ArgumentNullException"/>.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task RegisterPoolAsync_NullPool_ThrowsArgumentNullException()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(() => _sut.RegisterPoolAsync(null!));
         }
 
+        /// <summary>
+        /// Verifies that registering an invalid pool throws <see cref="ServiceConfigurationException"/>.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task RegisterPoolAsync_InvalidPool_ThrowsServiceConfigurationException()
         {
@@ -53,6 +62,10 @@ namespace CaddyVpsToolkit.Tests.Services
             await Assert.ThrowsAsync<ServiceConfigurationException>(() => _sut.RegisterPoolAsync(pool));
         }
 
+        /// <summary>
+        /// Verifies that registering a pool with a non‑existent service throws <see cref="ServiceNotFoundException"/>.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task RegisterPoolAsync_ServiceNotFound_ThrowsServiceNotFoundException()
         {
@@ -63,6 +76,10 @@ namespace CaddyVpsToolkit.Tests.Services
             await Assert.ThrowsAsync<ServiceNotFoundException>(() => _sut.RegisterPoolAsync(pool));
         }
 
+        /// <summary>
+        /// Verifies that registering a valid pool returns the pool identifier.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task RegisterPoolAsync_ValidPool_ReturnsPoolId()
         {
@@ -75,6 +92,10 @@ namespace CaddyVpsToolkit.Tests.Services
             result.Should().Be("pool1");
         }
 
+        /// <summary>
+        /// Verifies that retrieving an existing pool returns the correct pool instance.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task GetPoolAsync_ExistingPool_ReturnsPool()
         {
@@ -88,6 +109,10 @@ namespace CaddyVpsToolkit.Tests.Services
             result!.Id.Should().Be("pool1");
         }
 
+        /// <summary>
+        /// Verifies that retrieving a non‑existent pool returns <c>null</c>.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task GetPoolAsync_NonexistentPool_ReturnsNull()
         {
