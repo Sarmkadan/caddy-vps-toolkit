@@ -9,10 +9,16 @@ using CaddyVpsToolkit.Domain.Models;
 using FluentAssertions;
 using Xunit;
 
+/// <summary>
+/// Contains tests for the CaddyConfig class.
+/// </summary>
 namespace CaddyVpsToolkit.Tests.Domain
 {
     public sealed class CaddyConfigTests
     {
+        /// <summary>
+        /// Verifies that a valid CaddyConfig instance does not throw an exception when validated.
+        /// </summary>
         [Fact]
         public void Validate_WithValidData_ShouldNotThrow()
         {
@@ -34,6 +40,10 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().NotThrow();
         }
 
+        /// <summary>
+        /// Verifies that a CaddyConfig instance with an invalid admin port throws a ValidationException.
+        /// </summary>
+        /// <param name="port">The admin port to test.</param>
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
@@ -50,6 +60,9 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().Throw<ValidationException>().WithMessage("*Admin port must be between 1 and 65535*");
         }
 
+        /// <summary>
+        /// Verifies that a CaddyConfig instance with a negative timeout throws a ValidationException.
+        /// </summary>
         [Fact]
         public void Validate_WithNegativeTimeout_ShouldThrowValidationException()
         {
@@ -63,6 +76,9 @@ namespace CaddyVpsToolkit.Tests.Domain
             act.Should().Throw<ValidationException>().WithMessage("*Timeouts cannot be negative*");
         }
 
+        /// <summary>
+        /// Verifies that the SetDefaultValues method sets the default email addresses when the input emails are null.
+        /// </summary>
         [Fact]
         public void SetDefaultValues_WhenEmailsAreNull_ShouldSetDefaults()
         {
@@ -77,6 +93,9 @@ namespace CaddyVpsToolkit.Tests.Domain
             config.CertificateEmail.Should().Be("admin@localhost");
         }
 
+        /// <summary>
+        /// Verifies that the GenerateCaddyfileGlobals method includes the metrics directive when metrics are enabled.
+        /// </summary>
         [Fact]
         public void GenerateCaddyfileGlobals_ShouldContainMetricsWhenEnabled()
         {
@@ -90,6 +109,9 @@ namespace CaddyVpsToolkit.Tests.Domain
             result.Should().Contain("metrics");
         }
 
+        /// <summary>
+        /// Verifies that the GenerateCaddyfileGlobals method includes the auto_https off directive when auto_https is disabled.
+        /// </summary>
         [Fact]
         public void GenerateCaddyfileGlobals_WhenAutoHttpsDisabled_ShouldContainDirective()
         {
