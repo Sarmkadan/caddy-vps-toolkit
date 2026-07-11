@@ -49,17 +49,20 @@ namespace CaddyVpsToolkit.Extensions
             ArgumentNullException.ThrowIfNull(services);
             ArgumentNullException.ThrowIfNull(service);
 
-            // Enable SSL monitoring for services that have a public host binding
-            if (!string.IsNullOrWhiteSpace(service.HostBinding)
-                && !service.HostBinding.Equals("localhost", StringComparison.OrdinalIgnoreCase))
-            {
-                // In a real implementation, this would register the service for periodic monitoring
-                // For now, we just validate the configuration
-                service.Validate();
-            }
-
+        // Validate that the service has a public host binding suitable for SSL monitoring
+        if (string.IsNullOrWhiteSpace(service.HostBinding) || service.HostBinding.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+        {
             return services;
         }
+
+        service.Validate();
+
+        // Register the service for SSL certificate monitoring
+        // The SslCertificateMonitoringService will check this service's certificate during its periodic checks
+        services.AddSingleton(service);
+
+        return services;
+    }
 
         /// <summary>
         /// Determines if an SSL certificate is approaching expiry based on the configured thresholds.
