@@ -38,27 +38,45 @@ namespace CaddyVpsToolkit.Utilities
         }
 
         /// <summary>
-        /// Returns a placeholder value representing the StringExtensions type.
+        /// Parses a JSON string produced by <see cref="ToJson"/> (or any valid JSON document)
+        /// into a <see cref="JsonElement"/>.
         /// </summary>
-        /// <param name="json">The JSON string (unused, for API consistency).</param>
-        /// <returns>Always returns a new object reference as a placeholder.</returns>
-        /// <exception cref="JsonException">Never thrown.</exception>
+        /// <param name="json">The JSON string to parse.</param>
+        /// <returns>The parsed <see cref="JsonElement"/> boxed as <see cref="object"/>, or null when the document is the JSON null literal.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+        /// <exception cref="JsonException">Thrown when <paramref name="json"/> is not valid JSON.</exception>
         public static object? FromJson(string json)
         {
-            // Since StringExtensions is a static class, return a placeholder object
-            return new object();
+            ArgumentException.ThrowIfNullOrEmpty(json);
+
+            var element = JsonSerializer.Deserialize<JsonElement>(json, _jsonOptions);
+            return element.ValueKind == JsonValueKind.Null ? null : element;
         }
 
         /// <summary>
-        /// Attempts to process a JSON string as a placeholder for StringExtensions operations.
+        /// Attempts to parse a JSON string into a <see cref="JsonElement"/>.
         /// </summary>
-        /// <param name="json">The JSON string to process.</param>
-        /// <param name="value">Receives an object if successful.</param>
-        /// <returns>Always returns true since there's no actual deserialization to fail.</returns>
+        /// <param name="json">The JSON string to parse.</param>
+        /// <param name="value">Receives the parsed element on success, or null on failure.</param>
+        /// <returns>True if the input is valid JSON; otherwise, false.</returns>
         public static bool TryFromJson(string json, out object? value)
         {
-            value = new object();
-            return true;
+            if (string.IsNullOrEmpty(json))
+            {
+                value = null;
+                return false;
+            }
+
+            try
+            {
+                value = FromJson(json);
+                return true;
+            }
+            catch (JsonException)
+            {
+                value = null;
+                return false;
+            }
         }
     }
 }

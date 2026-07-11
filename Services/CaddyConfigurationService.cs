@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Domain.Models;
@@ -273,10 +274,14 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
-        /// Validate Caddyfile syntax (mock - requires actual Caddy).
+        /// Validate Caddyfile syntax in-process by checking brace balance line by line.
+        /// This is a structural check only; it does not invoke the caddy binary and cannot
+        /// detect directive-level errors.
         /// </summary>
         /// <param name="content">The Caddyfile content.</param>
-        /// <returns>True if the syntax is valid, otherwise throws an exception.</returns>
+        /// <returns>True if the syntax is valid.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="content"/> is null or whitespace.</exception>
+        /// <exception cref="CaddyOperationException">Thrown when the content contains unmatched braces.</exception>
         public async Task<bool> ValidateCaddyfileAsync(string content)
         {
             if (string.IsNullOrWhiteSpace(content))
@@ -346,39 +351,89 @@ namespace CaddyVpsToolkit.Services
 
         /// <summary>
         /// Generate Caddy JSON configuration (alternative format).
+        /// Emits the admin endpoint, the server listeners derived from the global HTTP/HTTPS
+        /// ports, and one reverse-proxy route per active entry in <paramref name="routes"/>.
+        /// All values are JSON-escaped by the writer.
         /// </summary>
         /// <param name="globalConfig">The global Caddy configuration.</param>
         /// <param name="routes">The list of Caddy routes.</param>
         /// <returns>The generated JSON configuration.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="globalConfig"/> is null.</exception>
         public string GenerateCaddyJsonAsync(CaddyConfig globalConfig, List<CaddyRoute> routes)
         {
-            // Simplified JSON generation
-            var json = new StringBuilder();
-            json.AppendLine("{");
-            json.AppendLine("  \"apps\": {");
-            json.AppendLine("    \"http\": {");
-            json.AppendLine("      \"servers\": {");
-            json.AppendLine("        \"default\": {");
-            json.AppendLine("          \"routes\": [");
+            ArgumentNullException.ThrowIfNull(globalConfig);
+            routes ??= new List<CaddyRoute>();
 
-            var activeRoutes = routes.Where(r => r.IsActive).ToList();
-            for (int i = 0; i < activeRoutes.Count; i++)
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
             {
-                var route = activeRoutes[i];
-                json.Append($"            {{ \"match\": [{{ \"host\": [\"{route.Domain}\"] }}], \"handle\": [{{ \"handler\": \"reverse_proxy\", \"upstreams\": [{{ \"dial\": \"{route.UpstreamUrl}\" }}] }}] }}");
-                if (i < activeRoutes.Count - 1)
-                    json.Append(",");
-                json.AppendLine();
+                writer.WriteStartObject();
+
+                writer.WriteStartObject("admin");
+                writer.WriteString("listen", FormattableString.Invariant($"{globalConfig.AdminHost}:{globalConfig.AdminPort}"));
+                writer.WriteEndObject();
+
+                writer.WriteStartObject("apps");
+                writer.WriteStartObject("http");
+                writer.WriteStartObject("servers");
+                writer.WriteStartObject("default");
+
+                writer.WriteStartArray("listen");
+                writer.WriteStringValue(FormattableString.Invariant($":{globalConfig.HttpPort}"));
+                writer.WriteStringValue(FormattableString.Invariant($":{globalConfig.HttpsPort}"));
+                writer.WriteEndArray();
+
+                writer.WriteStartArray("routes");
+                foreach (var route in routes.Where(r => r.IsActive))
+                {
+                    writer.WriteStartObject();
+
+                    writer.WriteStartArray("match");
+                    writer.WriteStartObject();
+                    writer.WriteStartArray("host");
+                    writer.WriteStringValue(route.Domain);
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
+                    writer.WriteEndArray();
+
+                    writer.WriteStartArray("handle");
+                    writer.WriteStartObject();
+                    writer.WriteString("handler", "reverse_proxy");
+                    writer.WriteStartArray("upstreams");
+                    writer.WriteStartObject();
+                    writer.WriteString("dial", GetDialAddress(route.UpstreamUrl));
+                    writer.WriteEndObject();
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
+                    writer.WriteEndArray();
+
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndArray();
+
+                writer.WriteEndObject(); // default
+                writer.WriteEndObject(); // servers
+                writer.WriteEndObject(); // http
+                writer.WriteEndObject(); // apps
+
+                writer.WriteEndObject();
             }
 
-            json.AppendLine("          ]");
-            json.AppendLine("        }");
-            json.AppendLine("      }");
-            json.AppendLine("    }");
-            json.AppendLine("  }");
-            json.AppendLine("}");
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
 
-            return json.ToString();
+        /// <summary>
+        /// Convert an upstream URL to the host:port dial address expected by Caddy's JSON config.
+        /// Falls back to the raw value when it is not an absolute URL.
+        /// </summary>
+        /// <param name="upstreamUrl">The upstream URL.</param>
+        /// <returns>The dial address.</returns>
+        private static string GetDialAddress(string upstreamUrl)
+        {
+            if (Uri.TryCreate(upstreamUrl, UriKind.Absolute, out var uri) && !string.IsNullOrEmpty(uri.Host))
+                return FormattableString.Invariant($"{uri.Host}:{uri.Port}");
+
+            return upstreamUrl;
         }
     }
 }
