@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -82,13 +83,13 @@ namespace CaddyVpsToolkit.Services
             try
             {
                 if (typeof(T) == typeof(int))
-                    return (T)(object)int.Parse(value);
+                    return (T)(object)int.Parse(value, CultureInfo.InvariantCulture);
                 else if (typeof(T) == typeof(bool))
                     return (T)(object)bool.Parse(value);
                 else if (typeof(T) == typeof(long))
-                    return (T)(object)long.Parse(value);
+                    return (T)(object)long.Parse(value, CultureInfo.InvariantCulture);
                 else if (typeof(T) == typeof(double))
-                    return (T)(object)double.Parse(value);
+                    return (T)(object)double.Parse(value, CultureInfo.InvariantCulture);
                 else if (typeof(T) == typeof(string))
                     return (T)(object)value;
 
@@ -181,7 +182,7 @@ namespace CaddyVpsToolkit.Services
             if (port <= 0 || port > 65535)
                 throw new ValidationException("Port must be between 1 and 65535");
 
-            await SetValueAsync("caddy:admin:port", port.ToString());
+            await SetValueAsync("caddy:admin:port", port.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>
@@ -189,7 +190,10 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task<int> GetCaddyAdminPortAsync()
         {
-            return await GetValueAsync("caddy:admin:port", AppConstants.DefaultCaddyAdminPort.ToString()).ContinueWith(t => int.Parse(t.Result));
+            var value = await GetValueAsync(
+                "caddy:admin:port",
+                AppConstants.DefaultCaddyAdminPort.ToString(CultureInfo.InvariantCulture));
+            return int.Parse(value, CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -197,11 +201,15 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task SetLoggingLevelAsync(string level)
         {
+            if (string.IsNullOrWhiteSpace(level))
+                throw new ValidationException("Logging level cannot be empty");
+
+            var normalized = level.ToLowerInvariant();
             var validLevels = new[] { "debug", "info", "warning", "error", "critical" };
-            if (!Array.Exists(validLevels, e => e == level.ToLower()))
+            if (!Array.Exists(validLevels, e => e == normalized))
                 throw new ValidationException($"Invalid logging level: {level}");
 
-            await SetValueAsync("logging:level", level.ToLower());
+            await SetValueAsync("logging:level", normalized);
         }
 
         /// <summary>
@@ -217,7 +225,7 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task SetHealthCheckEnabledAsync(bool enabled)
         {
-            await SetValueAsync("healthcheck:enabled", enabled.ToString().ToLower());
+            await SetValueAsync("healthcheck:enabled", enabled.ToString().ToLowerInvariant());
         }
 
         /// <summary>

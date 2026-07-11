@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -156,7 +157,7 @@ namespace CaddyVpsToolkit.Services
             if (!match.Success)
                 return null;
 
-            if (!DateTime.TryParse(match.Groups["ts"].Value, out var timestamp))
+            if (!DateTime.TryParse(match.Groups["ts"].Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var timestamp))
                 return null;
 
             return new LogEntry

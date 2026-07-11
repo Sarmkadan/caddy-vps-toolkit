@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Domain.Models;
 using CaddyVpsToolkit.Services;
@@ -298,7 +299,7 @@ namespace CaddyVpsToolkit.Core
                 }
                 else if (args[i].Equals("--since", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
                 {
-                    if (DateTime.TryParse(args[++i], out var since))
+                    if (DateTime.TryParse(args[++i], CultureInfo.InvariantCulture, DateTimeStyles.None, out var since))
                         options.Since = since.ToUniversalTime();
                 }
             }
