@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using CaddyVpsToolkit.Cli;
 using FluentAssertions;
 using Xunit;
@@ -14,17 +15,30 @@ public static class ArgumentParserEdgeCaseTestsExtensions
     /// <summary>
     /// Tests that GetCommand() returns expected command from various argument patterns.
     /// </summary>
-    public static void GetCommand_ShouldReturnExpected(this ArgumentParserEdgeCaseTests _, string[] args, string expectedCommand)
+    /// <param name="test">The test instance.</param>
+    /// <param name="args">The command-line arguments to parse.</param>
+    /// <param name="expectedCommand">The expected command name.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="args"/> is null.</exception>
+    public static void GetCommand_ShouldReturnExpected(this ArgumentParserEdgeCaseTests test, string[] args, string expectedCommand)
     {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(expectedCommand);
+
         var parser = new ArgumentParser(args);
         parser.GetCommand().Should().Be(expectedCommand);
     }
 
     /// <summary>
-    /// Tests that GetPositional() returns null for negative indices and throws for invalid indices.
+    /// Tests that GetPositional() returns null for negative indices and handles edge cases correctly.
     /// </summary>
-    public static void GetPositional_ShouldHandleNegativeIndices(this ArgumentParserEdgeCaseTests _, string[] args, int index)
+    /// <param name="test">The test instance.</param>
+    /// <param name="args">The command-line arguments to parse.</param>
+    /// <param name="index">The positional index to retrieve.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="args"/> is null.</exception>
+    public static void GetPositional_ShouldHandleNegativeIndices(this ArgumentParserEdgeCaseTests test, string[] args, int index)
     {
+        ArgumentNullException.ThrowIfNull(args);
+
         var parser = new ArgumentParser(args);
         parser.GetPositional(index).Should().BeNull();
     }
@@ -32,8 +46,16 @@ public static class ArgumentParserEdgeCaseTestsExtensions
     /// <summary>
     /// Tests combined flag operations - checking both presence and value extraction.
     /// </summary>
-    public static void GetFlagValue_ShouldWorkWithHasFlag(this ArgumentParserEdgeCaseTests _, string[] args, string flagName, string expectedValue)
+    /// <param name="test">The test instance.</param>
+    /// <param name="args">The command-line arguments to parse.</param>
+    /// <param name="flagName">The flag name to check.</param>
+    /// <param name="expectedValue">The expected flag value.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="args"/> or <paramref name="flagName"/> is null.</exception>
+    public static void GetFlagValue_ShouldWorkWithHasFlag(this ArgumentParserEdgeCaseTests test, string[] args, string flagName, string expectedValue)
     {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(flagName);
+
         var parser = new ArgumentParser(args);
         parser.HasFlag(flagName).Should().BeTrue();
         parser.GetFlagValue(flagName).Should().Be(expectedValue);
@@ -42,8 +64,16 @@ public static class ArgumentParserEdgeCaseTestsExtensions
     /// <summary>
     /// Tests that multiple boolean flags can be checked simultaneously.
     /// </summary>
-    public static void HasFlag_ShouldHandleMultipleFlags(this ArgumentParserEdgeCaseTests _, string[] args, string[] flagNames, bool expectedResult)
+    /// <param name="test">The test instance.</param>
+    /// <param name="args">The command-line arguments to parse.</param>
+    /// <param name="flagNames">The flag names to check.</param>
+    /// <param name="expectedResult">The expected result for all flags.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="args"/> or <paramref name="flagNames"/> is null.</exception>
+    public static void HasFlag_ShouldHandleMultipleFlags(this ArgumentParserEdgeCaseTests test, string[] args, string[] flagNames, bool expectedResult)
     {
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(flagNames);
+
         var parser = new ArgumentParser(args);
         foreach (var flagName in flagNames)
         {
