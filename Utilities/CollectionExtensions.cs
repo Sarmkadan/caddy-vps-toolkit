@@ -22,11 +22,12 @@ namespace CaddyVpsToolkit.Utilities
         /// <param name="list">The list to access</param>
         /// <param name="index">The zero-based index to retrieve</param>
         /// <param name="defaultValue">The default value to return if index is out of bounds</param>
-        /// <returns>The item at the specified index, or defaultValue if index is invalid</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="list"/> is null</exception>
+        /// <returns>The item at the specified index, or defaultValue if the list is null or the index is invalid</returns>
         public static T SafeGet<T>(this IList<T> list, int index, T defaultValue = default)
         {
-            ArgumentNullException.ThrowIfNull(list);
+            if (list is null)
+                return defaultValue;
+
             return index >= 0 && index < list.Count ? list[index] : defaultValue;
         }
 
@@ -88,16 +89,18 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         /// <param name="collection">The collection to partition</param>
         /// <param name="predicate">The function to test each element</param>
-        /// <returns>A tuple containing matching and not matching elements</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="collection"/> or <paramref name="predicate"/> is null</exception>
+        /// <returns>A tuple containing matching and not matching elements; both lists are empty when the collection is null</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="predicate"/> is null</exception>
         public static (List<T> matching, List<T> notMatching) Partition<T>(
             this IEnumerable<T> collection, Func<T, bool> predicate)
         {
-            ArgumentNullException.ThrowIfNull(collection);
             ArgumentNullException.ThrowIfNull(predicate);
 
             var matching = new List<T>();
             var notMatching = new List<T>();
+
+            if (collection is null)
+                return (matching, notMatching);
 
             foreach (var item in collection)
             {
@@ -114,11 +117,12 @@ namespace CaddyVpsToolkit.Utilities
         /// Convert dictionary to list of KeyValuePair with order preservation
         /// </summary>
         /// <param name="dict">The dictionary to convert</param>
-        /// <returns>List of key-value tuples in dictionary order</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="dict"/> is null</exception>
+        /// <returns>List of key-value tuples in dictionary order; empty when the dictionary is null</returns>
         public static List<(K key, V value)> ToTupleList<K, V>(this Dictionary<K, V> dict)
         {
-            ArgumentNullException.ThrowIfNull(dict);
+            if (dict is null)
+                return new List<(K key, V value)>();
+
             return dict.Select(kvp => (kvp.Key, kvp.Value)).ToList();
         }
 
@@ -169,12 +173,14 @@ namespace CaddyVpsToolkit.Utilities
         /// Add range of items to collection if they don't already exist
         /// </summary>
         /// <param name="list">The list to modify</param>
-        /// <param name="items">The items to add</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="list"/> or <paramref name="items"/> is null</exception>
+        /// <param name="items">The items to add; a null sequence leaves the list unchanged</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="list"/> is null</exception>
         public static void AddRangeIfNotExists<T>(this List<T> list, IEnumerable<T> items)
         {
             ArgumentNullException.ThrowIfNull(list);
-            ArgumentNullException.ThrowIfNull(items);
+
+            if (items is null)
+                return;
 
             foreach (var item in items)
             {
