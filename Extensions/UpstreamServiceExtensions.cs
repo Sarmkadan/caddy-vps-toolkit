@@ -6,6 +6,7 @@
 #nullable enable
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using CaddyVpsToolkit.Configuration;
 using CaddyVpsToolkit.LoadBalancing;
@@ -29,19 +30,21 @@ namespace CaddyVpsToolkit.Extensions
         /// Registers all services required for the v2 dynamic upstream management and health-aware
         /// load-balancing feature:
         /// <list type="bullet">
-        ///   <item><see cref="UpstreamManagementOptions"/> — tuning parameters singleton.</item>
-        ///   <item><see cref="IMetricsAggregator"/> (<see cref="SlidingWindowMetricsAggregator"/>) — thread-safe sliding-window metrics.</item>
-        ///   <item><see cref="IAdaptiveLoadBalancer"/> (<see cref="AdaptiveLoadBalancer"/>) — adaptive scoring engine.</item>
-        ///   <item><see cref="HealthAwareRoutingPolicy"/> — unified routing entry point for callers.</item>
+        /// <item><see cref="UpstreamManagementOptions"/> — tuning parameters singleton.</item>
+        /// <item><see cref="IMetricsAggregator"/> (<see cref="SlidingWindowMetricsAggregator"/>) — thread-safe sliding-window metrics.</item>
+        /// <item><see cref="IAdaptiveLoadBalancer"/> (<see cref="AdaptiveLoadBalancer"/>) — adaptive scoring engine.</item>
+        /// <item><see cref="HealthAwareRoutingPolicy"/> — unified routing entry point for callers.</item>
         /// </list>
         /// All registrations use singleton lifetime; the adaptive state (weights, penalty timestamps)
         /// must be shared across requests to remain meaningful.
         /// </summary>
-        /// <param name="services">The service collection to add registrations to.</param>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add registrations to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
         /// <param name="configure">
         /// Optional delegate for customising <see cref="UpstreamManagementOptions"/>. When omitted,
         /// all default values defined on the options class are used.
         /// </param>
+        /// <exception cref="ArgumentNullException"><paramref name="configure"/> throws an exception.</exception>
         /// <returns>The original <see cref="IServiceCollection"/> for fluent chaining.</returns>
         /// <example>
         /// Configuring the subsystem from <c>Program.cs</c>:
@@ -50,19 +53,21 @@ namespace CaddyVpsToolkit.Extensions
         ///     .AddInfrastructureServices()
         ///     .AddUpstreamManagement(opts =>
         ///     {
-        ///         opts.TargetLatencyMs            = 150.0;
-        ///         opts.PenaltyMultiplier          = 0.2;
-        ///         opts.PenaltyDecaySeconds        = 45.0;
-        ///         opts.WeightAdaptationAlpha      = 0.2;
-        ///         opts.AutoRecalibrationEnabled   = true;
+        ///         opts.TargetLatencyMs = 150.0;
+        ///         opts.PenaltyMultiplier = 0.2;
+        ///         opts.PenaltyDecaySeconds = 45.0;
+        ///         opts.WeightAdaptationAlpha = 0.2;
+        ///         opts.AutoRecalibrationEnabled = true;
         ///         opts.RecalibrationIntervalSeconds = 180;
         ///     });
         /// </code>
         /// </example>
         public static IServiceCollection AddUpstreamManagement(
-            this IServiceCollection        services,
+            this IServiceCollection services,
             Action<UpstreamManagementOptions>? configure = null)
         {
+            ArgumentNullException.ThrowIfNull(services);
+
             var options = new UpstreamManagementOptions();
             configure?.Invoke(options);
 
@@ -72,7 +77,7 @@ namespace CaddyVpsToolkit.Extensions
             // Sliding-window metrics aggregator with the configured per-upstream capacity.
             services.AddSingleton<IMetricsAggregator>(
                 new SlidingWindowMetricsAggregator(options.MetricsWindowSize));
-            
+
             services.AddSingleton<IUpstreamPoolRepository, CaddyVpsToolkit.Data.UpstreamPoolRepository>();
             services.AddSingleton<IUpstreamHealthTracker, UpstreamHealthTracker>();
             services.AddSingleton<IUpstreamSelector, UpstreamSelector>();
