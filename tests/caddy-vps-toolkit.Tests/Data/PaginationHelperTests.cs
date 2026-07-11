@@ -18,10 +18,17 @@ namespace CaddyVpsToolkit.Tests.Data
         public int Value { get; set; }
     }
 
+    /// <summary>
+    /// Contains unit tests for the <see cref="PaginationHelper"/> utility class.
+    /// </summary>
     public sealed class PaginationHelperTests
     {
         // ── Paginate ─────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifies that <see cref="PaginationHelper.Paginate{T}(IEnumerable{T},int,int)"/>
+        /// returns the correct slice for the first page.
+        /// </summary>
         [Fact]
         public void Paginate_FirstPage_ReturnsCorrectSlice()
         {
@@ -35,6 +42,10 @@ namespace CaddyVpsToolkit.Tests.Data
             result.TotalCount.Should().Be(25);
         }
 
+        /// <summary>
+        /// Verifies that the last page returns the remaining items when the total count
+        /// is not a multiple of the page size.
+        /// </summary>
         [Fact]
         public void Paginate_LastPage_ReturnsRemainingItems()
         {
@@ -45,6 +56,10 @@ namespace CaddyVpsToolkit.Tests.Data
             result.Items.Should().Equal(21, 22, 23, 24, 25);
         }
 
+        /// <summary>
+        /// Ensures that requesting a page beyond the total number of pages yields an empty
+        /// collection while preserving the total count.
+        /// </summary>
         [Fact]
         public void Paginate_PageBeyondTotal_ReturnsEmptyItems()
         {
@@ -56,6 +71,9 @@ namespace CaddyVpsToolkit.Tests.Data
             result.TotalCount.Should().Be(5);
         }
 
+        /// <summary>
+        /// Confirms that a <c>null</c> source collection is treated as an empty collection.
+        /// </summary>
         [Fact]
         public void Paginate_NullCollection_TreatsAsEmpty()
         {
@@ -65,6 +83,9 @@ namespace CaddyVpsToolkit.Tests.Data
             result.TotalCount.Should().Be(0);
         }
 
+        /// <summary>
+        /// Checks that a page number less than one is clamped to the first page.
+        /// </summary>
         [Fact]
         public void Paginate_PageLessThanOne_ClampsToOne()
         {
@@ -76,6 +97,9 @@ namespace CaddyVpsToolkit.Tests.Data
             result.Items.Should().Equal(1, 2, 3, 4, 5);
         }
 
+        /// <summary>
+        /// Verifies that a page size less than one is clamped to the default size of ten.
+        /// </summary>
         [Fact]
         public void Paginate_PageSizeLessThanOne_ClampsToTen()
         {
@@ -89,6 +113,10 @@ namespace CaddyVpsToolkit.Tests.Data
 
         // ── SortBy ───────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Ensures that <see cref="PaginationHelper.SortBy{T}(IEnumerable{T},string,bool)"/>
+        /// sorts a collection in ascending order when requested.
+        /// </summary>
         [Fact]
         public void SortBy_Ascending_SortsCorrectly()
         {
@@ -104,6 +132,10 @@ namespace CaddyVpsToolkit.Tests.Data
             sorted.Select(i => i.Value).Should().Equal(1, 2, 3);
         }
 
+        /// <summary>
+        /// Ensures that <see cref="PaginationHelper.SortBy{T}(IEnumerable{T},string,bool)"/>
+        /// sorts a collection in descending order when requested.
+        /// </summary>
         [Fact]
         public void SortBy_Descending_SortsCorrectly()
         {
@@ -119,6 +151,10 @@ namespace CaddyVpsToolkit.Tests.Data
             sorted.Select(i => i.Value).Should().Equal(3, 2, 1);
         }
 
+        /// <summary>
+        /// Verifies that providing an unknown property name results in the original
+        /// collection being returned unchanged.
+        /// </summary>
         [Fact]
         public void SortBy_UnknownProperty_ReturnsUnsortedList()
         {
@@ -129,6 +165,9 @@ namespace CaddyVpsToolkit.Tests.Data
             sorted.Select(i => i.Name).Should().Equal("b", "a");
         }
 
+        /// <summary>
+        /// Confirms that a <c>null</c> source collection results in an empty list.
+        /// </summary>
         [Fact]
         public void SortBy_NullCollection_ReturnsEmptyList()
         {
@@ -139,6 +178,10 @@ namespace CaddyVpsToolkit.Tests.Data
 
         // ── FilterBy ─────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Checks that <see cref="PaginationHelper.FilterBy{T}(IEnumerable{T},string,object)"/>
+        /// returns only items whose specified property matches the given value.
+        /// </summary>
         [Fact]
         public void FilterBy_ExistingPropertyValue_ReturnsMatchingItems()
         {
@@ -155,6 +198,10 @@ namespace CaddyVpsToolkit.Tests.Data
             filtered.All(i => i.Name == "api").Should().BeTrue();
         }
 
+        /// <summary>
+        /// Validates that <see cref="PaginationHelper.Filter{T}(IEnumerable{T},Func{T,bool})"/>
+        /// returns items that satisfy the supplied predicate.
+        /// </summary>
         [Fact]
         public void Filter_WithPredicate_ReturnsMatchingItems()
         {
@@ -165,6 +212,9 @@ namespace CaddyVpsToolkit.Tests.Data
             filtered.Should().Equal(6, 7, 8, 9, 10);
         }
 
+        /// <summary>
+        /// Ensures that filtering a <c>null</c> collection yields an empty list.
+        /// </summary>
         [Fact]
         public void Filter_NullCollection_ReturnsEmptyList()
         {
@@ -174,8 +224,14 @@ namespace CaddyVpsToolkit.Tests.Data
         }
     }
 
+    /// <summary>
+    /// Contains unit tests for the <see cref="QueryBuilder{T}"/> class.
+    /// </summary>
     public sealed class QueryBuilderTests
     {
+        /// <summary>
+        /// Verifies that specifying page and page size returns a correctly paginated result.
+        /// </summary>
         [Fact]
         public void Execute_WithPageAndPageSize_ReturnsPaginatedResult()
         {
@@ -190,6 +246,9 @@ namespace CaddyVpsToolkit.Tests.Data
             result.Page.Should().Be(2);
         }
 
+        /// <summary>
+        /// Confirms that a <c>Where</c> filter is applied before pagination.
+        /// </summary>
         [Fact]
         public void Execute_WithWhereFilter_FiltersBeforePagination()
         {
@@ -205,6 +264,9 @@ namespace CaddyVpsToolkit.Tests.Data
             result.TotalCount.Should().Be(10); // 10 even numbers
         }
 
+        /// <summary>
+        /// Ensures that <c>ExecuteUnpaged</c> returns all filtered items without pagination.
+        /// </summary>
         [Fact]
         public void ExecuteUnpaged_ReturnsAllFilteredItems()
         {
@@ -217,6 +279,9 @@ namespace CaddyVpsToolkit.Tests.Data
             result.Should().Equal(6, 7, 8, 9, 10);
         }
 
+        /// <summary>
+        /// Checks that executing a query on a <c>null</c> data source returns an empty result.
+        /// </summary>
         [Fact]
         public void Execute_WithNullData_ReturnsEmptyResult()
         {
@@ -227,6 +292,9 @@ namespace CaddyVpsToolkit.Tests.Data
             result.TotalCount.Should().Be(0);
         }
 
+        /// <summary>
+        /// Verifies that multiple chained <c>Where</c> filters are applied cumulatively.
+        /// </summary>
         [Fact]
         public void Execute_ChainedWhereFilters_AppliesBoth()
         {
