@@ -10,10 +10,16 @@ using CaddyVpsToolkit.Utilities;
 using FluentAssertions;
 using Xunit;
 
+/// <summary>
+/// Tests for the RetryPolicy class.
+/// </summary>
 namespace CaddyVpsToolkit.Tests.Utilities
 {
     public sealed class RetryPolicyTests
     {
+        /// <summary>
+        /// Verifies that the ExecuteAsync method succeeds on the first attempt and returns the result without retrying.
+        /// </summary>
         [Fact]
         public async Task ExecuteAsync_SuccessOnFirstAttempt_ReturnsResultWithoutRetry()
         {
@@ -31,6 +37,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             callCount.Should().Be(1);
         }
 
+        /// <summary>
+        /// Verifies that the ExecuteAsync method fails, then succeeds after retrying, and returns the result.
+        /// </summary>
         [Fact]
         public async Task ExecuteAsync_FailsThenSucceeds_ReturnsResultAfterRetry()
         {
@@ -50,6 +59,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             callCount.Should().Be(3);
         }
 
+        /// <summary>
+        /// Verifies that the ExecuteAsync method exceeds the maximum retries and rethrows the last exception.
+        /// </summary>
         [Fact]
         public async Task ExecuteAsync_ExceedsMaxRetries_RethrowsLastException()
         {
@@ -67,6 +79,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             callCount.Should().Be(3); // initial + 2 retries
         }
 
+        /// <summary>
+        /// Verifies that the ExecuteAsync method throws an ArgumentNullException when the operation is null.
+        /// </summary>
         [Fact]
         public async Task ExecuteAsync_NullOperation_ThrowsArgumentNullException()
         {
@@ -77,6 +92,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             await act.Should().ThrowAsync<ArgumentNullException>();
         }
 
+        /// <summary>
+        /// Verifies that the ExecuteAsync method throws an ArgumentNullException when the operation is null (void overload).
+        /// </summary>
         [Fact]
         public async Task ExecuteAsync_VoidOverload_NullOperation_ThrowsArgumentNullException()
         {
@@ -87,6 +105,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             await act.Should().ThrowAsync<ArgumentNullException>();
         }
 
+        /// <summary>
+        /// Verifies that the LinearBackoffRetryPolicy's ExecuteAsync method succeeds on the first attempt and returns the result.
+        /// </summary>
         [Fact]
         public async Task LinearBackoffRetryPolicy_SuccessOnFirstAttempt_ReturnsResult()
         {
@@ -97,6 +118,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().Be("linear-ok");
         }
 
+        /// <summary>
+        /// Verifies that the LinearBackoffRetryPolicy's ExecuteAsync method fails, then succeeds after retrying, and returns the result.
+        /// </summary>
         [Fact]
         public async Task LinearBackoffRetryPolicy_FailsThenSucceeds_RetriesAndReturns()
         {
@@ -116,6 +140,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             callCount.Should().Be(2);
         }
 
+        /// <summary>
+        /// Verifies that the LinearBackoffRetryPolicy's ExecuteAsync method exceeds the maximum retries and throws.
+        /// </summary>
         [Fact]
         public async Task LinearBackoffRetryPolicy_ExceedsMaxRetries_Throws()
         {
@@ -130,6 +157,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             await act.Should().ThrowAsync<Exception>().WithMessage("always fails");
         }
 
+        /// <summary>
+        /// Verifies that the NoRetryPolicy's ExecuteAsync method succeeds on the first call and returns the result.
+        /// </summary>
         [Fact]
         public async Task NoRetryPolicy_SuccessOnFirstCall_ReturnsResult()
         {
@@ -140,6 +170,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().Be(99);
         }
 
+        /// <summary>
+        /// Verifies that the NoRetryPolicy's ExecuteAsync method throws an exception immediately.
+        /// </summary>
         [Fact]
         public async Task NoRetryPolicy_OperationThrows_PropagatesImmediately()
         {
