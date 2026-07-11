@@ -17,15 +17,25 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Services
 {
+    /// <summary>
+    /// Tests for the SslCertStatusChecker class.
+    /// </summary>
     public sealed class SslCertStatusCheckerTests
     {
         private readonly ISslCertificateMonitoringService _sslMonitor;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SslCertStatusCheckerTests"/> class.
+        /// </summary>
         public SslCertStatusCheckerTests()
         {
             _sslMonitor = Substitute.For<ISslCertificateMonitoringService>();
         }
 
+        /// <summary>
+        /// Verifies that the CheckAllServicesAsync method skips local host bindings.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task CheckAllServicesAsync_SkipsLocalHostBindings()
         {
@@ -54,6 +64,10 @@ namespace CaddyVpsToolkit.Tests.Services
             results.Should().BeEmpty();
         }
 
+        /// <summary>
+        /// Verifies that the CheckCertificateAsync method returns a failure when the domain is empty.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         [Fact]
         public async Task CheckCertificateAsync_WithEmptyDomain_ReturnsFailure()
         {
@@ -69,6 +83,12 @@ namespace CaddyVpsToolkit.Tests.Services
             result.ErrorCode.Should().Be("INVALID_DOMAIN");
         }
 
+        /// <summary>
+        /// Verifies that the SslCertificateCheckResult.CreateValid method sets the correct status.
+        /// </summary>
+        /// <param name="domain">The domain of the certificate.</param>
+        /// <param name="cert">The certificate information.</param>
+        /// <returns>A new instance of the SslCertificateCheckResult class.</returns>
         [Fact]
         public void SslCertificateCheckResult_CreateValid_SetsCorrectStatus()
         {
@@ -92,6 +112,12 @@ namespace CaddyVpsToolkit.Tests.Services
             result.Certificate!.DaysUntilExpiry.Should().BeGreaterThan(0);
         }
 
+        /// <summary>
+        /// Verifies that the SslCertificateCheckResult.CreateExpired method sets the correct status.
+        /// </summary>
+        /// <param name="domain">The domain of the certificate.</param>
+        /// <param name="cert">The certificate information.</param>
+        /// <returns>A new instance of the SslCertificateCheckResult class.</returns>
         [Fact]
         public void SslCertificateCheckResult_CreateExpired_SetsCorrectStatus()
         {
@@ -111,6 +137,13 @@ namespace CaddyVpsToolkit.Tests.Services
             result.Message.Should().Contain("expired");
         }
 
+        /// <summary>
+        /// Verifies that the SslCertificateCheckResult.CreateExpiringSoon method sets the correct status.
+        /// </summary>
+        /// <param name="domain">The domain of the certificate.</param>
+        /// <param name="cert">The certificate information.</param>
+        /// <param name="isCritical">A flag indicating whether the certificate is critical.</param>
+        /// <returns>A new instance of the SslCertificateCheckResult class.</returns>
         [Fact]
         public void SslCertificateCheckResult_CreateExpiringSoon_Critical_SetsCorrectStatus()
         {
@@ -129,6 +162,12 @@ namespace CaddyVpsToolkit.Tests.Services
             result.Status.Should().Be(SslCertificateStatus.Critical);
         }
 
+        /// <summary>
+        /// Verifies that the SslCertificateCheckResult.CreateError method sets the error status.
+        /// </summary>
+        /// <param name="domain">The domain of the certificate.</param>
+        /// <param name="message">The error message.</param>
+        /// <returns>A new instance of the SslCertificateCheckResult class.</returns>
         [Fact]
         public void SslCertificateCheckResult_CreateError_SetsErrorStatus()
         {
@@ -141,6 +180,11 @@ namespace CaddyVpsToolkit.Tests.Services
             result.Message.Should().Contain("Connection refused");
         }
 
+        /// <summary>
+        /// Verifies that the SslCertificateInfo.DaysUntilExpiry method returns zero for expired certificates.
+        /// </summary>
+        /// <param name="cert">The certificate information.</param>
+        /// <returns>The number of days until expiry.</returns>
         [Fact]
         public void SslCertificateInfo_DaysUntilExpiry_ReturnsZeroForExpiredCert()
         {
