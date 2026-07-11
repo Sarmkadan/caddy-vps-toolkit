@@ -15,11 +15,17 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Data
 {
+    /// <summary>
+    /// Tests for the ServiceRepository class.
+    /// </summary>
     public sealed class ServiceRepositoryTests : IDisposable
     {
         private readonly ServiceRepository _sut;
         private readonly string _tempDbPath;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceRepositoryTests"/> class.
+        /// </summary>
         public ServiceRepositoryTests()
         {
             // Ensure the directory for the static AppConstants.DatabasePath exists to avoid constructor crash
@@ -41,6 +47,9 @@ namespace CaddyVpsToolkit.Tests.Data
             initMethod?.Invoke(_sut, null);
         }
 
+        /// <summary>
+        /// Tests that adding a service inserts it and returns the correct ID.
+        /// </summary>
         [Fact]
         public async Task AddAsync_ShouldInsertAndReturnId()
         {
@@ -62,6 +71,9 @@ namespace CaddyVpsToolkit.Tests.Data
             result.Should().Be(service.Id);
         }
 
+        /// <summary>
+        /// Tests that getting a service by ID returns the inserted service.
+        /// </summary>
         [Fact]
         public async Task GetByIdAsync_ShouldReturnInsertedService()
         {
@@ -85,6 +97,9 @@ namespace CaddyVpsToolkit.Tests.Data
             retrieved.Port.Should().Be(8081);
         }
 
+        /// <summary>
+        /// Tests that updating a service modifies the existing service.
+        /// </summary>
         [Fact]
         public async Task UpdateAsync_ShouldModifyExistingService()
         {
@@ -111,6 +126,9 @@ namespace CaddyVpsToolkit.Tests.Data
             retrieved.Port.Should().Be(9090);
         }
 
+        /// <summary>
+        /// Tests that deleting a service removes it.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_ShouldRemoveService()
         {
@@ -134,6 +152,9 @@ namespace CaddyVpsToolkit.Tests.Data
             retrieved.Should().BeNull();
         }
 
+        /// <summary>
+        /// Tests that getting the count of services returns the correct count.
+        /// </summary>
         [Fact]
         public async Task GetCountAsync_ShouldReturnCorrectCount()
         {
@@ -156,6 +177,9 @@ namespace CaddyVpsToolkit.Tests.Data
             newCount.Should().Be(initialCount + 1);
         }
 
+        /// <summary>
+        /// Disposes of the test instance.
+        /// </summary>
         public void Dispose()
         {
             var tempDir = Path.GetDirectoryName(_tempDbPath);
