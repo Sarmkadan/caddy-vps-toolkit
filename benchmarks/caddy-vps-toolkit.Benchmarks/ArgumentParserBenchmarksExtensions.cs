@@ -43,7 +43,9 @@ namespace CaddyVpsToolkit.Benchmarks
         /// Handles both equals syntax (--flag=value) and space syntax (--flag value).
         /// </summary>
         /// <param name="benchmarks">The benchmarks instance (cannot be null).</param>
-        /// <returns>The average of all parsed flag values, or 0 if no values are present.</returns>
+        /// <returns>
+        /// The average of all parsed flag values, or 0 if no values are present.
+        /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="benchmarks"/> is <see langword="null"/>.</exception>
         /// <exception cref="FormatException">Thrown when a flag value cannot be parsed as a double.</exception>
         public static double GetFlagValueAverage(this ArgumentParserBenchmarks benchmarks)
