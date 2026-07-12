@@ -10,10 +10,16 @@ using CaddyVpsToolkit.Utilities;
 using FluentAssertions;
 using Xunit;
 
+/// <summary>
+/// Tests for the TemplateEngine class.
+/// </summary>
 namespace CaddyVpsToolkit.Tests.Utilities
 {
     public sealed class TemplateEngineTests
     {
+        /// <summary>
+        /// Tests that a single variable is substituted correctly.
+        /// </summary>
         [Fact]
         public void Render_SingleVariable_SubstitutesCorrectly()
         {
@@ -25,6 +31,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().Be("Service: api-service");
         }
 
+        /// <summary>
+        /// Tests that multiple variables are substituted correctly.
+        /// </summary>
         [Fact]
         public void Render_MultipleVariables_SubstitutesAllPlaceholders()
         {
@@ -37,6 +46,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().Be("http://localhost:8080/health");
         }
 
+        /// <summary>
+        /// Tests that an unknown variable leaves the placeholder intact.
+        /// </summary>
         [Fact]
         public void Render_UnknownVariable_LeavesPlaceholderIntact()
         {
@@ -47,6 +59,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().Be("Hello {{unknown}}!");
         }
 
+        /// <summary>
+        /// Tests that a null template returns null.
+        /// </summary>
         [Fact]
         public void Render_NullTemplate_ReturnsNull()
         {
@@ -57,6 +72,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().BeNull();
         }
 
+        /// <summary>
+        /// Tests that an empty template returns an empty string.
+        /// </summary>
         [Fact]
         public void Render_EmptyTemplate_ReturnsEmptyString()
         {
@@ -67,6 +85,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().BeEmpty();
         }
 
+        /// <summary>
+        /// Tests that a template with no placeholders returns unchanged.
+        /// </summary>
         [Fact]
         public void Render_NoPlaceholders_ReturnsTemplateUnchanged()
         {
@@ -78,6 +99,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().Be("no placeholders here");
         }
 
+        /// <summary>
+        /// Tests that a static overload substitutes variables from a dictionary.
+        /// </summary>
         [Fact]
         public void Render_StaticOverload_SubstitutesFromDictionary()
         {
@@ -92,6 +116,10 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().Be("caddy v2.0");
         }
 
+        /// <summary>
+        /// Tests that setting an empty key throws an ArgumentException.
+        /// </summary>
+        /// <param name="act">The action to test.</param>
         [Fact]
         public void Set_EmptyKey_ThrowsArgumentException()
         {
@@ -102,6 +130,10 @@ namespace CaddyVpsToolkit.Tests.Utilities
             act.Should().Throw<ArgumentException>();
         }
 
+        /// <summary>
+        /// Tests that setting a null key throws an ArgumentException.
+        /// </summary>
+        /// <param name="act">The action to test.</param>
         [Fact]
         public void Set_NullKey_ThrowsArgumentException()
         {
@@ -112,6 +144,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             act.Should().Throw<ArgumentException>();
         }
 
+        /// <summary>
+        /// Tests that getting an existing key returns the value.
+        /// </summary>
         [Fact]
         public void Get_ExistingKey_ReturnsValue()
         {
@@ -121,6 +156,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             engine.Get("key").Should().Be("value");
         }
 
+        /// <summary>
+        /// Tests that getting a missing key returns null.
+        /// </summary>
         [Fact]
         public void Get_MissingKey_ReturnsNull()
         {
@@ -129,6 +167,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             engine.Get("missing").Should().BeNull();
         }
 
+        /// <summary>
+        /// Tests that rendering a variable with a null value substitutes an empty string.
+        /// </summary>
         [Fact]
         public void Render_VariableWithNullValue_SubstitutesEmptyString()
         {
@@ -140,6 +181,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             result.Should().Be("result: ");
         }
 
+        /// <summary>
+        /// Tests that the constructor with a dictionary uses the provided variables.
+        /// </summary>
         [Fact]
         public void Constructor_WithDictionary_UsesProvidedVariables()
         {
