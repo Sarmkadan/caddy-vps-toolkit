@@ -9,16 +9,28 @@ using CaddyVpsToolkit.Domain.Models;
 
 namespace CaddyVpsToolkit.Data
 {
+    /// <summary>
+    /// Repository for managing UpstreamPool data in the SQLite database.
+    /// </summary>
     public sealed class UpstreamPoolRepository : LoadBalancing.IUpstreamPoolRepository
     {
         private readonly string _connectionString;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UpstreamPoolRepository"/> class.
+        /// Configures the database connection and ensures the schema is initialized.
+        /// </summary>
         public UpstreamPoolRepository()
         {
             _connectionString = $"Data Source={AppConstants.DatabasePath};Version=3;";
             InitializeDatabase();
         }
 
+        /// <summary>
+        /// Retrieves an <see cref="UpstreamPool"/> by its unique identifier.
+        /// </summary>
+        /// <param name="poolId">The unique identifier of the upstream pool.</param>
+        /// <returns>The <see cref="UpstreamPool"/> if found; otherwise, null.</returns>
         public async Task<UpstreamPool?> GetByIdAsync(string poolId)
         {
             using var connection = new SQLiteConnection(_connectionString);
@@ -34,6 +46,11 @@ namespace CaddyVpsToolkit.Data
             return null;
         }
 
+        /// <summary>
+        /// Retrieves all <see cref="UpstreamPool"/>s associated with a specific service.
+        /// </summary>
+        /// <param name="serviceId">The unique identifier of the service.</param>
+        /// <returns>A list of <see cref="UpstreamPool"/>s.</returns>
         public async Task<List<UpstreamPool>> GetByServiceIdAsync(string serviceId)
         {
             var pools = new List<UpstreamPool>();
@@ -50,6 +67,10 @@ namespace CaddyVpsToolkit.Data
             return pools;
         }
 
+        /// <summary>
+        /// Retrieves all <see cref="UpstreamPool"/>s from the database.
+        /// </summary>
+        /// <returns>A list of all available <see cref="UpstreamPool"/>s.</returns>
         public async Task<List<UpstreamPool>> GetAllAsync()
         {
             var pools = new List<UpstreamPool>();
@@ -65,6 +86,11 @@ namespace CaddyVpsToolkit.Data
             return pools;
         }
 
+        /// <summary>
+        /// Adds a new <see cref="UpstreamPool"/> to the database.
+        /// </summary>
+        /// <param name="pool">The <see cref="UpstreamPool"/> to add.</param>
+        /// <returns>The unique identifier of the added <see cref="UpstreamPool"/>.</returns>
         public async Task<string> AddAsync(UpstreamPool pool)
         {
             pool.Validate();
@@ -106,6 +132,11 @@ namespace CaddyVpsToolkit.Data
             return pool.Id;
         }
 
+        /// <summary>
+        /// Updates an existing <see cref="UpstreamPool"/> in the database.
+        /// </summary>
+        /// <param name="pool">The <see cref="UpstreamPool"/> to update.</param>
+        /// <returns>True if the update was successful; otherwise, false.</returns>
         public async Task<bool> UpdateAsync(UpstreamPool pool)
         {
             pool.Validate();
@@ -143,6 +174,11 @@ namespace CaddyVpsToolkit.Data
             return await command.ExecuteNonQueryAsync() > 0;
         }
 
+        /// <summary>
+        /// Deletes an <see cref="UpstreamPool"/> from the database by its unique identifier.
+        /// </summary>
+        /// <param name="poolId">The unique identifier of the upstream pool to delete.</param>
+        /// <returns>True if the pool was successfully deleted; otherwise, false.</returns>
         public async Task<bool> DeleteAsync(string poolId)
         {
             using var connection = new SQLiteConnection(_connectionString);
@@ -153,6 +189,11 @@ namespace CaddyVpsToolkit.Data
             return await command.ExecuteNonQueryAsync() > 0;
         }
 
+        /// <summary>
+        /// Checks if an <see cref="UpstreamPool"/> exists in the database.
+        /// </summary>
+        /// <param name="poolId">The unique identifier of the upstream pool.</param>
+        /// <returns>True if the pool exists; otherwise, false.</returns>
         public async Task<bool> ExistsAsync(string poolId)
         {
             using var connection = new SQLiteConnection(_connectionString);
