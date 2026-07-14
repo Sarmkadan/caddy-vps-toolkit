@@ -1283,6 +1283,30 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 
 [Portfolio](https://sarmkadan.com) | [GitHub](https://github.com/Sarmkadan) | [Telegram](https://t.me/sarmkadan)
 
+## StringExtensionsBenchmarks
+
+The `StringExtensionsBenchmarks` class provides performance benchmarks for string extension methods that convert and analyze strings. These methods are commonly used throughout the application for configuration parsing, service naming, and data formatting.
+
+Example usage:
+```csharp
+var benchmarks = new StringExtensionsBenchmarks();
+
+// Convert strings to different cases
+string kebabCase = "HelloWorldService".ToKebabCase();  // "hello-world-service"
+string camelCase = "HelloWorldService".ToCamelCase();  // "helloWorldService"
+
+// Truncate long strings
+string truncated = "This is a very long service name that needs to be shortened".Truncate(20);  // "This is a very long..."
+
+// Check if strings contain only digits
+bool isNumericDigits = "12345".IsNumeric_Digits;      // true
+bool isNumericNonDigits = "123-abc".IsNumeric_NonDigits; // false
+
+// Check if strings start with any of the specified prefixes
+bool startsWithMatch = "api-service".StartsWithAny_Match;     // true (matches "api")
+bool startsWithNoMatch = "web-service".StartsWithAny_NoMatch;  // true (no match)
+```
+
 ## ServiceCreatedEventHandler
 
 `ServiceCreatedEventHandler` is an event handler that responds to `ServiceCreatedEvent` notifications. It logs the creation of new services and triggers webhook notifications to external systems, enabling integration with monitoring, alerting, and automation platforms.
