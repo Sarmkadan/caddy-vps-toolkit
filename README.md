@@ -1127,6 +1127,54 @@ public class HealthMonitoringService
 - **Use meaningful aggregate IDs**: Choose IDs that represent the entity or aggregate root
 - **Keep events immutable**: Once published, events should not be modified
 
+## ServiceCreatedEvent
+
+The `ServiceCreatedEvent` is raised when a new service is created and registered in the system. This event provides essential information about the newly created service, enabling other components to react to service creation events for logging, monitoring, configuration generation, or integration purposes.
+
+### Public Members
+
+```csharp
+public string ServiceName { get; set; }
+public ServiceType ServiceType { get; set; }
+public int Port { get; set; }
+public string ExecutablePath { get; set; }
+```
+
+### Usage Example
+
+```csharp
+// Create a new service
+var newService = new ManagedService
+{
+    Name = "api-service",
+    Port = 8080,
+    Domain = "api.example.com",
+    ExecutablePath = "/usr/local/bin/api-server",
+    ServiceType = ServiceType.WebApi
+};
+
+// Add the service (this would typically trigger the ServiceCreatedEvent)
+await serviceManagementService.AddServiceAsync(newService);
+
+// Subscribe to service creation events
+var eventBus = new EventBus();
+eventBus.Subscribe<ServiceCreatedEvent>(serviceEvent =>
+{
+    Console.WriteLine($"Service created: {serviceEvent.ServiceName}");
+    Console.WriteLine($"Type: {serviceEvent.ServiceType}");
+    Console.WriteLine($"Port: {serviceEvent.Port}");
+    Console.WriteLine($"Executable: {serviceEvent.ExecutablePath}");
+    
+    // Could trigger downstream processes like:
+    // - Generate systemd unit file
+    // - Update Caddy configuration
+    // - Send notification to monitoring system
+    // - Log the event to audit trail
+});
+
+// The event would be published automatically when the service is created
+```
+
 ## Related Projects
 
 Part of a collection of .NET libraries and tools. See more at [github.com/sarmkadan](https://github.com/sarmkadan).
