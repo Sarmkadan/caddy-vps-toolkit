@@ -1307,6 +1307,32 @@ bool startsWithMatch = "api-service".StartsWithAny_Match;     // true (matches "
 bool startsWithNoMatch = "web-service".StartsWithAny_NoMatch;  // true (no match)
 ```
 
+## Notification
+
+The `Notification` type represents a structured notification that can be sent through the `NotificationService` to deliver messages to external systems or internal components. Notifications contain metadata for routing, priority levels for filtering, and tracking information for audit purposes.
+
+```csharp
+var notification = new Notification
+{
+    Id = Guid.NewGuid().ToString(),
+    Title = "Service Health Alert",
+    Message = "Service 'api-service' has become unhealthy",
+    Priority = NotificationPriority.High,
+    CreatedAt = DateTime.UtcNow,
+    Metadata = new Dictionary<string, string>
+    {
+        ["service"] = "api-service",
+        ["status"] = "unhealthy",
+        ["timestamp"] = DateTime.UtcNow.ToString("o")
+    }
+};
+
+var notificationService = new NotificationService();
+notificationService.Register("slack", new SlackWebhookHandler("https://hooks.slack.com/services/..."));
+
+bool sent = await notificationService.SendAsync(notification);
+```
+
 ## ServiceCreatedEventHandler
 
 `ServiceCreatedEventHandler` is an event handler that responds to `ServiceCreatedEvent` notifications. It logs the creation of new services and triggers webhook notifications to external systems, enabling integration with monitoring, alerting, and automation platforms.
