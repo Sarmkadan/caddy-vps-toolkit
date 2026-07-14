@@ -891,29 +891,41 @@ caddy-vps-toolkit is optimized for minimal overhead on resource-constrained VPS 
 \* Network-latency dependent. Benchmarks measured on a 2 vCPU / 2 GB VPS (AMD EPYC 7R13, Ubuntu 22.04, .NET 10, single core).
 
 
-## CaddyConfigBenchmarksExtensions
+## CaddyConfigBenchmarks
 
-Provides extension methods for benchmarking Caddy configuration generation and validation scenarios. These utilities help measure performance characteristics of configuration serialization, route validation, and path matcher generation.
+The `CaddyConfigBenchmarks` class measures the performance of core Caddy configuration operations including route path generation, Caddyfile global configuration generation, configuration validation, and path matcher creation. These benchmarks help identify performance regressions in configuration serialization and validation logic.
 
 
 ```csharp
-// Example: Creating a production configuration for benchmarking
+// Create benchmark instance
 var benchmarks = new CaddyConfigBenchmarks();
-var productionConfig = benchmarks.CreateProductionConfig();
 
-// Example: Creating an API route for benchmarking
-var apiRoute = benchmarks.CreateApiRoute("api.example.com", 8080);
+// Benchmark simple route path generation (e.g., "api.example.com")
+var simplePath = benchmarks.GenerateRoutePath_Simple();
 
-// Example: Generating a complete Caddyfile
-var config = benchmarks.CreateProductionConfig();
-var routes = new List<CaddyRoute> { apiRoute };
-var caddyfile = benchmarks.GenerateCaddyfile(config, routes);
+// Benchmark route path generation with path prefix (e.g., "app.example.com/api/v1")
+var prefixedRoute = new CaddyRoute
+{
+    Domain = "app.example.com",
+    Path = "/api/v1",
+    UpstreamUrl = "http://127.0.0.1:3000"
+};
+var pathWithPrefix = benchmarks.GenerateRoutePath_WithPath(prefixedRoute);
 
-// Example: Validating routes
-benchmarks.ValidateRoutes(routes);
+// Benchmark Caddyfile global configuration generation
+var globals = benchmarks.GenerateCaddyfileGlobals();
 
-// Example: Generating path matchers for all routes
-var matchers = benchmarks.GetPathMatchers(routes);
+// Benchmark configuration validation
+benchmarks.ValidateConfig();
+
+// Benchmark route validation
+benchmarks.ValidateRoute(simpleRoute);
+
+// Benchmark path matcher generation for root path
+var rootMatcher = benchmarks.GetCaddyPathMatcher_Root();
+
+// Benchmark path matcher generation for prefixed path
+var prefixedMatcher = benchmarks.GetCaddyPathMatcher_Prefixed(prefixedRoute);
 ```
 ### Micro-benchmark Results
 
