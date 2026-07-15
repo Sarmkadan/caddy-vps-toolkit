@@ -923,6 +923,65 @@ Assert.Equal("my-production-service.service", unitName);
 
 Integration tests require a local SQLite database, which is created automatically on first run.
 
+## EventBusTests
+
+`EventBusTests` validates the `EventBus` class, a lightweight publish-subscribe event bus implementation that enables decoupled communication between components. The tests cover core functionality including event publishing with subscribers, null event handling, multiple subscriber scenarios, handler management (subscribe/unsubscribe), subscriber counting, event type isolation, and concurrent publishing.
+
+```csharp
+// Example: Using EventBus for service health monitoring notifications
+var eventBus = new EventBus();
+
+// Define a custom event type for service health changes
+public class ServiceHealthChangedEvent : DomainEvent
+{
+    public string ServiceName { get; }
+    public bool IsHealthy { get; }
+    public string PreviousStatus { get; }
+
+    public ServiceHealthChangedEvent(
+        string aggregateId,
+        string serviceName,
+        bool isHealthy,
+        string previousStatus)
+        : base(aggregateId)
+    {
+        ServiceName = serviceName;
+        IsHealthy = isHealthy;
+        PreviousStatus = previousStatus;
+    }
+}
+
+// Subscribe to health change events (e.g., in a monitoring service)
+eventBus.Subscribe<ServiceHealthChangedEvent>(async healthEvent =>
+{
+    var message = healthEvent.IsHealthy
+        ? $"Service {healthEvent.ServiceName} is now healthy"
+        : $"Service {healthEvent.ServiceName} became unhealthy (was {healthEvent.PreviousStatus}) - sending alert!";
+
+    Console.WriteLine(message);
+    
+    // Could also send webhook notifications, update dashboards, etc.
+    await notifier.SendAlertAsync(message);
+});
+
+// Publish an event when service health changes (e.g., in health monitoring service)
+var healthEvent = new ServiceHealthChangedEvent(
+    aggregateId: "api-service-123",
+    serviceName: "api-service",
+    isHealthy: true,
+    previousStatus: "unhealthy"
+);
+
+await eventBus.PublishAsync(healthEvent);
+
+// Check how many subscribers are listening for this event type
+int subscriberCount = eventBus.GetSubscriberCount<ServiceHealthChangedEvent>();
+Console.WriteLine($"Health change events have {subscriberCount} subscribers");
+
+// Unsubscribe when no longer needed (e.g., during cleanup)
+eventBus.Unsubscribe<ServiceHealthChangedEvent>(healthHandler);
+```
+
 ## Performance
 
 caddy-vps-toolkit is optimized for minimal overhead on resource-constrained VPS environments.
