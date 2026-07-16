@@ -2290,6 +2290,67 @@ notificationService.Register("slack", new SlackWebhookHandler("https://hooks.sla
 bool sent = await notificationService.SendAsync(notification);
 ```
 
+## UpstreamManagerServiceTests
+
+`UpstreamManagerServiceTests` provides unit tests for the `UpstreamManagerService` class, which manages upstream pool registration and retrieval for load balancing configurations. This test suite verifies that the service correctly handles null inputs, invalid pool configurations, non-existent service references, and valid pool operations, ensuring robust error handling and correct behavior for upstream pool management.
+
+```csharp
+// Example: Using UpstreamManagerService for load balancing pool management
+var serviceRepo = Substitute.For<IServiceRepository>();
+var healthRepo = Substitute.For<IHealthCheckRepository>();
+
+var serviceManager = new ServiceManagementService(serviceRepo);
+var healthMonitor = new HealthMonitoringService(healthRepo, serviceManager);
+var caddyConfig = new CaddyConfigurationService(serviceManager);
+
+var options = new LoadBalancingOptions();
+var upstreamManager = new UpstreamManagerService(serviceManager, healthMonitor, caddyConfig, options);
+
+// Test null pool registration - should throw ArgumentNullException
+Func<Task> nullPoolTest = async () => await upstreamManager.RegisterPoolAsync(null!);
+await nullPoolTest.Should().ThrowAsync<ArgumentNullException>();
+
+// Test invalid pool registration - should throw ServiceConfigurationException
+var invalidPool = new UpstreamPool { Id = "pool1", Name = "pool1", ServiceId = "svc1" };
+invalidPool.Servers = new List<UpstreamServer>();
+Func<Task> invalidPoolTest = async () => await upstreamManager.RegisterPoolAsync(invalidPool);
+await invalidPoolTest.Should().ThrowAsync<ServiceConfigurationException>();
+
+// Test service not found scenario - should throw ServiceNotFoundException
+var poolWithMissingService = new UpstreamPool
+{
+    Id = "pool1",
+    Name = "pool1", 
+    ServiceId = "nonexistent",
+    Servers = new List<UpstreamServer> { new UpstreamServer { Address = "127.0.0.1", Port = 80 } }
+};
+serviceRepo.GetByIdAsync("nonexistent").Returns(Task.FromResult<ManagedService?>(null));
+Func<Task> missingServiceTest = async () => await upstreamManager.RegisterPoolAsync(poolWithMissingService);
+await missingServiceTest.Should().ThrowAsync<ServiceNotFoundException>();
+
+// Test valid pool registration - should return pool ID
+var validPool = new UpstreamPool
+{
+    Id = "pool1",
+    Name = "pool1",
+    ServiceId = "svc1",
+    Servers = new List<UpstreamServer> { new UpstreamServer { Address = "127.0.0.1", Port = 80 } }
+};
+serviceRepo.GetByIdAsync("svc1").Returns(Task.FromResult<ManagedService?>(new ManagedService { Id = "svc1" }));
+
+var poolId = await upstreamManager.RegisterPoolAsync(validPool);
+poolId.Should().Be("pool1");
+
+// Test retrieving existing pool - should return the pool
+var retrievedPool = await upstreamManager.GetPoolAsync("pool1");
+retrievedPool.Should().NotBeNull();
+retrievedPool!.Id.Should().Be("pool1");
+
+// Test retrieving non-existent pool - should return null
+var nonexistentPool = await upstreamManager.GetPoolAsync("unknown");
+nonexistentPool.Should().BeNull();
+```
+
 ## ServiceCreatedEventHandler
 
 `ServiceCreatedEventHandler` is an event handler that responds to `ServiceCreatedEvent` notifications. It logs the creation of new services and triggers webhook notifications to external systems, enabling integration with monitoring, alerting, and automation platforms.
