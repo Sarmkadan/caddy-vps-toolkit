@@ -1057,6 +1057,58 @@ webhookHandler.Unregister(
 );
 ```
 
+## LoadBalancingOptions
+
+`LoadBalancingOptions` provides runtime configuration for the upstream management and health-aware load-balancing subsystem. It controls default behaviors such as health probing, retry policies, sticky sessions, and circuit breaker settings that apply to all upstream pools unless overridden at the pool level.
+
+The options govern active health checks, passive failure detection, retry strategies, session affinity, and circuit breaking behavior across your load-balanced services.
+
+**Example Usage:**
+
+```csharp
+// Configure load balancing options in your service setup
+var loadBalancingOptions = new LoadBalancingOptions
+{
+    DefaultStrategy = LoadBalancingStrategy.RoundRobin,
+    HealthCheckIntervalSeconds = 30,
+    HealthProbeTimeoutMs = 5000,
+    HealthProbePath = "/health",
+    ActiveHealthEnabled = true,
+    PassiveHealthEnabled = true,
+    UnhealthyThreshold = 3,
+    HealthyThreshold = 2,
+    MaxRetries = 2,
+    RetryDurationSeconds = 30,
+    StickySessionEnabled = true,
+    DefaultStickyCookieName = "my_session",
+    CircuitBreakerEnabled = true,
+    CircuitBreakerHealthThreshold = 0.3,
+    CircuitBreakerRecoverySeconds = 60,
+    ConnectionDrainTimeoutSeconds = 30
+};
+
+// Register with your service collection
+services.AddUpstreamManagement(options =>
+{
+    options.DefaultStrategy = loadBalancingOptions.DefaultStrategy;
+    options.HealthCheckIntervalSeconds = loadBalancingOptions.HealthCheckIntervalSeconds;
+    options.HealthProbeTimeoutMs = loadBalancingOptions.HealthProbeTimeoutMs;
+    options.HealthProbePath = loadBalancingOptions.HealthProbePath;
+    options.ActiveHealthEnabled = loadBalancingOptions.ActiveHealthEnabled;
+    options.PassiveHealthEnabled = loadBalancingOptions.PassiveHealthEnabled;
+    options.UnhealthyThreshold = loadBalancingOptions.UnhealthyThreshold;
+    options.HealthyThreshold = loadBalancingOptions.HealthyThreshold;
+    options.MaxRetries = loadBalancingOptions.MaxRetries;
+    options.RetryDurationSeconds = loadBalancingOptions.RetryDurationSeconds;
+    options.StickySessionEnabled = loadBalancingOptions.StickySessionEnabled;
+    options.DefaultStickyCookieName = loadBalancingOptions.DefaultStickyCookieName;
+    options.CircuitBreakerEnabled = loadBalancingOptions.CircuitBreakerEnabled;
+    options.CircuitBreakerHealthThreshold = loadBalancingOptions.CircuitBreakerHealthThreshold;
+    options.CircuitBreakerRecoverySeconds = loadBalancingOptions.CircuitBreakerRecoverySeconds;
+    options.ConnectionDrainTimeoutSeconds = loadBalancingOptions.ConnectionDrainTimeoutSeconds;
+});
+```
+
 ## DateTimeExtensionsTests
 
 `DateTimeExtensionsTests` provides unit tests for the `DateTimeExtensions` utility class, which extends `DateTime` with common formatting and calculation methods. This test suite validates that all extension methods correctly handle various date and time scenarios, including relative time formatting, ISO 8601 serialization, start-of-day calculations, past/future checks, and working day counting.
