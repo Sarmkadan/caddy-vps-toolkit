@@ -1134,6 +1134,69 @@ app.Run();
 - **RateLimitCapacity** (int, default: 100) - Maximum number of requests allowed in the bucket
 - **RateLimitRefillRate** (int, default: 10) - Number of tokens added per second
 
+## ManagedService
+
+The `ManagedService` type represents a service that is managed by the system. It has the following properties:
+
+* Id: a unique identifier for the service
+* Name: the name of the service
+* Description: a brief description of the service
+* Type: the type of service (e.g. Windows service, Linux service)
+* ExecutablePath: the path to the executable that runs the service
+* WorkingDirectory: the working directory for the service
+* Arguments: the arguments passed to the service when it is started
+* Status: the current status of the service (e.g. running, stopped)
+* Port: the port number used by the service
+* HostBinding: the host binding for the service (e.g. localhost, all interfaces)
+* AutoStart: whether the service starts automatically when the system boots
+* Priority: the priority of the service (e.g. high, normal, low)
+* EnvironmentVariables: environment variables set for the service
+* CreatedAt: the date and time the service was created
+* UpdatedAt: the date and time the service was last updated
+* SystemdUnitName: the name of the systemd unit for the service (if applicable)
+* ExposedPorts: a list of ports exposed by the service
+* HealthCheck: configuration for health checks on the service
+* IsEnabled: whether the service is enabled or disabled
+
+Example usage:
+
+```csharp
+var myService = new ManagedService
+{
+    Id = Guid.NewGuid().ToString(),
+    Name = "my-web-app",
+    Description = "My web application service",
+    Type = ServiceType.WebApplication,
+    ExecutablePath = "/usr/bin/dotnet",
+    WorkingDirectory = "/opt/my-app",
+    Arguments = "MyApp.dll --environment Production",
+    Status = ServiceStatus.Stopped,
+    Port = 8080,
+    HostBinding = "0.0.0.0",
+    AutoStart = true,
+    Priority = 100,
+    EnvironmentVariables = "ASPNETCORE_ENVIRONMENT=Production\nLOG_LEVEL=Info",
+    SystemdUnitName = "my-web-app.service",
+    ExposedPorts = new List<ServicePort>
+    {
+        new ServicePort { Port = 8080, Protocol = "tcp" },
+        new ServicePort { Port = 8443, Protocol = "tcp" }
+    },
+    HealthCheck = new HealthCheckConfig
+    {
+        Url = "http://localhost:8080/health",
+        Interval = TimeSpan.FromSeconds(30),
+        Timeout = TimeSpan.FromSeconds(5),
+        Retries = 3
+    },
+    IsEnabled = true,
+    CreatedAt = DateTime.UtcNow,
+    UpdatedAt = DateTime.UtcNow
+};
+
+myService.Validate();
+```
+
 ## ArgumentParser
 
 The `ArgumentParser` class provides command-line argument parsing functionality for the CLI tool. It parses command-line arguments into structured command objects using a simple key-value pattern for flags and supports positional arguments. The parser efficiently handles both boolean flags (like `--verbose`, `--force`) and flags with values (like `--port 8080` or `--domain example.com`), using span-based comparisons to avoid unnecessary string allocations.
