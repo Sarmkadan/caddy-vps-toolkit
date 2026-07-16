@@ -2172,6 +2172,91 @@ Func<Task> emptyContentTest = async () => await caddyService.ValidateCaddyfileAs
 await emptyContentTest.Should().ThrowAsync<ArgumentException>();
 ```
 
+## SystemdUnitConfig
+
+The `SystemdUnitConfig` type represents a systemd unit file configuration for managing services on Linux systems. It provides a structured way to define service execution parameters, restart policies, environment variables, and service dependencies, enabling automated generation of valid systemd unit files.
+
+This type is used by the toolkit to create systemd units for managed services, ensuring consistent service management across different Linux distributions and systemd versions.
+
+
+
+### Example Usage
+
+```csharp
+// Create a systemd unit configuration for a web application service
+var systemdConfig = new SystemdUnitConfig
+{
+    Id = Guid.NewGuid().ToString(),
+    ServiceId = "web-app-01",
+    UnitName = "web-app",
+    ExecStart = "/usr/bin/dotnet /opt/web-app/WebApp.dll --urls http://*:5000",
+    ExecReload = "/bin/kill -s SIGUSR1 $MAINPID",
+    ExecStop = "/bin/kill -s SIGTERM $MAINPID",
+    User = "www-data",
+    Group = "www-data",
+    RestartPolicy = RestartPolicy.Always,
+    RestartDelaySeconds = 5,
+    StartLimitIntervalSec = 60,
+    StartLimitBurst = 3,
+    Type = "notify",
+    StandardOutput = "journal",
+    StandardError = "journal",
+    WorkingDirectory = "/opt/web-app",
+    Environment = new Dictionary<string, string>
+    {
+        ["ASPNETCORE_ENVIRONMENT"] = "Production",
+        ["LOG_LEVEL"] = "Information"
+    },
+    EnvironmentFiles = new List<string> { "/etc/default/web-app" },
+    After = new List<string> { "network.target", "postgresql.service" },
+    Wants = new List<string> { "postgresql.service" },
+    LimitNoFile = true,
+    LimitNoFileValue = 65535
+};
+
+// Validate the configuration
+systemdConfig.Validate();
+
+// Generate the systemd unit file content
+string unitContent = systemdConfig.GenerateSystemdContent();
+Console.WriteLine(unitContent);
+
+// Write to file
+File.WriteAllText("/etc/systemd/system/web-app.service", unitContent);
+
+// Reload systemd daemon
+Console.WriteLine("sudo systemctl daemon-reload");
+```
+
+**Key Properties:**
+
+- **Id**: Unique identifier for the configuration
+- **ServiceId**: Identifier for the associated service
+- **UnitName**: Name of the systemd unit file (without .service extension)
+- **ExecStart**: Command to start the service (required)
+- **ExecReload**: Command to reload the service configuration
+- **ExecStop**: Command to stop the service
+- **User**: User to run the service as (default: "root")
+- **Group**: Group to run the service as (default: "root")
+- **RestartPolicy**: When to restart the service (default: Always)
+- **RestartDelaySeconds**: Delay before restarting (default: 10)
+- **StartLimitIntervalSec**: Time window for start rate limiting (default: 300)
+- **StartLimitBurst**: Maximum starts allowed in the time window (default: 5)
+- **Type**: Service type (simple, forking, oneshot, dbus, notify, idle) (default: "simple")
+- **StandardOutput**: Where to send stdout (journal, file, inherit, null) (default: "journal")
+- **StandardError**: Where to send stderr (journal, file, inherit, null) (default: "journal")
+- **Environment**: Dictionary of environment variables to set
+- **EnvironmentFiles**: List of files containing environment variables to load
+- **After**: List of units that must start before this one
+- **Wants**: List of optional dependencies
+- **WorkingDirectory**: Working directory for the service process
+- **LimitNoFile**: Whether to set file descriptor limit (default: false)
+- **LimitNoFileValue**: File descriptor limit value (default: 65535)
+- **CreatedAt**: Timestamp when configuration was created
+- **UpdatedAt**: Timestamp when configuration was last updated
+
+
+
 ## CollectionExtensionsTests
 
 `CollectionExtensionsTests` provides unit tests for the `CollectionExtensions` utility class, which extends standard .NET collection types with safe access, batching, partitioning, and conditional operations. This test suite validates that all extension methods correctly handle edge cases including null collections, out-of-range indices, empty collections, and various predicate conditions, ensuring robust error handling and predictable behavior for collection operations.
