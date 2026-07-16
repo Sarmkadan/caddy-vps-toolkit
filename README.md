@@ -1101,6 +1101,45 @@ if (!validationResult.IsValid)
 Console.WriteLine("Arguments are valid!");
 ```
 
+## HealthMonitoringServiceTests
+
+`HealthMonitoringServiceTests` provides unit tests for the `HealthMonitoringService` class, which validates health monitoring functionality including service health checks, health status retrieval, health history tracking, and database record cleanup. This test suite verifies that the service correctly handles null inputs, invalid parameters, and valid health monitoring operations, ensuring robust error handling and correct behavior for service health monitoring workflows.
+
+```csharp
+// Example: Using HealthMonitoringService for service health monitoring
+var healthRepositoryMock = Substitute.For<IHealthCheckRepository>();
+var serviceRepositoryMock = Substitute.For<IServiceRepository>();
+var serviceManager = new ServiceManagementService(serviceRepositoryMock);
+var healthMonitoringService = new HealthMonitoringService(healthRepositoryMock, serviceManager);
+
+// Test service health check - throws HealthCheckException when service has no health check
+var serviceWithoutHealthCheck = new ManagedService { Id = "svc1", Name = "Test", ExecutablePath = "/bin", WorkingDirectory = "/", Port = 80, HealthCheck = null };
+serviceRepositoryMock.GetByIdAsync("svc1").Returns(serviceWithoutHealthCheck);
+
+Func<Task> healthCheckTest = async () => await healthMonitoringService.CheckServiceHealthAsync("svc1");
+await healthCheckTest.Should().ThrowAsync<HealthCheckException>();
+
+// Test retrieving latest health status
+var latestHealthStatus = new HealthCheckResult { ServiceId = "svc1", IsHealthy = true };
+healthRepositoryMock.GetLatestAsync("svc1").Returns(latestHealthStatus);
+
+var result = await healthMonitoringService.GetLatestHealthStatusAsync("svc1");
+result.Should().BeEquivalentTo(latestHealthStatus);
+
+// Test retrieving health history for the last 24 hours
+var healthHistory = new List<HealthCheckResult> { new HealthCheckResult(), new HealthCheckResult() };
+healthRepositoryMock.GetRecentAsync("svc1", 24).Returns(healthHistory);
+
+var history = await healthMonitoringService.GetHealthHistoryAsync("svc1", 24);
+history.Should().HaveCount(2);
+
+// Test cleanup of old health records
+healthRepositoryMock.DeleteOlderThanAsync(Arg.Any<DateTime>()).Returns(true);
+
+var cleanupResult = await healthMonitoringService.CleanupOldRecordsAsync(30);
+cleanupResult.Should().BeTrue();
+```
+
 ## EventBusTests
 
 `EventBusTests` validates the `EventBus` class, a lightweight publish-subscribe event bus implementation that enables decoupled communication between components. The tests cover core functionality including event publishing with subscribers, null event handling, multiple subscriber scenarios, handler management (subscribe/unsubscribe), subscriber counting, event type isolation, and concurrent publishing.
