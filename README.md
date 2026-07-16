@@ -1195,6 +1195,59 @@ foreach (var logEntry in logs)
 memoryLogger.Clear();
 ```
 
+## IRateLimiter
+
+The `IRateLimiter` interface provides a mechanism for rate limiting API operations to prevent abuse and ensure fair usage. It's implemented by two rate limiting algorithms: `TokenBucketRateLimiter` for burst-capable rate limiting and `FixedWindowRateLimiter` for simple window-based limiting.
+
+
+
+Rate limiting is essential for protecting API endpoints from being overwhelmed by excessive requests, whether malicious or accidental, ensuring system stability and predictable performance.
+
+
+
+**Public Members:**
+- `Task<bool> AllowAsync(string key)` - Checks if a request should be allowed based on the rate limit rules
+
+**Implementations:**
+- `TokenBucketRateLimiter` - Token bucket algorithm that allows burst traffic up to bucket capacity, then enforces per-second rate limits
+- `FixedWindowRateLimiter` - Simple fixed-window counter that resets after a specified time period
+
+**Example Usage:**
+
+```csharp
+// Create a token bucket rate limiter with capacity of 100 requests and refill rate of 10 requests per second
+var tokenBucketLimiter = new TokenBucketRateLimiter(capacity: 100, refillRatePerSecond: 10);
+
+// Check if a request is allowed for a specific API key
+bool isAllowed = await tokenBucketLimiter.AllowAsync("api-key-123");
+
+if (isAllowed)
+{
+    Console.WriteLine("Request allowed - rate limit not exceeded");
+    // Process the request
+}
+else
+{
+    Console.WriteLine("Request denied - rate limit exceeded");
+    // Return 429 Too Many Requests
+}
+
+// Create a fixed window rate limiter with 50 requests per 60-second window
+var fixedWindowLimiter = new FixedWindowRateLimiter(maxRequests: 50, windowSeconds: 60);
+
+// Check if a request is allowed for a user session
+bool isAllowed2 = await fixedWindowLimiter.AllowAsync("user-session-456");
+
+if (isAllowed2)
+{
+    Console.WriteLine("User request allowed within current window");
+}
+else
+{
+    Console.WriteLine("User rate limit exceeded for this window");
+}
+```
+
 ## IWebhookHandler
 
 The `IWebhookHandler` interface provides a mechanism for external system integration through webhook notifications. It allows registration of webhook URLs for specific event types and triggers notifications when those events occur. The interface supports registering and unregistering webhook endpoints, triggering events with payload data, and retrieving current registrations.
