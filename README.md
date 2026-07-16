@@ -1079,6 +1079,79 @@ catch (ValidationException ex)
 
 `HealthCheckConfigEdgeCaseTests` validates edge-case behavior for the `HealthCheckConfig` class, focusing on boundary conditions and validation edge cases. This test suite ensures that health check configurations properly handle minimum/maximum values, zero values, and type-specific requirements. It validates that the configuration validation logic correctly identifies and reports invalid configurations that fall outside expected boundaries.
 
+## CaddyConfigPipelineIntegrationTests
+
+`CaddyConfigPipelineIntegrationTests` provides end-to-end integration tests for the complete Caddy configuration generation pipeline. This test suite validates the full workflow from service configuration inputs through route generation, Caddyfile output, and validation, ensuring all components work together correctly in realistic scenarios.
+
+The tests cover:
+- Route combination handling (multiple active routes, inactive route exclusion)
+- Null and empty input handling with appropriate fallback behavior
+- Global configuration presence in generated output
+- Route block generation with various features (path matchers, custom headers, rate limiting, authentication, TLS DNS providers, path stripping)
+- Caddyfile validation for both well-formed and malformed configurations
+- JSON structure generation for programmatic consumption
+- End-to-end pipeline validation with balanced braces
+
+```csharp
+// Example: Testing the complete Caddy configuration pipeline
+var serviceRepositoryMock = Substitute.For<IServiceRepository>();
+var serviceManager = new ServiceManagementService(serviceRepositoryMock);
+var caddyService = new CaddyConfigurationService(serviceManager);
+
+// Create a service configuration
+var service = new ManagedService
+{
+    Id = Guid.NewGuid().ToString(),
+    Name = "api-backend",
+    Description = "Backend API Service",
+    ExecutablePath = "/usr/bin/dotnet",
+    WorkingDirectory = "/opt/api",
+    HostBinding = "127.0.0.1",
+    Port = 5000
+};
+
+// Generate route configuration for the service
+var route = caddyService.GenerateRouteForService(service, "api.example.com", "cloudflare");
+
+// Generate Caddy configuration with multiple routes
+var globalConfig = new CaddyConfig { AdminEmail = "ops@example.com" };
+var routes = new List<CaddyRoute>
+{
+    route,
+    new CaddyRoute
+    {
+        Domain = "www.example.com",
+        UpstreamUrl = "http://localhost:3000",
+        IsActive = true,
+        CustomHeaders = new Dictionary<string, string>
+        {
+            { "X-Real-IP", "{remote_host}" },
+            { "X-Request-ID", "{uuid}" }
+        },
+        RateLimitRule = "100r/s",
+        BasicAuthEnabled = true,
+        BasicAuthUsername = "admin",
+        BasicAuthPasswordHash = "$2a$14$hashed",
+        StripPath = true
+    }
+};
+
+// Generate the complete Caddyfile
+var caddyfile = await caddyService.GenerateCaddyfileAsync(globalConfig, routes);
+
+// Validate the generated configuration
+bool isValid = await caddyService.ValidateCaddyfileAsync(caddyfile);
+
+// Generate JSON structure for programmatic use
+string jsonConfig = caddyService.GenerateCaddyJsonAsync(globalConfig, routes);
+
+// The generated Caddyfile should contain all configured routes
+caddyfile.Should().Contain("api.example.com");
+caddyfile.Should().Contain("www.example.com");
+caddyfile.Should().Contain("http://localhost:5000");
+caddyfile.Should().Contain("http://localhost:3000");
+```
+
 ## CaddyConfigTests
 
 `CaddyConfigTests` provides unit tests for the `CaddyConfig` class, which validates Caddy server configuration settings and generates Caddyfile global directives. This test suite verifies validation logic for admin ports, HTTP/HTTPS ports, timeouts, email addresses, metrics configuration, and auto HTTPS settings, ensuring that Caddy configurations meet required constraints before being applied.
