@@ -767,11 +767,21 @@ Console.WriteLine(caddyRouteBlock);
 - **IdleTimeout**: Idle connection timeout in seconds (default: 120)
 - **ReadTimeout**: Read timeout in seconds (default: 30)
 - **WriteTimeout**: Write timeout in seconds (default: 30)
+- **OnDemandTls**: List of domains for on-demand TLS certificate generation
+- **CertificateEmail**: Email for Let's Encrypt certificate registration
+- **StrictSniRequired**: Require strict SNI checking
+- **CustomGlobals**: Additional global Caddy directives as key-value pairs
+- **CreatedAt**: Timestamp when configuration was created
+- **UpdatedAt**: Timestamp when configuration was last updated
+- **IsActive**: Whether this configuration is currently active
+
 
 
 ## HealthCheckConfig
 
+
 The `HealthCheckConfig` type represents configuration for service health monitoring. It defines parameters for checking service availability and responsiveness, including check intervals, timeout settings, failure thresholds, and expected response conditions. Health checks are essential for automatic service recovery and maintaining system reliability.
+
 
 ### Example Usage
 
@@ -817,7 +827,6 @@ var tcpHealthCheck = new HealthCheckConfig
 
 tcpHealthCheck.Validate();
 ```
-
 ## Configuration Reference
 
 ### appsettings.json
