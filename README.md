@@ -587,6 +587,79 @@ Output includes expiry date, days remaining, and a status classification:
 - `Expired` — certificate has already expired
 - `Error` — could not connect or retrieve the certificate
 
+## CaddyConfig
+
+The `CaddyConfig` type represents the global configuration for Caddy reverse proxy. It controls core settings like ports, timeouts, logging behavior, and TLS configuration that apply across all services managed by the toolkit.
+
+
+
+### Example Usage
+
+```csharp
+// Create a Caddy configuration with custom settings
+var caddyConfig = new CaddyConfig
+{
+    AdminEmail = "admin@example.com",
+    AdminPort = 2019,
+    AdminHost = "127.0.0.1",
+    HttpPort = 80,
+    HttpsPort = 443,
+    LogLevel = "info",
+    LogFormat = "{common_log}",
+    EnableMetrics = true,
+    EnableLogOutput = true,
+    IdleTimeout = 120,
+    ReadTimeout = 30,
+    WriteTimeout = 30,
+    AutoHttpsDisabled = false,
+    TlsPolicy = "clients",
+    StrictSniRequired = false,
+    OnDemandTls = new List<string> { "example.com", "*.example.com" },
+    CertificateEmail = "admin@example.com",
+    CustomGlobals = new Dictionary<string, string>
+    {
+        ["debug"] = "true"
+    },
+    CreatedAt = DateTime.UtcNow,
+    UpdatedAt = DateTime.UtcNow
+};
+
+// Validate the configuration
+caddyConfig.Validate();
+
+// Set default values for any missing required fields
+caddyConfig.SetDefaultValues();
+
+// Generate Caddyfile global configuration block
+string caddyfileGlobals = caddyConfig.GenerateCaddyfileGlobals();
+Console.WriteLine(caddyfileGlobals);
+```
+
+**Key Properties:**
+
+- **Id**: Unique identifier for the configuration
+- **AdminEmail**: Email address for administrative notifications and certificate registration
+- **AdminPort**: Port for the Caddy admin interface (default: 2019)
+- **AdminHost**: Host address for the admin interface (default: "localhost")
+- **EnableMetrics**: Enable Caddy metrics endpoint (default: true)
+- **EnableLogOutput**: Enable structured log output (default: true)
+- **LogLevel**: Logging verbosity level (default: "info")
+- **LogFormat**: Format string for log entries (default: "{common_log}")
+- **HttpPort**: HTTP port for incoming traffic (default: 80)
+- **HttpsPort**: HTTPS port for incoming traffic (default: 443)
+- **AutoHttpsDisabled**: Disable automatic HTTPS certificate provisioning
+- **TlsPolicy**: TLS policy for client connections (default: "clients")
+- **IdleTimeout**: Idle connection timeout in seconds (default: 120)
+- **ReadTimeout**: Read timeout in seconds (default: 30)
+- **WriteTimeout**: Write timeout in seconds (default: 30)
+- **OnDemandTls**: List of domains for on-demand TLS certificate generation
+- **CertificateEmail**: Email for Let's Encrypt certificate registration
+- **StrictSniRequired**: Require strict SNI checking
+- **CustomGlobals**: Additional global Caddy directives as key-value pairs
+- **CreatedAt**: Timestamp when configuration was created
+- **UpdatedAt**: Timestamp when configuration was last updated
+- **IsActive**: Whether this configuration is currently active
+
 ## Configuration Reference
 
 ### appsettings.json
