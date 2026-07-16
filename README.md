@@ -967,6 +967,78 @@ var unitName = validation.ManagedService_GetSystemdUnitName_WithSpacesInName_For
 Assert.Equal("my-production-service.service", unitName);
 ```
 
+## ServiceManagementServiceTests
+
+`ServiceManagementServiceTests` provides unit tests for the `ServiceManagementService` class, which manages the lifecycle of systemd services including creation, retrieval, updating, and deletion. This test suite validates that service operations correctly handle null inputs, duplicate service names, running service constraints, and valid status transitions, ensuring robust error handling and correct behavior for service management workflows.
+
+```csharp
+// Example: Managing services programmatically via ServiceManagementService
+var serviceRepositoryMock = Substitute.For<IServiceRepository>();
+var serviceManagementService = new ServiceManagementService(serviceRepositoryMock);
+
+// Test creating a new service
+var newService = new ManagedService
+{
+    Name = "my-web-app",
+    ExecutablePath = "/usr/bin/dotnet",
+    WorkingDirectory = "/opt/my-app",
+    Port = 8080,
+    Description = "My web application service"
+};
+
+// Create a service - returns service ID
+string serviceId = await serviceManagementService.CreateServiceAsync(newService);
+Console.WriteLine($"Created service with ID: {serviceId}");
+
+// Test retrieving a service by ID
+ManagedService retrievedService = await serviceManagementService.GetServiceAsync(serviceId);
+Console.WriteLine($"Retrieved service: {retrievedService.Name} on port {retrievedService.Port}");
+
+// Test updating service status
+bool statusUpdated = await serviceManagementService.UpdateServiceStatusAsync(
+    serviceId, 
+    ServiceStatus.Running
+);
+Console.WriteLine($"Status updated: {statusUpdated}");
+
+// Test deleting a service (will throw if service is running)
+try
+{
+    await serviceManagementService.DeleteServiceAsync(serviceId);
+}
+catch (ServiceConfigurationException ex)
+{
+    Console.WriteLine($"Cannot delete running service: {ex.Message}");
+}
+
+// Test error scenarios
+try
+{
+    // This will throw ArgumentNullException
+    await serviceManagementService.CreateServiceAsync(null!);
+}
+catch (ArgumentNullException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+}
+
+try
+{
+    // This will throw ServiceConfigurationException for duplicate name
+    await serviceManagementService.CreateServiceAsync(new ManagedService
+    {
+        Name = "my-web-app", // Same name as existing service
+        ExecutablePath = "/usr/bin/node",
+        WorkingDirectory = "/opt/app",
+        Port = 3000
+    });
+}
+catch (ServiceConfigurationException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}");
+}
+```
+
 ## ResultGenericTests
 
 `ResultGenericTests` validates the generic `Result<T>` class, which provides a type-safe wrapper for operation results with support for both success and failure states. The test suite verifies that successful results properly set the `IsSuccess` flag and return the provided data (or default values when no data is provided), while failure results correctly set the `IsSuccess` flag to false and populate the error message and optional error code. This pattern is commonly used throughout the application to handle operations that may fail without throwing exceptions.
