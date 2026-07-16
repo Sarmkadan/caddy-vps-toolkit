@@ -1498,6 +1498,59 @@ Console.WriteLine($"Effective weight: {weight}");
 
 The options govern active health checks, passive failure detection, retry strategies, session affinity, and circuit breaking behavior across your load-balanced services.
 
+## UpstreamServer
+
+The `UpstreamServer` type represents a backend server that can receive traffic from the load balancer. It maintains comprehensive health monitoring, performance tracking, and connection state information to enable intelligent routing decisions. Upstream servers are organized into pools and are automatically evaluated for availability based on health probes and performance metrics.
+
+Upstream servers support weighted load balancing, health status tracking, circuit breaking, and real-time performance monitoring through continuous health checks and metrics aggregation.
+
+```csharp
+// Example: Creating and configuring an upstream server for a load-balanced service pool
+var upstreamServer = new UpstreamServer
+{
+    Id = "api-server-01",
+    Address = "192.168.1.100",
+    Port = 8080,
+    Weight = 100, // Higher weight = more traffic
+    Status = UpstreamServerStatus.Healthy,
+    IsHealthy = true,
+    LastCheckedAt = DateTime.UtcNow,
+    ConsecutiveFailures = 0,
+    ConsecutiveSuccesses = 150,
+    AverageResponseTimeMs = 45,
+    ActiveConnections = 8,
+    Tags = "production,high-priority",
+    Notes = "Primary API server in us-west-2 region",
+    CreatedAt = DateTime.UtcNow,
+    UpdatedAt = DateTime.UtcNow
+};
+
+// Validate the upstream server configuration
+upstreamServer.Validate();
+
+// Check if the server is available for routing
+if (upstreamServer.IsAvailable)
+{
+    Console.WriteLine($"Server {upstreamServer.Id} is available at {upstreamServer.GetUpstreamAddress()}");
+}
+
+// Record a health probe result (automatically updates health status and metrics)
+var probeResult = new HealthProbeResult
+{
+    Success = true,
+    ResponseTimeMs = 42,
+    StatusCode = 200,
+    CheckedAt = DateTime.UtcNow
+};
+
+upstreamServer.RecordHealthProbeResult(probeResult);
+
+// The server's health status and metrics are automatically updated
+Console.WriteLine($"Server health: {upstreamServer.Status}");
+Console.WriteLine($"Average response time: {upstreamServer.AverageResponseTimeMs}ms");
+Console.WriteLine($"Active connections: {upstreamServer.ActiveConnections}");
+```
+
 ## SlidingWindowMetricsAggregator
 
 `SlidingWindowMetricsAggregator` is a thread-safe utility class that maintains a rolling window of metrics over time, enabling real-time aggregation and analysis of upstream performance data. It tracks request counts, response times, error rates, and other key performance indicators across a configurable time window, allowing the adaptive load balancer to make data-driven routing decisions based on recent service behavior rather than historical averages.
@@ -1548,6 +1601,59 @@ services.AddUpstreamManagement(options =>
     options.CircuitBreakerRecoverySeconds = loadBalancingOptions.CircuitBreakerRecoverySeconds;
     options.ConnectionDrainTimeoutSeconds = loadBalancingOptions.ConnectionDrainTimeoutSeconds;
 });
+```
+
+## UpstreamServer
+
+The `UpstreamServer` type represents a backend server that can receive traffic from the load balancer. It maintains comprehensive health monitoring, performance tracking, and connection state information to enable intelligent routing decisions. Upstream servers are organized into pools and are automatically evaluated for availability based on health probes and performance metrics.
+
+Upstream servers support weighted load balancing, health status tracking, circuit breaking, and real-time performance monitoring through continuous health checks and metrics aggregation.
+
+```csharp
+// Example: Creating and configuring an upstream server for a load-balanced service pool
+var upstreamServer = new UpstreamServer
+{
+    Id = "api-server-01",
+    Address = "192.168.1.100",
+    Port = 8080,
+    Weight = 100, // Higher weight = more traffic
+    Status = UpstreamServerStatus.Healthy,
+    IsHealthy = true,
+    LastCheckedAt = DateTime.UtcNow,
+    ConsecutiveFailures = 0,
+    ConsecutiveSuccesses = 150,
+    AverageResponseTimeMs = 45,
+    ActiveConnections = 8,
+    Tags = "production,high-priority",
+    Notes = "Primary API server in us-west-2 region",
+    CreatedAt = DateTime.UtcNow,
+    UpdatedAt = DateTime.UtcNow
+};
+
+// Validate the upstream server configuration
+upstreamServer.Validate();
+
+// Check if the server is available for routing
+if (upstreamServer.IsAvailable)
+{
+    Console.WriteLine($"Server {upstreamServer.Id} is available at {upstreamServer.GetUpstreamAddress()}");
+}
+
+// Record a health probe result (automatically updates health status and metrics)
+var probeResult = new HealthProbeResult
+{
+    Success = true,
+    ResponseTimeMs = 42,
+    StatusCode = 200,
+    CheckedAt = DateTime.UtcNow
+};
+
+upstreamServer.RecordHealthProbeResult(probeResult);
+
+// The server's health status and metrics are automatically updated
+Console.WriteLine($"Server health: {upstreamServer.Status}");
+Console.WriteLine($"Average response time: {upstreamServer.AverageResponseTimeMs}ms");
+Console.WriteLine($"Active connections: {upstreamServer.ActiveConnections}");
 ```
 
 ## SlidingWindowMetricsAggregator
