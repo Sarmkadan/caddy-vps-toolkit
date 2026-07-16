@@ -542,6 +542,58 @@ caddy-vps-toolkit backup-list [--dir /path/to/backups]
 ```
 Prints all `*.backup.json` files found in the configured (or specified) directory.
 
+## BackupManifest
+
+The `BackupManifest` type represents a backup manifest that tracks all configuration components included in a backup.
+
+It contains metadata about the backup itself (ID, creation timestamp, application version) and references to all managed services, their configurations, and the Caddyfile content.
+
+Example usage:
+```csharp
+// Create a backup manifest for a configuration backup
+var backupManifest = new BackupManifest
+{
+    BackupId = Guid.NewGuid().ToString(),
+    CreatedAt = DateTime.UtcNow,
+    AppVersion = "2.0.0",
+    Services = new List<ManagedService>
+    {
+        new ManagedService
+        {
+            Name = "web-app",
+            Port = 3000,
+            Domain = "app.example.com",
+            HealthCheck = new HealthCheckConfig
+            {
+                Url = "http://localhost:3000/health",
+                Interval = TimeSpan.FromSeconds(30)
+            }
+        },
+        new ManagedService
+        {
+            Name = "api-service",
+            Port = 8080,
+            Domain = "api.example.com"
+        }
+    },
+    Configuration = new Dictionary<string, string>
+    {
+        ["Caddy.AdminPort"] = "2019",
+        ["HealthCheck.DefaultInterval"] = "30s",
+        ["Systemd.EnableOnCreation"] = "true"
+    },
+    CaddyfileContent = "example.com {\n    reverse_proxy localhost:3000\n}",
+    Description = "Weekly backup including web-app and api-service"
+};
+
+// Validate the backup manifest
+backupManifest.Validate();
+
+// Serialize to JSON for backup storage
+string json = JsonSerializer.Serialize(backupManifest, new JsonSerializerOptions { WriteIndented = true });
+File.WriteAllText($"backup-{backupManifest.BackupId}.json", json);
+```
+
 #### logs-view
 
 Aggregate and filter application logs from all service log files.
