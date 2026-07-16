@@ -2486,6 +2486,49 @@ eventBus.Unsubscribe<ServiceHealthChangedEvent>(alertHandler);
 
 ### Common Event Patterns
 
+---
+
+## ServiceLifecycleIntegrationTests
+
+`ServiceLifecycleIntegrationTests` provides end-to-end integration tests that validate the complete service lifecycle workflow. These tests verify service creation, status transitions, Caddy configuration generation, health monitoring, caching, event bus integration, retry policies, and state management. The test suite demonstrates how all components work together in realistic scenarios, including concurrent operations and configuration combinations.
+
+## AppConfigurationBuilderTests
+
+`AppConfigurationBuilderTests` provides unit tests for the `AppConfigurationBuilder` class, which validates the configuration builder functionality for application settings. This test suite verifies that the builder correctly handles setting additions, default value merging, JSON file loading, and type-safe value retrieval for integers and booleans, ensuring robust configuration management for application settings.
+
+```csharp
+// Example: Building application configuration with various sources
+var builder = new AppConfigurationBuilder()
+    .WithSetting("Database:ConnectionString", "Server=localhost;Database=appdb")
+    .WithSetting("Database:Port", "5432")
+    .WithSetting("FeatureFlags:EnableNewDashboard", "true")
+    .WithSetting("FeatureFlags:MaxConnections", "100");
+
+// Build the configuration
+var config = builder.Build();
+
+// Retrieve values with type safety
+string connectionString = config.GetString("Database:ConnectionString");
+int port = config.GetInt("Database:Port", 5432); // Returns 5432 if key not found or invalid
+bool enableDashboard = config.GetBool("FeatureFlags:EnableNewDashboard");
+
+// Add default values for missing keys
+var defaults = new Dictionary<string, object>
+{
+    { "Database:Timeout", 30 },
+    { "FeatureFlags:EnableLegacyMode", "false" }
+};
+builder.WithDefaults(defaults);
+
+// Build updated configuration
+var configWithDefaults = builder.Build();
+int timeout = configWithDefaults.GetInt("Database:Timeout"); // Returns 30
+
+// Load configuration from JSON file
+builder.WithJsonFile("appsettings.json");
+var configFromFile = builder.Build();
+```
+
 **1. Domain Event Pattern**: Use `DomainEvent` as a base class for domain events in DDD applications
 
 ```csharp
