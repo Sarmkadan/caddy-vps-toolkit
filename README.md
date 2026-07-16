@@ -1045,6 +1045,52 @@ var unitName = validation.ManagedService_GetSystemdUnitName_WithSpacesInName_For
 Assert.Equal("my-production-service.service", unitName);
 ```
 
+## StateMachineTests
+
+`StateMachineTests` provides unit tests for the `StateMachine<TState, TTrigger>` class, a generic finite state machine implementation for managing state transitions in applications. This test suite validates state transition behavior, validation of valid/invalid transitions, callback invocation on state entry/exit, reset functionality, and available transition queries, ensuring robust state management for workflows and service lifecycle operations.
+
+```csharp
+// Example: Using StateMachine for service lifecycle management
+var serviceMachine = new StateMachine<ServiceState, ServiceTrigger>(ServiceState.Stopped);
+
+// Configure valid state transitions
+serviceMachine.Configure(ServiceState.Stopped, ServiceTrigger.Start, ServiceState.Running);
+serviceMachine.Configure(ServiceState.Running, ServiceTrigger.Pause, ServiceState.Paused);
+serviceMachine.Configure(ServiceState.Running, ServiceTrigger.Stop, ServiceState.Stopped);
+serviceMachine.Configure(ServiceState.Paused, ServiceTrigger.Resume, ServiceState.Running);
+serviceMachine.Configure(ServiceState.Paused, ServiceTrigger.Stop, ServiceState.Stopped);
+
+// Check if a transition is possible
+bool canStart = serviceMachine.CanFire(ServiceTrigger.Start); // Returns true
+bool canStop = serviceMachine.CanFire(ServiceTrigger.Stop); // Returns false (not configured from Stopped)
+
+// Fire a valid transition
+bool transitionSucceeded = serviceMachine.Fire(ServiceTrigger.Start); // Returns true, state changes to Running
+
+// Get current state
+ServiceState currentState = serviceMachine.GetCurrentState(); // Returns Running
+
+// Register callbacks for state entry/exit
+bool enterCalled = false;
+bool exitCalled = false;
+
+serviceMachine.OnEnter(ServiceState.Running, () => enterCalled = true);
+serviceMachine.OnExit(ServiceState.Stopped, () => exitCalled = true);
+
+// Fire transition to trigger callbacks
+serviceMachine.Fire(ServiceTrigger.Start); // enterCalled becomes true
+
+// Get available transitions from current state
+var availableTransitions = serviceMachine.GetAvailableTransitions();
+// Returns: [ServiceTrigger.Pause, ServiceTrigger.Stop]
+
+// Reset to a specific state
+serviceMachine.Reset(ServiceState.Stopped);
+
+// Fire invalid transition (returns false, state unchanged)
+bool invalidTransition = serviceMachine.Fire(ServiceTrigger.Resume); // Returns false, state remains Stopped
+```
+
 ## ServiceRepositoryTests
 
 `ServiceRepositoryTests` provides unit tests for the `ServiceRepository` class, which handles database operations for managed services including creation, retrieval, updating, and deletion. This test suite validates that all repository methods correctly handle database operations, return expected results, and maintain data integrity when working with service configurations.
