@@ -1110,6 +1110,155 @@ var minimumConfig = new HealthCheckConfig
 
 edgeCaseTests.Validate_IntervalExactlyMinimum_DoesNotThrow();
 Console.WriteLine("Exact minimum interval validation passed");
+```
+
+## CaddyRouteEdgeCaseTests
+
+`CaddyRouteEdgeCaseTests` validates edge-case behavior for the `CaddyRoute` class, focusing on validation boundaries, path matching, and configuration requirements. This test suite ensures that Caddy route configurations properly handle null values, empty strings, invalid URLs, and timeout constraints. It validates that the route validation logic correctly identifies and reports invalid configurations before they reach the Caddy configuration generator.
+
+```csharp
+// Example: Validating Caddy route configurations for edge cases
+var routeTests = new CaddyRouteEdgeCaseTests();
+
+// Test null domain validation - should throw ValidationException
+var nullDomainRoute = new CaddyRoute
+{
+    Domain = null!,
+    UpstreamUrl = "http://localhost:5000"
+};
+
+try
+{
+    routeTests.Validate_NullDomain_ThrowsValidationException();
+    Console.WriteLine("Null domain validation works correctly");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Test failed: {ex.Message}");
+}
+
+// Test empty domain validation - should throw ValidationException
+var emptyDomainRoute = new CaddyRoute
+{
+    Domain = "",
+    UpstreamUrl = "http://localhost:5000"
+};
+
+routeTests.Validate_EmptyDomain_ThrowsValidationException();
+Console.WriteLine("Empty domain validation passed");
+
+// Test invalid upstream URL validation - should throw ValidationException
+var invalidUrlRoute = new CaddyRoute
+{
+    Domain = "example.com",
+    UpstreamUrl = "not-a-url"
+};
+
+routeTests.Validate_InvalidUpstreamUrl_ThrowsValidationException();
+Console.WriteLine("Invalid URL validation works correctly");
+
+// Test zero timeout validation - should throw ValidationException
+var zeroTimeoutRoute = new CaddyRoute
+{
+    Domain = "example.com",
+    UpstreamUrl = "http://localhost:5000",
+    TimeoutSeconds = 0
+};
+
+routeTests.Validate_ZeroTimeout_ThrowsValidationException();
+Console.WriteLine("Zero timeout validation works correctly");
+
+// Test negative timeout validation - should throw ValidationException
+var negativeTimeoutRoute = new CaddyRoute
+{
+    Domain = "example.com",
+    UpstreamUrl = "http://localhost:5000",
+    TimeoutSeconds = -1
+};
+
+routeTests.Validate_NegativeTimeout_ThrowsValidationException();
+Console.WriteLine("Negative timeout validation works correctly");
+
+// Test basic auth enabled without username validation - should throw ValidationException
+var basicAuthNoUserRoute = new CaddyRoute
+{
+    Domain = "example.com",
+    UpstreamUrl = "http://localhost:5000",
+    BasicAuthEnabled = true,
+    BasicAuthUsername = null!
+};
+
+routeTests.Validate_BasicAuthEnabledWithoutUsername_ThrowsValidationException();
+Console.WriteLine("Basic auth username validation works correctly");
+
+// Test valid route - should not throw
+var validRoute = new CaddyRoute
+{
+    Domain = "example.com",
+    UpstreamUrl = "http://localhost:5000",
+    TimeoutSeconds = 30
+};
+
+routeTests.Validate_ValidRoute_DoesNotThrow();
+Console.WriteLine("Valid route validation passed");
+
+// Test path matcher generation with null path - should return empty string
+var nullPathRoute = new CaddyRoute { Path = null! };
+string nullPathMatcher = nullPathRoute.GetCaddyPathMatcher();
+Console.WriteLine($"Null path matcher: '{nullPathMatcher}'"); // Outputs: ''
+
+// Test path matcher generation with slash path - should return empty string
+var slashPathRoute = new CaddyRoute { Path = "/" };
+string slashPathMatcher = slashPathRoute.GetCaddyPathMatcher();
+Console.WriteLine($"Slash path matcher: '{slashPathMatcher}'"); // Outputs: ''
+
+// Test path matcher generation with custom path - should return the path
+var customPathRoute = new CaddyRoute { Path = "/api/v1" };
+string customPathMatcher = customPathRoute.GetCaddyPathMatcher();
+Console.WriteLine($"Custom path matcher: '{customPathMatcher}'"); // Outputs: '/api/v1'
+
+// Test route path generation with custom path - should concatenate domain and path
+var routeWithPath = new CaddyRoute { Domain = "example.com", Path = "/api" };
+string routePath = routeWithPath.GenerateRoutePath();
+Console.WriteLine($"Route path with custom path: '{routePath}'"); // Outputs: 'example.com/api'
+
+// Test route path generation with slash path - should return domain only
+var routeWithSlash = new CaddyRoute { Domain = "example.com", Path = "/" };
+string slashRoutePath = routeWithSlash.GenerateRoutePath();
+Console.WriteLine($"Route path with slash: '{slashRoutePath}'"); // Outputs: 'example.com'
+```
+
+```csharp
+// Example: Testing health check configuration edge cases
+var edgeCaseTests = new HealthCheckConfigEdgeCaseTests();
+
+// Test minimum interval boundary - 4 seconds is below minimum of 5
+var belowMinimumConfig = new HealthCheckConfig
+{
+    IntervalSeconds = 4,
+    TimeoutSeconds = 2
+};
+
+try
+{
+    edgeCaseTests.Validate_IntervalBelowMinimum_ThrowsValidationException();
+    Console.WriteLine("Minimum interval validation works correctly");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Test failed: {ex.Message}");
+}
+
+// Test exact minimum interval - 5 seconds is the minimum allowed
+var minimumConfig = new HealthCheckConfig
+{
+    Type = HealthCheckType.Tcp,
+    IntervalSeconds = 5,
+    TimeoutSeconds = 1
+};
+
+edgeCaseTests.Validate_IntervalExactlyMinimum_DoesNotThrow();
+Console.WriteLine("Exact minimum interval validation passed");
 
 // Test timeout greater than interval - should throw validation exception
 var invalidTimeoutConfig = new HealthCheckConfig
