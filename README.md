@@ -1048,6 +1048,45 @@ webhookHandler.Unregister(
 
 The `Result` type is a simple, type-safe wrapper for operation results that provides a consistent way to handle both success and failure states without throwing exceptions. It's commonly used throughout the application to return operation outcomes where failures are expected and should be handled gracefully. The generic `Result<T>` variant carries data for successful operations, while the non-generic `Result` is used for operations that don't need to return values.
 
+## HealthCheckResult
+
+The `HealthCheckResult` type represents the outcome of a health check for a service endpoint. It captures detailed information about the check including response times, HTTP status codes, error messages, and historical tracking of consecutive successes and failures. This type is used by the health monitoring system to evaluate service health and trigger recovery actions when thresholds are exceeded.
+
+```csharp
+// Create a successful health check result for a healthy service
+var successResult = HealthCheckResult.CreateSuccess(
+    serviceId: "api-service-01",
+    responseTimeMs: 125,
+    httpStatus: 200
+);
+
+Console.WriteLine($"Healthy: {successResult.IsHealthy}");
+Console.WriteLine($"Status: {successResult.Status}");
+Console.WriteLine($"Response time: {successResult.ResponseTimeMs}ms");
+Console.WriteLine($"HTTP status: {successResult.HttpStatusCode}");
+Console.WriteLine($"Checked at: {successResult.CheckedAt}");
+
+// Create a failed health check result for an unhealthy service
+var failureResult = HealthCheckResult.CreateFailure(
+    serviceId: "database-service-02",
+    errorMessage: "Connection timeout after 5000ms",
+    responseTimeMs: 5200
+);
+
+Console.WriteLine($"Healthy: {failureResult.IsHealthy}");
+Console.WriteLine($"Status: {failureResult.Status}");
+Console.WriteLine($"Error: {failureResult.ErrorMessage}");
+Console.WriteLine($"Consecutive failures: {failureResult.ConsecutiveFailures}");
+
+// Check if response is slow (threshold defaults to 5000ms)
+bool isSlow = successResult.IsSlowResponse();
+Console.WriteLine($"Is slow response: {isSlow}");
+
+// Check with custom threshold
+bool isVerySlow = failureResult.IsSlowResponse(thresholdMs: 5000);
+Console.WriteLine($"Is very slow: {isVerySlow}");
+```
+
 ## SslCertificateInfo
 
 The `SslCertificateInfo` class represents metadata for an SSL/TLS certificate retrieved from a remote domain. It provides information about certificate validity, subject, issuer, and expiry dates. This type is used by the SSL certificate checker functionality to monitor certificate health and alert users before certificates expire.
