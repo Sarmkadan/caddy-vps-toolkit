@@ -950,6 +950,55 @@ Func<Task> emptyContentTest = async () => await caddyService.ValidateCaddyfileAs
 await emptyContentTest.Should().ThrowAsync<ArgumentException>();
 ```
 
+## CollectionExtensionsTests
+
+`CollectionExtensionsTests` provides unit tests for the `CollectionExtensions` utility class, which extends standard .NET collection types with safe access, batching, partitioning, and conditional operations. This test suite validates that all extension methods correctly handle edge cases including null collections, out-of-range indices, empty collections, and various predicate conditions, ensuring robust error handling and predictable behavior for collection operations.
+
+```csharp
+// Example: Using CollectionExtensions for safe collection operations
+var services = new List<ManagedService>
+{
+    new ManagedService { Name = "api", Port = 8080, Domain = "api.example.com" },
+    new ManagedService { Name = "web", Port = 3000, Domain = "web.example.com" },
+    new ManagedService { Name = "cache", Port = 6379, Domain = "cache.example.com" }
+};
+
+// SafeGet - safely access elements without throwing IndexOutOfRangeException
+var firstService = services.SafeGet(0); // Returns "api" service
+var outOfRange = services.SafeGet(10); // Returns null/default instead of throwing
+var negativeIndex = services.SafeGet(-1); // Returns null/default instead of throwing
+
+// SafeGet with custom default value
+var customDefault = services.SafeGet(10, new ManagedService { Name = "default", Port = 0 });
+
+// IsNullOrEmpty - check if collection is null or empty
+bool isNull = ((List<ManagedService>?)null).IsNullOrEmpty(); // Returns true
+bool isEmpty = new List<ManagedService>().IsNullOrEmpty(); // Returns true
+bool isNotEmpty = services.IsNullOrEmpty(); // Returns false
+
+// Batch - split collection into batches of specified size
+var batches = services.Batch(2);
+foreach (var batch in batches)
+{
+    Console.WriteLine($"Batch contains {batch.Count} services");
+}
+
+// Partition - split collection into matching and not matching groups
+var (evenPorts, oddPorts) = services.Partition(s => s.Port % 2 == 0);
+Console.WriteLine($"Services with even ports: {evenPorts.Count}");
+Console.WriteLine($"Services with odd ports: {oddPorts.Count}");
+
+// RemoveWhere - remove items matching a predicate
+services.RemoveWhere(s => s.Port > 5000); // Removes cache service
+
+// AddRangeIfNotExists - add items only if they don't already exist
+services.AddRangeIfNotExists(new[]
+{
+    new ManagedService { Name = "database", Port = 5432, Domain = "db.example.com" },
+    new ManagedService { Name = "api", Port = 8080, Domain = "api.example.com" } // Won't add - already exists
+});
+```
+
 ## ValidationHelperTests
 
 `ValidationHelperTests` provides unit tests for input validation utilities used throughout the application. It validates port numbers, domain names, service identifiers, and error result merging, ensuring that configuration inputs meet the required constraints before being processed by other components. The test class exercises both success and failure paths for common validation scenarios.
