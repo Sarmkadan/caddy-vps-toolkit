@@ -975,6 +975,49 @@ webhookHandler.Unregister(
 
 The `Result` type is a simple, type-safe wrapper for operation results that provides a consistent way to handle both success and failure states without throwing exceptions. It's commonly used throughout the application to return operation outcomes where failures are expected and should be handled gracefully. The generic `Result<T>` variant carries data for successful operations, while the non-generic `Result` is used for operations that don't need to return values.
 
+## SslCertificateInfo
+
+The `SslCertificateInfo` class represents metadata for an SSL/TLS certificate retrieved from a remote domain. It provides information about certificate validity, subject, issuer, and expiry dates. This type is used by the SSL certificate checker functionality to monitor certificate health and alert users before certificates expire.
+
+```csharp
+// Example: Checking SSL certificate status and creating a monitoring alert
+var certificateInfo = new SslCertificateInfo
+{
+    Domain = "example.com",
+    Subject = "CN=example.com, O=Example Inc, L=San Francisco, ST=California, C=US",
+    Issuer = "CN=Let's Encrypt Authority X3, O=Let's Encrypt, C=US",
+    IssuedAt = DateTime.UtcNow.AddDays(-90),
+    ExpiresAt = DateTime.UtcNow.AddDays(30)
+};
+
+// Check if certificate is valid
+bool isValid = certificateInfo.IsValid; // true
+int daysRemaining = certificateInfo.DaysUntilExpiry; // 30
+
+// Create a certificate check result based on status
+SslCertificateCheckResult result;
+if (certificateInfo.DaysUntilExpiry <= 7)
+{
+    result = SslCertificateCheckResult.CreateExpiringSoon(
+        certificateInfo.Domain, 
+        certificateInfo, 
+        certificateInfo.DaysUntilExpiry <= 7
+    );
+}
+else if (certificateInfo.DaysUntilExpiry <= 0)
+{
+    result = SslCertificateCheckResult.CreateExpired(certificateInfo.Domain, certificateInfo);
+}
+else
+{
+    result = SslCertificateCheckResult.CreateValid(certificateInfo.Domain, certificateInfo);
+}
+
+Console.WriteLine($"Certificate status: {result.Status}");
+Console.WriteLine($"Message: {result.Message}");
+Console.WriteLine($"Checked at: {result.CheckedAt}");
+```
+
 ### Public Members
 
 The `Result` type provides the following public members:
