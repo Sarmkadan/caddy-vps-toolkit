@@ -2181,6 +2181,55 @@ else
 }
 ```
 
+## MemoryCacheTests
+
+`MemoryCacheTests` provides unit tests for the `MemoryCache` class, which implements an in-memory key-value store with asynchronous operations and optional time-based expiration. The test suite validates core caching functionality including value storage and retrieval, existence checks, entry removal, cache clearing, expiration handling, and key validation, ensuring robust behavior for caching scenarios throughout the application.
+
+```csharp
+// Example: Using MemoryCache for service configuration caching
+var cache = new MemoryCache();
+
+// Store a service configuration in cache
+await cache.SetAsync("api-service-config", new ServiceConfig
+{
+    Name = "api-service",
+    Port = 5000,
+    Domain = "api.example.com"
+});
+
+// Retrieve the cached configuration
+var cachedConfig = await cache.GetAsync<ServiceConfig>("api-service-config");
+Console.WriteLine($"Retrieved cached service: {cachedConfig?.Name} on port {cachedConfig?.Port}");
+
+// Check if a key exists before attempting retrieval
+bool exists = await cache.ExistsAsync("api-service-config");
+if (exists)
+{
+    var config = await cache.GetAsync<ServiceConfig>("api-service-config");
+    // Use the cached configuration
+}
+
+// Remove a specific entry from cache
+await cache.RemoveAsync("api-service-config");
+
+// Clear all cached entries
+await cache.ClearAsync();
+
+// Store with expiration - cache entry will be automatically removed after 5 minutes
+await cache.SetAsync("temp-data", result, TimeSpan.FromMinutes(5));
+
+// Use GetOrSetAsync for computed values - computes and caches only if missing
+var expensiveResult = await cache.GetOrSetAsync("expensive-query-result", async () =>
+{
+    // This expensive operation will only run if the key doesn't exist
+    return await database.QueryExpensiveDataAsync();
+});
+
+// Generate consistent cache keys from multiple parts
+string cacheKey = CacheExtensions.MakeCacheKey("service", "health", "status");
+// Returns: "service:health:status"
+```
+
 ## ServiceLifecycleIntegrationTests
 
 `ServiceLifecycleIntegrationTests` provides end-to-end integration tests that validate the complete service lifecycle workflow. These tests verify service creation, status transitions, Caddy configuration generation, health monitoring, caching, event bus integration, retry policies, and state management. The test suite demonstrates how all components work together in realistic scenarios, including concurrent operations and configuration combinations.
@@ -2487,6 +2536,55 @@ eventBus.Unsubscribe<ServiceHealthChangedEvent>(alertHandler);
 ### Common Event Patterns
 
 ---
+
+## MemoryCacheTests
+
+`MemoryCacheTests` provides unit tests for the `MemoryCache` class, which implements an in-memory key-value store with asynchronous operations and optional time-based expiration. The test suite validates core caching functionality including value storage and retrieval, existence checks, entry removal, cache clearing, expiration handling, and key validation, ensuring robust behavior for caching scenarios throughout the application.
+
+```csharp
+// Example: Using MemoryCache for service configuration caching
+var cache = new MemoryCache();
+
+// Store a service configuration in cache
+await cache.SetAsync("api-service-config", new ServiceConfig
+{
+    Name = "api-service",
+    Port = 5000,
+    Domain = "api.example.com"
+});
+
+// Retrieve the cached configuration
+var cachedConfig = await cache.GetAsync<ServiceConfig>("api-service-config");
+Console.WriteLine($"Retrieved cached service: {cachedConfig?.Name} on port {cachedConfig?.Port}");
+
+// Check if a key exists before attempting retrieval
+bool exists = await cache.ExistsAsync("api-service-config");
+if (exists)
+{
+    var config = await cache.GetAsync<ServiceConfig>("api-service-config");
+    // Use the cached configuration
+}
+
+// Remove a specific entry from cache
+await cache.RemoveAsync("api-service-config");
+
+// Clear all cached entries
+await cache.ClearAsync();
+
+// Store with expiration - cache entry will be automatically removed after 5 minutes
+await cache.SetAsync("temp-data", result, TimeSpan.FromMinutes(5));
+
+// Use GetOrSetAsync for computed values - computes and caches only if missing
+var expensiveResult = await cache.GetOrSetAsync("expensive-query-result", async () =>
+{
+    // This expensive operation will only run if the key doesn't exist
+    return await database.QueryExpensiveDataAsync();
+});
+
+// Generate consistent cache keys from multiple parts
+string cacheKey = CacheExtensions.MakeCacheKey("service", "health", "status");
+// Returns: "service:health:status"
+```
 
 ## ServiceLifecycleIntegrationTests
 
