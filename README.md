@@ -1147,6 +1147,54 @@ var allCommands = registry.GetAll();
 Console.WriteLine($"Total registered commands: {allCommands.Count}");
 ```
 
+## ILogger
+
+The `ILogger` interface provides structured logging capabilities with support for multiple log levels and asynchronous operations. It serves as the primary logging abstraction for the application, enabling consistent log formatting and output to different destinations (file, console, or in-memory for testing).
+
+The interface is implemented by `FileLogger` for persistent logging to disk and `MemoryLogger` for testing scenarios where log inspection is needed without writing to disk.
+
+**Public Members:**
+- `Task LogInfoAsync(string message)` - Logs an informational message
+- `Task LogWarningAsync(string message)` - Logs a warning message
+- `Task LogErrorAsync(string message)` - Logs an error message
+- `Task LogDebugAsync(string message)` - Logs a debug message
+
+**Example Usage:**
+
+```csharp
+// Create a file-based logger with minimum log level of Info
+var fileLogger = new FileLogger(
+    logPath: "/var/log/caddy-vps-toolkit/app.log",
+    minLevel: LogLevel.Info,
+    consoleOutput: true
+);
+
+// Log messages at different levels
+await fileLogger.LogInfoAsync("Application started successfully");
+await fileLogger.LogWarningAsync("High memory usage detected - 85%");
+await fileLogger.LogErrorAsync("Failed to connect to database: connection timeout");
+await fileLogger.LogDebugAsync("Processing request: GET /api/users/123");
+
+// Create an in-memory logger for testing scenarios
+var memoryLogger = new MemoryLogger(minLevel: LogLevel.Debug);
+
+// Log messages during testing
+await memoryLogger.LogInfoAsync("Test case started: ServiceHealthCheck");
+await memoryLogger.LogDebugAsync("Mock service response: 200 OK");
+
+// Retrieve and verify logged messages
+var logs = memoryLogger.GetLogs();
+Console.WriteLine($"Total log entries: {logs.Count}");
+
+foreach (var logEntry in logs)
+{
+    Console.WriteLine(logEntry);
+}
+
+// Clear logs between test cases
+memoryLogger.Clear();
+```
+
 ## IWebhookHandler
 
 The `IWebhookHandler` interface provides a mechanism for external system integration through webhook notifications. It allows registration of webhook URLs for specific event types and triggers notifications when those events occur. The interface supports registering and unregistering webhook endpoints, triggering events with payload data, and retrieving current registrations.
