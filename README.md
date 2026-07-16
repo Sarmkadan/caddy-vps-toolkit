@@ -859,6 +859,61 @@ curl http://localhost:9090/metrics
 # health_check_duration_seconds{name="api"} 0.125
 ```
 
+## IWebhookHandler
+
+The `IWebhookHandler` interface provides a mechanism for external system integration through webhook notifications. It allows registration of webhook URLs for specific event types and triggers notifications when those events occur. The interface supports registering and unregistering webhook endpoints, triggering events with payload data, and retrieving current registrations.
+
+The `WebhookHandler` implementation manages webhook registrations in memory and delivers notifications via HTTP POST requests. It handles event types such as service creation, deletion, status changes, health check failures, and configuration updates.
+
+**Example Usage:**
+
+```csharp
+// Create webhook handler with HTTP client
+var httpClient = new HttpClient();
+var webhookHandler = new WebhookHandler(httpClient);
+
+// Register webhook URL for service creation events
+webhookHandler.Register(
+    url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+    eventType: WebhookEventType.ServiceCreated
+);
+
+// Register additional webhook for health check failures
+webhookHandler.Register(
+    url: "https://your-monitoring-system.example.com/webhook",
+    eventType: WebhookEventType.HealthCheckFailed
+);
+
+// Trigger a service creation event
+var serviceCreatedPayload = new
+{
+    ServiceName = "api-service",
+    Port = 8080,
+    Domain = "api.example.com",
+    Status = "created"
+};
+
+bool success = await webhookHandler.TriggerAsync(
+    WebhookEventType.ServiceCreated,
+    serviceCreatedPayload
+);
+
+Console.WriteLine($"Webhook triggered successfully: {success}");
+
+// Get all registered URLs for a specific event type
+var healthCheckUrls = webhookHandler.GetRegistrations(WebhookEventType.HealthCheckFailed);
+foreach (var url in healthCheckUrls)
+{
+    Console.WriteLine($"Health check webhook registered at: {url}");
+}
+
+// Unregister a webhook URL
+webhookHandler.Unregister(
+    url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+    eventType: WebhookEventType.ServiceCreated
+);
+```
+
 ## DateTimeExtensionsTests
 
 `DateTimeExtensionsTests` provides unit tests for the `DateTimeExtensions` utility class, which extends `DateTime` with common formatting and calculation methods. This test suite validates that all extension methods correctly handle various date and time scenarios, including relative time formatting, ISO 8601 serialization, start-of-day calculations, past/future checks, and working day counting.
