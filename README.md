@@ -1551,6 +1551,89 @@ Console.WriteLine($"Average response time: {upstreamServer.AverageResponseTimeMs
 Console.WriteLine($"Active connections: {upstreamServer.ActiveConnections}");
 ```
 
+## UpstreamPool
+
+The `UpstreamPool` type represents a named pool of backend upstream servers that shares a load-balancing strategy, health-check policy, and retry configuration. A pool is owned by a single `ManagedService` and serves as the primary unit of Caddy configuration generation for dynamic upstream management in v2.
+
+Upstream pools enable sophisticated load balancing scenarios including:
+- Multiple load balancing strategies (Round Robin, Least Connections, Random, Weighted Random, IP Hash)
+- Active and passive health monitoring with configurable thresholds
+- Retry policies for failed requests
+- Sticky sessions via cookie-based affinity
+- Weighted distribution based on server capacity
+
+```csharp
+// Example: Creating a load-balanced pool with multiple upstream servers
+var pool = new UpstreamPool
+{
+    Name = "api-pool",
+    ServiceId = "api-service-123",
+    Strategy = LoadBalancingStrategy.RoundRobin,
+    Servers = new List<UpstreamServer>
+    {
+        new UpstreamServer
+        {
+            Id = "api-server-01",
+            Address = "192.168.1.100",
+            Port = 8080,
+            Weight = 100,
+            Status = UpstreamServerStatus.Active,
+            IsHealthy = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        },
+        new UpstreamServer
+        {
+            Id = "api-server-02",
+            Address = "192.168.1.101",
+            Port = 8080,
+            Weight = 75,
+            Status = UpstreamServerStatus.Active,
+            IsHealthy = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        },
+        new UpstreamServer
+        {
+            Id = "api-server-03",
+            Address = "192.168.1.102",
+            Port = 8080,
+            Weight = 50,
+            Status = UpstreamServerStatus.Active,
+            IsHealthy = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        }
+    },
+    PassiveHealthEnabled = true,
+    ActiveHealthEnabled = true,
+    HealthCheckIntervalSeconds = 30,
+    UnhealthyThreshold = 3,
+    HealthyThreshold = 2,
+    MaxRetries = 2,
+    RetryDurationSeconds = 30,
+    StickyCookieName = "api_session",
+    HealthProbePath = "/health",
+    IsEnabled = true
+};
+
+// Validate the pool configuration
+pool.Validate();
+
+// Get available servers (only healthy, active servers)
+var availableServers = pool.GetAvailableServers();
+Console.WriteLine($"Available servers: {availableServers.Count}");
+
+// Get total active connections across all servers
+var totalConnections = pool.GetTotalActiveConnections();
+Console.WriteLine($"Total active connections: {totalConnections}");
+
+// Generate Caddy reverse_proxy configuration block
+var caddyConfig = pool.GenerateCaddyUpstreamBlock("/*");
+Console.WriteLine("Generated Caddy configuration:");
+Console.WriteLine(caddyConfig);
+```
+
 ## SlidingWindowMetricsAggregator
 
 `SlidingWindowMetricsAggregator` is a thread-safe utility class that maintains a rolling window of metrics over time, enabling real-time aggregation and analysis of upstream performance data. It tracks request counts, response times, error rates, and other key performance indicators across a configurable time window, allowing the adaptive load balancer to make data-driven routing decisions based on recent service behavior rather than historical averages.
@@ -1654,6 +1737,89 @@ upstreamServer.RecordHealthProbeResult(probeResult);
 Console.WriteLine($"Server health: {upstreamServer.Status}");
 Console.WriteLine($"Average response time: {upstreamServer.AverageResponseTimeMs}ms");
 Console.WriteLine($"Active connections: {upstreamServer.ActiveConnections}");
+```
+
+## UpstreamPool
+
+The `UpstreamPool` type represents a named pool of backend upstream servers that shares a load-balancing strategy, health-check policy, and retry configuration. A pool is owned by a single `ManagedService` and serves as the primary unit of Caddy configuration generation for dynamic upstream management in v2.
+
+Upstream pools enable sophisticated load balancing scenarios including:
+- Multiple load balancing strategies (Round Robin, Least Connections, Random, Weighted Random, IP Hash)
+- Active and passive health monitoring with configurable thresholds
+- Retry policies for failed requests
+- Sticky sessions via cookie-based affinity
+- Weighted distribution based on server capacity
+
+```csharp
+// Example: Creating a load-balanced pool with multiple upstream servers
+var pool = new UpstreamPool
+{
+    Name = "api-pool",
+    ServiceId = "api-service-123",
+    Strategy = LoadBalancingStrategy.RoundRobin,
+    Servers = new List<UpstreamServer>
+    {
+        new UpstreamServer
+        {
+            Id = "api-server-01",
+            Address = "192.168.1.100",
+            Port = 8080,
+            Weight = 100,
+            Status = UpstreamServerStatus.Active,
+            IsHealthy = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        },
+        new UpstreamServer
+        {
+            Id = "api-server-02",
+            Address = "192.168.1.101",
+            Port = 8080,
+            Weight = 75,
+            Status = UpstreamServerStatus.Active,
+            IsHealthy = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        },
+        new UpstreamServer
+        {
+            Id = "api-server-03",
+            Address = "192.168.1.102",
+            Port = 8080,
+            Weight = 50,
+            Status = UpstreamServerStatus.Active,
+            IsHealthy = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        }
+    },
+    PassiveHealthEnabled = true,
+    ActiveHealthEnabled = true,
+    HealthCheckIntervalSeconds = 30,
+    UnhealthyThreshold = 3,
+    HealthyThreshold = 2,
+    MaxRetries = 2,
+    RetryDurationSeconds = 30,
+    StickyCookieName = "api_session",
+    HealthProbePath = "/health",
+    IsEnabled = true
+};
+
+// Validate the pool configuration
+pool.Validate();
+
+// Get available servers (only healthy, active servers)
+var availableServers = pool.GetAvailableServers();
+Console.WriteLine($"Available servers: {availableServers.Count}");
+
+// Get total active connections across all servers
+var totalConnections = pool.GetTotalActiveConnections();
+Console.WriteLine($"Total active connections: {totalConnections}");
+
+// Generate Caddy reverse_proxy configuration block
+var caddyConfig = pool.GenerateCaddyUpstreamBlock("/*");
+Console.WriteLine("Generated Caddy configuration:");
+Console.WriteLine(caddyConfig);
 ```
 
 ## SlidingWindowMetricsAggregator
