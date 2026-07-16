@@ -1063,6 +1063,12 @@ webhookHandler.Unregister(
 
 The options govern active health checks, passive failure detection, retry strategies, session affinity, and circuit breaking behavior across your load-balanced services.
 
+## SlidingWindowMetricsAggregator
+
+`SlidingWindowMetricsAggregator` is a thread-safe utility class that maintains a rolling window of metrics over time, enabling real-time aggregation and analysis of upstream performance data. It tracks request counts, response times, error rates, and other key performance indicators across a configurable time window, allowing the adaptive load balancer to make data-driven routing decisions based on recent service behavior rather than historical averages.
+
+This aggregator is particularly useful for load balancing scenarios where service performance fluctuates over time, as it provides up-to-date metrics that reflect current conditions while smoothing out short-term spikes and anomalies.
+
 **Example Usage:**
 
 ```csharp
@@ -1107,6 +1113,65 @@ services.AddUpstreamManagement(options =>
     options.CircuitBreakerRecoverySeconds = loadBalancingOptions.CircuitBreakerRecoverySeconds;
     options.ConnectionDrainTimeoutSeconds = loadBalancingOptions.ConnectionDrainTimeoutSeconds;
 });
+```
+
+## SlidingWindowMetricsAggregator
+
+`SlidingWindowMetricsAggregator` is a thread-safe utility class that maintains a rolling window of metrics over time, enabling real-time aggregation and analysis of upstream performance data. It tracks request counts, response times, error rates, and other key performance indicators across a configurable time window, allowing the adaptive load balancer to make data-driven routing decisions based on recent service behavior rather than historical averages.
+
+This aggregator is particularly useful for load balancing scenarios where service performance fluctuates over time, as it provides up-to-date metrics that reflect current conditions while smoothing out short-term spikes and anomalies.
+
+**Example Usage:**
+
+```csharp
+// Create a metrics aggregator with a 5-minute sliding window
+var metricsAggregator = new SlidingWindowMetricsAggregator(
+    windowSize: TimeSpan.FromMinutes(5),
+    bucketSize: TimeSpan.FromSeconds(10)
+);
+
+// Record metrics for upstream requests
+await metricsAggregator.Record(
+    upstreamAddress: "192.168.1.100:8080",
+    responseTime: TimeSpan.FromMilliseconds(125),
+    statusCode: 200,
+    requestSize: 1024,
+    responseSize: 2048
+);
+
+// Record another request
+await metricsAggregator.Record(
+    upstreamAddress: "192.168.1.100:8080",
+    responseTime: TimeSpan.FromMilliseconds(85),
+    statusCode: 200,
+    requestSize: 512,
+    responseSize: 1024
+);
+
+// Get aggregated metrics summary
+var summary = metricsAggregator.GetSummary("192.168.1.100:8080");
+
+if (summary != null)
+{
+    Console.WriteLine($"Total Requests: {summary.TotalRequests}");
+    Console.WriteLine($"Average Response Time: {summary.AverageResponseTime.TotalMilliseconds:F2}ms");
+    Console.WriteLine($"Error Rate: {summary.ErrorRate:P2}");
+    Console.WriteLine($"Throughput: {summary.ThroughputPerSecond:F2} req/s");
+    Console.WriteLine($"95th Percentile: {summary.Percentile95.TotalMilliseconds:F2}ms");
+    Console.WriteLine($"Last 5 Minutes: Success={summary.SuccessCount}, Errors={summary.ErrorCount}");
+}
+
+// Reset the aggregator to clear all metrics
+metricsAggregator.Reset();
+
+// Use with AdaptiveLoadBalancer for dynamic routing decisions
+var loadBalancer = new AdaptiveLoadBalancer(
+    metricsAggregator,
+    healthCheckInterval: TimeSpan.FromSeconds(30)
+);
+
+// The load balancer will automatically use the aggregator's metrics
+// to evaluate pool health and make routing decisions
 ```
 
 ## DateTimeExtensionsTests
