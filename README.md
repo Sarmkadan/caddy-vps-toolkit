@@ -914,6 +914,58 @@ webhookHandler.Unregister(
 );
 ```
 
+## IServiceDiscoveryClient
+
+The `IServiceDiscoveryClient` interface provides a service discovery abstraction for locating service endpoints in distributed systems. It enables dynamic service registration, deregistration, and discovery, supporting integration with service registries like Consul, Eureka, or custom implementations. This interface is particularly useful for service-to-service communication where endpoints may change dynamically.
+
+**Key Features:**
+- Discover individual service instances by name
+- Retrieve all available instances of a service
+- Register services with metadata for discovery
+- Deregister services when they become unavailable
+
+**Example Usage:**
+
+```csharp
+// Create a service instance to register
+var serviceInstance = new ServiceInstance
+{
+    Id = Guid.NewGuid().ToString(),
+    ServiceName = "api-service",
+    Host = "192.168.1.100",
+    Port = 5000,
+    Metadata = new Dictionary<string, string>
+    {
+        {"version", "1.2.3"},
+        {"environment", "production"},
+        {"region", "us-west-2"}
+    }
+};
+
+// Create service discovery client (using in-memory implementation for local development)
+var discoveryClient = new InMemoryServiceDiscoveryClient();
+
+// Register the service so it can be discovered by other services
+await discoveryClient.RegisterAsync(serviceInstance);
+
+// Discover a specific service instance
+var instance = await discoveryClient.DiscoverAsync("api-service");
+Console.WriteLine($"Discovered service at: {instance.GetUrl()}");
+// Output: Discovered service at: http://192.168.1.100:5000
+
+// Discover all available instances of a service
+var allInstances = await discoveryClient.DiscoverAllAsync("api-service");
+Console.WriteLine($"Found {allInstances.Count} instances of api-service");
+
+// Get service URL for connection
+string serviceUrl = instance.GetUrl();
+Console.WriteLine($"Service URL: {serviceUrl}");
+
+// Deregister service when it's shutting down
+await discoveryClient.DeregisterAsync(serviceInstance.Id);
+Console.WriteLine("Service deregistered");
+```
+
 ## IHttpClient
 
 The `IHttpClient` interface provides a clean abstraction for HTTP communication with built-in retry, timeout, and error handling. It simplifies making HTTP requests by handling common concerns like retry policies, timeouts, and JSON serialization/deserialization, allowing service code to focus on business logic rather than HTTP plumbing.
