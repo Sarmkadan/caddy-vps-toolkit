@@ -1057,6 +1057,83 @@ webhookHandler.Unregister(
 );
 ```
 
+## HealthAwareRoutingPolicy
+
+`HealthAwareRoutingPolicy` is the unified entry point for health-aware adaptive load balancing. It combines real-time health monitoring, circuit breaker logic, and machine-learning-based scoring to select the optimal upstream server for each request.
+
+The policy first attempts to use adaptive scoring based on historical performance data. When the scoring model lacks sufficient data (e.g., new servers with no observations), it transparently falls back to the pool's configured load-balancing strategy. All circuit-breaker checks are applied before scoring, ensuring callers receive clear failure reasons like "circuit open" or "pool disabled".
+
+Key features:
+- **Adaptive Scoring**: Uses `IAdaptiveLoadBalancer` to rank upstream candidates based on recent performance
+- **Circuit Breaker**: Enforces health ratio thresholds to prevent routing to unhealthy pools
+- **Fallback Strategy**: Delegates to pool's configured strategy when scoring confidence is low
+- **Real-time Feedback**: Records request outcomes to improve future routing decisions
+- **Diagnostic API**: Provides scored candidate lists for health dashboards and CLI monitoring
+
+**Example Usage:**
+
+```csharp
+// Setup dependencies
+var upstreamManager = new UpstreamManagerService(/* dependencies */);
+var adaptiveBalancer = new AdaptiveLoadBalancer(/* metrics aggregator */);
+var loadBalancingOptions = new LoadBalancingOptions
+{
+    CircuitBreakerEnabled = true,
+    CircuitBreakerHealthThreshold = 0.5, // 50% healthy servers minimum
+    DefaultStrategy = LoadBalancingStrategy.RoundRobin
+};
+
+// Create the routing policy
+var routingPolicy = new HealthAwareRoutingPolicy(
+    upstreamManager,
+    adaptiveBalancer,
+    loadBalancingOptions
+);
+
+// Route a request to select the best upstream
+var context = new UpstreamSelectionContext("api-pool")
+{
+    ClientIp = "192.168.1.100",
+    SessionToken = "abc123"
+};
+
+var result = await routingPolicy.RouteAsync(context);
+
+if (result.IsSuccess)
+{
+    var selectedServer = result.Data;
+    Console.WriteLine($"Selected upstream: {selectedServer.Address}:{selectedServer.Port}");
+    
+    // Simulate request completion and report outcome
+    await routingPolicy.NotifyOutcomeAsync(
+        poolId: "api-pool",
+        upstreamId: selectedServer.Id,
+        responseTimeMs: 125,
+        succeeded: true
+    );
+}
+else
+{
+    Console.WriteLine($"Routing failed: {result.ErrorMessage}");
+    Console.WriteLine($"Error code: {result.ErrorCode}");
+}
+
+// Get scored candidates for health dashboard
+var scoredCandidates = await routingPolicy.GetScoredCandidatesAsync("api-pool");
+foreach (var score in scoredCandidates.OrderByDescending(s => s.CompositeScore))
+{
+    Console.WriteLine($"Server {score.UpstreamId}: Score={score.CompositeScore:F2}, " +
+                     $"Health={score.IsHealthy}, Weight={score.EffectiveWeight}");
+}
+
+// Force recalibration when pool configuration changes
+await routingPolicy.RecalibrateAsync("api-pool");
+
+// Get effective weight for a specific upstream
+var weight = await routingPolicy.GetEffectiveWeightAsync(selectedServer.Id);
+Console.WriteLine($"Effective weight: {weight}");
+```
+
 ## LoadBalancingOptions
 
 `LoadBalancingOptions` provides runtime configuration for the upstream management and health-aware load-balancing subsystem. It controls default behaviors such as health probing, retry policies, sticky sessions, and circuit breaker settings that apply to all upstream pools unless overridden at the pool level.
