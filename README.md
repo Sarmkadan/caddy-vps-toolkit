@@ -914,6 +914,38 @@ webhookHandler.Unregister(
 );
 ```
 
+## ArgumentParser
+
+The `ArgumentParser` class provides command-line argument parsing functionality for the CLI tool. It parses command-line arguments into structured command objects using a simple key-value pattern for flags and supports positional arguments. The parser efficiently handles both boolean flags (like `--verbose`, `--force`) and flags with values (like `--port 8080` or `--domain example.com`), using span-based comparisons to avoid unnecessary string allocations.
+
+**Example Usage:**
+
+```csharp
+// Create argument parser with command-line arguments
+var args = new[] { "service", "add", "my-service", "--port", "8080", "--domain", "example.com", "--verbose" };
+var parser = new ArgumentParser(args);
+
+// Get the command name
+string command = parser.GetCommand(); // Returns "service"
+
+// Get positional arguments
+string serviceName = parser.GetPositional(0); // Returns "my-service"
+
+// Check for boolean flags
+bool isVerbose = parser.HasFlag("verbose"); // Returns true
+bool isForce = parser.HasFlag("force"); // Returns false
+
+// Get flag values
+string portValue = parser.GetFlagValue("port"); // Returns "8080"
+string domainValue = parser.GetFlagValue("domain"); // Returns "example.com"
+
+// Get all positional arguments
+var allPositionals = parser.GetAllPositional(); // Returns ["my-service"]
+
+// Get all flags provided
+var allFlags = parser.GetAllFlags(); // Returns ["port", "domain", "verbose"]
+```
+
 ## IServiceDiscoveryClient
 
 The `IServiceDiscoveryClient` interface provides a service discovery abstraction for locating service endpoints in distributed systems. It enables dynamic service registration, deregistration, and discovery, supporting integration with service registries like Consul, Eureka, or custom implementations. This interface is particularly useful for service-to-service communication where endpoints may change dynamically.
