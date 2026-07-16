@@ -635,6 +635,69 @@ string caddyfileGlobals = caddyConfig.GenerateCaddyfileGlobals();
 Console.WriteLine(caddyfileGlobals);
 ```
 
+
+
+## CaddyRoute
+
+
+The `CaddyRoute` type represents an individual route configuration for Caddy reverse proxy. It defines how incoming HTTP/HTTPS requests are routed to backend services based on domain, path, and other routing rules. Each route can be customized with various options like path stripping, host header preservation, timeouts, rate limiting, and authentication.
+
+
+
+### Example Usage
+
+
+```csharp
+// Create a route for a web application service
+var route = new CaddyRoute
+{
+
+Id = Guid.NewGuid().ToString(),
+
+ServiceId = "web-app-01",
+
+Domain = "app.example.com",
+
+Path = "/api/*",
+
+UpstreamUrl = "http://localhost:8080",
+
+StripPath = true,
+
+PreserveHostHeader = true,
+
+TimeoutSeconds = 30,
+
+EnableHttps = true,
+
+AutoRedirectHttp = true,
+
+CustomHeaders = new Dictionary<string, string>
+{
+["X-Content-Type-Options"] = "nosniff",
+["X-Frame-Options"] = "DENY"
+},
+
+RateLimitRule = "100/10s",
+
+BasicAuthEnabled = false,
+
+IsActive = true,
+
+CreatedAt = DateTime.UtcNow,
+
+UpdatedAt = DateTime.UtcNow
+};
+
+
+// Validate the route configuration
+route.Validate();
+
+// Generate Caddy configuration block for this route
+string caddyRouteBlock = route.GenerateCaddyRouteBlock();
+Console.WriteLine(caddyRouteBlock);
+```
+
 **Key Properties:**
 
 - **Id**: Unique identifier for the configuration
