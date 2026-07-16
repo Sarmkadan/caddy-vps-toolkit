@@ -967,6 +967,65 @@ var unitName = validation.ManagedService_GetSystemdUnitName_WithSpacesInName_For
 Assert.Equal("my-production-service.service", unitName);
 ```
 
+## ServiceRepositoryTests
+
+`ServiceRepositoryTests` provides unit tests for the `ServiceRepository` class, which handles database operations for managed services including creation, retrieval, updating, and deletion. This test suite validates that all repository methods correctly handle database operations, return expected results, and maintain data integrity when working with service configurations.
+
+The test class exercises both success and failure paths for common service repository operations including CRUD operations, count queries, and proper cleanup of test databases.
+
+
+
+
+```csharp
+// Example: Using ServiceRepository for service management operations
+var serviceRepository = new ServiceRepository();
+
+// Initialize the repository with an in-memory database for testing
+// In production, this would use the configured SQLite database path
+var connectionStringField = typeof(ServiceRepository).GetField("_connectionString", BindingFlags.NonPublic | BindingFlags.Instance);
+connectionStringField?.SetValue(serviceRepository, "Data Source=services.db;Version=3;");
+
+// Add a new service to the repository
+var newService = new ManagedService
+{
+    Name = "my-web-app",
+    Description = "Web application service",
+    ExecutablePath = "/usr/bin/dotnet",
+    WorkingDirectory = "/opt/my-app",
+    Port = 8080,
+    Status = ServiceStatus.Stopped
+};
+
+string serviceId = await serviceRepository.AddAsync(newService);
+Console.WriteLine($"Added service with ID: {serviceId}");
+
+// Retrieve the service by ID
+ManagedService retrievedService = await serviceRepository.GetByIdAsync(serviceId);
+Console.WriteLine($"Retrieved service: {retrievedService.Name} on port {retrievedService.Port}");
+
+// Update the service
+retrievedService.Description = "Updated web application service";
+retrievedService.Port = 9090;
+bool updateSuccess = await serviceRepository.UpdateAsync(retrievedService);
+Console.WriteLine($"Service updated successfully: {updateSuccess}");
+
+// Get the updated service to verify changes
+ManagedService updatedService = await serviceRepository.GetByIdAsync(serviceId);
+Console.WriteLine($"Updated service description: {updatedService.Description}");
+
+// Get the total count of services
+int serviceCount = await serviceRepository.GetCountAsync();
+Console.WriteLine($"Total services in repository: {serviceCount}");
+
+// Delete the service when done
+bool deleteSuccess = await serviceRepository.DeleteAsync(serviceId);
+Console.WriteLine($"Service deleted successfully: {deleteSuccess}");
+
+// Verify the service was deleted
+ManagedService deletedService = await serviceRepository.GetByIdAsync(serviceId);
+Console.WriteLine($"Service exists after deletion: {deletedService != null}"); // Should be false
+```
+
 ## PaginationHelperTests
 
 `PaginationHelperTests` contains unit tests for the `PaginationHelper` utility class, which provides methods for paginating, sorting, and filtering collections. This test suite validates that pagination returns correct slices for various page numbers and page sizes, handles edge cases like null collections and out-of-bounds pages, and ensures sorting and filtering operations work correctly with different property names and predicates.
