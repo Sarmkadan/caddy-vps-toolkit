@@ -1075,6 +1075,129 @@ catch (ValidationException ex)
 }
 ```
 
+## HealthCheckConfigEdgeCaseTests
+
+`HealthCheckConfigEdgeCaseTests` validates edge-case behavior for the `HealthCheckConfig` class, focusing on boundary conditions and validation edge cases. This test suite ensures that health check configurations properly handle minimum/maximum values, zero values, and type-specific requirements. It validates that the configuration validation logic correctly identifies and reports invalid configurations that fall outside expected boundaries.
+
+```csharp
+// Example: Testing health check configuration edge cases
+var edgeCaseTests = new HealthCheckConfigEdgeCaseTests();
+
+// Test minimum interval boundary - 4 seconds is below minimum of 5
+var belowMinimumConfig = new HealthCheckConfig
+{
+    IntervalSeconds = 4,
+    TimeoutSeconds = 2
+};
+
+try
+{
+    edgeCaseTests.Validate_IntervalBelowMinimum_ThrowsValidationException();
+    Console.WriteLine("Minimum interval validation works correctly");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Test failed: {ex.Message}");
+}
+
+// Test exact minimum interval - 5 seconds is the minimum allowed
+var minimumConfig = new HealthCheckConfig
+{
+    Type = HealthCheckType.Tcp,
+    IntervalSeconds = 5,
+    TimeoutSeconds = 1
+};
+
+edgeCaseTests.Validate_IntervalExactlyMinimum_DoesNotThrow();
+Console.WriteLine("Exact minimum interval validation passed");
+
+// Test timeout greater than interval - should throw validation exception
+var invalidTimeoutConfig = new HealthCheckConfig
+{
+    IntervalSeconds = 10,
+    TimeoutSeconds = 15
+};
+
+edgeCaseTests.Validate_TimeoutGreaterThanInterval_ThrowsValidationException();
+Console.WriteLine("Timeout greater than interval validation works correctly");
+
+// Test timeout equals interval - should be valid
+var equalTimeoutConfig = new HealthCheckConfig
+{
+    Type = HealthCheckType.Tcp,
+    IntervalSeconds = 10,
+    TimeoutSeconds = 10
+};
+
+edgeCaseTests.Validate_TimeoutEqualsInterval_DoesNotThrow();
+Console.WriteLine("Equal timeout and interval validation passed");
+
+// Test zero timeout - should throw validation exception
+var zeroTimeoutConfig = new HealthCheckConfig
+{
+    IntervalSeconds = 10,
+    TimeoutSeconds = 0
+};
+
+edgeCaseTests.Validate_ZeroTimeout_ThrowsValidationException();
+Console.WriteLine("Zero timeout validation works correctly");
+
+// Test zero unhealthy threshold - should throw validation exception
+var zeroUnhealthyConfig = new HealthCheckConfig
+{
+    IntervalSeconds = 10,
+    TimeoutSeconds = 5,
+    UnhealthyThreshold = 0
+};
+
+edgeCaseTests.Validate_ZeroUnhealthyThreshold_ThrowsValidationException();
+Console.WriteLine("Zero unhealthy threshold validation works correctly");
+
+// Test zero healthy threshold - should throw validation exception
+var zeroHealthyConfig = new HealthCheckConfig
+{
+    IntervalSeconds = 10,
+    TimeoutSeconds = 5,
+    HealthyThreshold = 0
+};
+
+edgeCaseTests.Validate_ZeroHealthyThreshold_ThrowsValidationException();
+Console.WriteLine("Zero healthy threshold validation works correctly");
+
+// Test HTTP type without endpoint - should throw validation exception
+var httpWithoutEndpointConfig = new HealthCheckConfig
+{
+    Type = HealthCheckType.Http,
+    IntervalSeconds = 10,
+    TimeoutSeconds = 5,
+    Endpoint = null
+};
+
+edgeCaseTests.Validate_HttpTypeWithoutEndpoint_ThrowsValidationException();
+Console.WriteLine("HTTP type without endpoint validation works correctly");
+
+// Test URL generation for HTTP type
+var httpConfig = new HealthCheckConfig
+{
+    Type = HealthCheckType.Http,
+    Endpoint = "/health"
+};
+
+string httpUrl = httpConfig.GetHealthCheckUrl("localhost", 5000);
+Console.WriteLine($"HTTP health check URL: {httpUrl}");
+// Outputs: HTTP health check URL: http://localhost:5000/health
+
+// Test URL generation for non-HTTP type (returns null)
+var tcpConfig = new HealthCheckConfig
+{
+    Type = HealthCheckType.Tcp
+};
+
+string tcpUrl = tcpConfig.GetHealthCheckUrl("localhost", 5000);
+Console.WriteLine($"TCP health check URL: {tcpUrl}");
+// Outputs: TCP health check URL: (null)
+```
+
 ## ArgumentParserEdgeCaseTests
 
 `ArgumentParserEdgeCaseTests` validates the edge case behavior of the CLI argument parser, ensuring robust handling of null values, empty argument lists, out-of-bounds access, and various flag parsing scenarios. These tests verify that the parser gracefully handles malformed inputs and edge cases without throwing exceptions, maintaining application stability in production environments.
