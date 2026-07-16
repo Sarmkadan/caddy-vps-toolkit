@@ -1836,6 +1836,64 @@ Console.WriteLine($"Health change events have {subscriberCount} subscribers");
 eventBus.Unsubscribe<ServiceHealthChangedEvent>(healthHandler);
 ```
 
+## SslCertStatusCheckerTests
+
+`SslCertStatusCheckerTests` provides unit tests for the `SslCertStatusChecker` class, which validates SSL/TLS certificate monitoring functionality. This test suite verifies that certificate status checks correctly handle various scenarios including local host bindings, empty domains, valid certificates, expired certificates, certificates expiring soon, and error conditions. The tests ensure robust error handling and correct status classification for SSL certificate monitoring workflows.
+
+```csharp
+// Example: Checking SSL certificate status for multiple services
+var sslMonitor = new SslCertStatusChecker();
+
+// Check all registered services
+var allServices = new List<ManagedService>
+{
+    new ManagedService
+    {
+        Name = "web-app",
+        Domain = "example.com",
+        HostBinding = "0.0.0.0",
+        Port = 443,
+        ExecutablePath = "/usr/bin/web-app",
+        WorkingDirectory = "/opt/web-app"
+    },
+    new ManagedService
+    {
+        Name = "api-service",
+        Domain = "api.example.com",
+        HostBinding = "127.0.0.1",
+        Port = 5001,
+        ExecutablePath = "/usr/bin/api-server",
+        WorkingDirectory = "/opt/api-server"
+    }
+};
+
+// Check all services asynchronously
+var results = await sslMonitor.CheckAllServicesAsync(allServices, CancellationToken.None);
+
+foreach (var result in results)
+{
+    Console.WriteLine($"Domain: {result.Domain}");
+    Console.WriteLine($"Status: {result.Status}");
+    Console.WriteLine($"Days until expiry: {result.Certificate?.DaysUntilExpiry ?? 0}");
+    Console.WriteLine($"Message: {result.Message}");
+    Console.WriteLine();
+}
+
+// Check a specific domain
+var domainResult = await sslMonitor.CheckCertificateAsync("example.com");
+
+if (domainResult.IsSuccess)
+{
+    var certInfo = domainResult.Data;
+    Console.WriteLine($"Certificate valid until: {certInfo.ExpiresAt}");
+    Console.WriteLine($"Days remaining: {certInfo.DaysUntilExpiry}");
+}
+else
+{
+    Console.WriteLine($"Error checking certificate: {domainResult.ErrorMessage}");
+}
+```
+
 ## ServiceLifecycleIntegrationTests
 
 `ServiceLifecycleIntegrationTests` provides end-to-end integration tests that validate the complete service lifecycle workflow. These tests verify service creation, status transitions, Caddy configuration generation, health monitoring, caching, event bus integration, retry policies, and state management. The test suite demonstrates how all components work together in realistic scenarios, including concurrent operations and configuration combinations.
