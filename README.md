@@ -1079,6 +1079,97 @@ catch (ValidationException ex)
 
 `HealthCheckConfigEdgeCaseTests` validates edge-case behavior for the `HealthCheckConfig` class, focusing on boundary conditions and validation edge cases. This test suite ensures that health check configurations properly handle minimum/maximum values, zero values, and type-specific requirements. It validates that the configuration validation logic correctly identifies and reports invalid configurations that fall outside expected boundaries.
 
+## CaddyConfigTests
+
+`CaddyConfigTests` provides unit tests for the `CaddyConfig` class, which validates Caddy server configuration settings and generates Caddyfile global directives. This test suite verifies validation logic for admin ports, HTTP/HTTPS ports, timeouts, email addresses, metrics configuration, and auto HTTPS settings, ensuring that Caddy configurations meet required constraints before being applied.
+
+```csharp
+// Example: Creating and validating a Caddy configuration
+var config = new CaddyConfig
+{
+    AdminPort = 2019,
+    HttpPort = 80,
+    HttpsPort = 443,
+    AdminEmail = "admin@example.com",
+    CertificateEmail = "cert@example.com",
+    EnableMetrics = true,
+    AutoHttpsDisabled = false,
+    ReadTimeout = 30,
+    WriteTimeout = 30,
+    IdleTimeout = 120
+};
+
+// Validate configuration - throws ValidationException if invalid
+config.Validate();
+
+// Set default values for missing emails
+config.SetDefaultValues();
+Console.WriteLine($"Admin Email: {config.AdminEmail}"); // Outputs: Admin Email: admin@example.com
+Console.WriteLine($"Certificate Email: {config.CertificateEmail}"); // Outputs: Certificate Email: cert@example.com
+
+// Generate Caddyfile global directives
+string caddyfileGlobals = config.GenerateCaddyfileGlobals();
+Console.WriteLine(caddyfileGlobals);
+
+// Example: Configuration validation scenarios
+try
+{
+    // This will throw ValidationException - admin port out of range
+    var invalidPortConfig = new CaddyConfig
+    {
+        AdminPort = 70000, // Invalid port (> 65535)
+        HttpPort = 80,
+        HttpsPort = 443
+    };
+    invalidPortConfig.Validate();
+}
+catch (ValidationException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}"); // Outputs: Validation failed: Admin port must be between 1 and 65535
+}
+
+try
+{
+    // This will throw ValidationException - negative timeout
+    var negativeTimeoutConfig = new CaddyConfig
+    {
+        AdminPort = 2019,
+        HttpPort = 80,
+        HttpsPort = 443,
+        ReadTimeout = -5 // Invalid negative timeout
+    };
+    negativeTimeoutConfig.Validate();
+}
+catch (ValidationException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}"); // Outputs: Validation failed: Timeouts cannot be negative
+}
+
+// Example: Generate Caddyfile globals with metrics enabled
+var metricsConfig = new CaddyConfig
+{
+    AdminPort = 2019,
+    HttpPort = 80,
+    HttpsPort = 443,
+    EnableMetrics = true
+};
+
+string globalsWithMetrics = metricsConfig.GenerateCaddyfileGlobals();
+Console.WriteLine(globalsWithMetrics.Contains("metrics")); // Outputs: True
+
+// Example: Generate Caddyfile globals with auto HTTPS disabled
+var noAutoHttpsConfig = new CaddyConfig
+{
+    AdminPort = 2019,
+    HttpPort = 80,
+    HttpsPort = 443,
+    AutoHttpsDisabled = true
+};
+
+string globalsWithoutAutoHttps = noAutoHttpsConfig.GenerateCaddyfileGlobals();
+Console.WriteLine(globalsWithoutAutoHttps.Contains("auto_https off")); // Outputs: True
+```
+
 ```csharp
 // Example: Testing health check configuration edge cases
 var edgeCaseTests = new HealthCheckConfigEdgeCaseTests();
