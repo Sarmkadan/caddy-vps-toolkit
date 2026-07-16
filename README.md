@@ -1427,6 +1427,42 @@ var app = builder.Build();
 app.Run();
 ```
 
+### WorkerCoordinator
+
+The `WorkerCoordinator` type coordinates background workers within the caddy-vps-toolkit system. It manages worker registration, lifecycle, and monitoring, providing centralized control over multiple background services.
+
+Usage example:
+
+```csharp
+// Create a worker coordinator
+var coordinator = new WorkerCoordinator();
+
+// Register workers
+coordinator.Register("health-monitor", async () => await healthMonitor.StartAsync());
+coordinator.Register("metrics-collector", async () => await metricsService.StartAsync());
+
+// Start all registered workers
+await coordinator.StartAllAsync();
+
+// Check overall status
+string status = coordinator.GetStatus();
+Console.WriteLine($"System status: {status}");
+
+// Get list of registered workers
+List<string> workerNames = coordinator.GetWorkerNames();
+foreach (string name in workerNames)
+{
+    Console.WriteLine($"Worker: {name}");
+}
+
+// Check if a specific worker is running
+bool isRunning = coordinator.IsWorkerRunning("health-monitor");
+Console.WriteLine($"Health monitor running: {isRunning}");
+
+// Stop all workers when shutting down
+await coordinator.StopAllAsync();
+```
+
 ### Available Extension Methods
 
 - **AddCachingServices()** - Registers in-memory caching services
