@@ -1125,6 +1125,45 @@ catch (ValidationException ex)
 
 `HealthCheckConfigEdgeCaseTests` validates edge-case behavior for the `HealthCheckConfig` class, focusing on boundary conditions and validation edge cases. This test suite ensures that health check configurations properly handle minimum/maximum values, zero values, and type-specific requirements. It validates that the configuration validation logic correctly identifies and reports invalid configurations that fall outside expected boundaries.
 
+## BackupServiceTests
+
+`BackupServiceTests` provides unit tests for the `BackupService` class, which handles the creation and restoration of configuration backups for the caddy-vps-toolkit application. This test suite verifies that backup operations correctly handle file system interactions, JSON serialization, error conditions, and restore operations, ensuring data integrity and recovery scenarios work as expected.
+
+```csharp
+// Example: Creating and restoring backups programmatically
+var serviceRepo = Substitute.For<IServiceRepository>();
+var configRepo = Substitute.For<IConfigurationRepository>();
+var backupService = new BackupService(serviceRepo, configRepo);
+
+// Create a backup with a specific output path and description
+var backupPath = "/path/to/backups/my-config.backup.json";
+var createdBackupPath = await backupService.CreateBackupAsync(
+    outputPath: backupPath,
+    description: "Weekly configuration backup"
+);
+
+Console.WriteLine($"Backup created at: {createdBackupPath}");
+
+// Create a backup with auto-generated timestamped filename in the config directory
+var autoBackupPath = await backupService.CreateBackupAsync(
+    description: "Automatic backup"
+);
+Console.WriteLine($"Auto-generated backup: {autoBackupPath}");
+
+// List all available backups in the config directory
+var allBackups = await backupService.ListBackupsAsync();
+foreach (var backup in allBackups)
+{
+    Console.WriteLine($"Found backup: {Path.GetFileName(backup)}");
+}
+
+// Restore a backup - this will recreate services, configuration, and Caddyfile
+var manifest = await backupService.RestoreBackupAsync(backupPath);
+Console.WriteLine($"Restored {manifest.ServiceCount} services from backup");
+Console.WriteLine($"Backup created at: {manifest.CreatedAt}");
+Console.WriteLine($"Description: {manifest.Description}");
+```
+
 ## CaddyConfigPipelineIntegrationTests
 
 `CaddyConfigPipelineIntegrationTests` provides end-to-end integration tests for the complete Caddy configuration generation pipeline. This test suite validates the full workflow from service configuration inputs through route generation, Caddyfile output, and validation, ensuring all components work together correctly in realistic scenarios.
