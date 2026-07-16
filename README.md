@@ -967,6 +967,101 @@ var unitName = validation.ManagedService_GetSystemdUnitName_WithSpacesInName_For
 Assert.Equal("my-production-service.service", unitName);
 ```
 
+## PaginationHelperTests
+
+`PaginationHelperTests` contains unit tests for the `PaginationHelper` utility class, which provides methods for paginating, sorting, and filtering collections. This test suite validates that pagination returns correct slices for various page numbers and page sizes, handles edge cases like null collections and out-of-bounds pages, and ensures sorting and filtering operations work correctly with different property names and predicates.
+
+
+The test class exercises both success and failure paths for common pagination scenarios including clamping invalid page/pageSize values, handling null inputs, and verifying correct behavior when requesting pages beyond the total count.
+
+```csharp
+// Example: Using PaginationHelper for paginating service configurations
+var services = new List<ManagedService>
+{
+    new ManagedService { Name = "api", Port = 8080, Domain = "api.example.com" },
+    new ManagedService { Name = "web", Port = 3000, Domain = "web.example.com" },
+    new ManagedService { Name = "cache", Port = 6379, Domain = "cache.example.com" },
+    new ManagedService { Name = "database", Port = 5432, Domain = "db.example.com" },
+    new ManagedService { Name = "auth", Port = 5000, Domain = "auth.example.com" },
+    new ManagedService { Name = "storage", Port = 9000, Domain = "storage.example.com" }
+};
+
+// Paginate services - get first page with 3 items per page
+var firstPage = PaginationHelper.Paginate(services, page: 1, pageSize: 3);
+Console.WriteLine($"Page {firstPage.Page} of {firstPage.TotalPages}:");
+foreach (var service in firstPage.Items)
+{
+    Console.WriteLine($"  - {service.Name} on port {service.Port}");
+}
+// Output:
+// Page 1 of 2:
+//   - api on port 8080
+//   - web on port 3000
+//   - cache on port 6379
+
+// Get second page
+var secondPage = PaginationHelper.Paginate(services, page: 2, pageSize: 3);
+Console.WriteLine($"\nPage {secondPage.Page} of {secondPage.TotalPages}:");
+foreach (var service in secondPage.Items)
+{
+    Console.WriteLine($"  - {service.Name} on port {service.Port}");
+}
+// Output:
+// Page 2 of 2:
+//   - database on port 5432
+//   - auth on port 5000
+//   - storage on port 9000
+
+// Sort services by port number in descending order
+var sortedByPort = PaginationHelper.SortBy(services, nameof(ManagedService.Port), ascending: false);
+Console.WriteLine("\nServices sorted by port (descending):");
+foreach (var service in sortedByPort)
+{
+    Console.WriteLine($"  - {service.Name} on port {service.Port}");
+}
+// Output:
+// Services sorted by port (descending):
+//   - storage on port 9000
+//   - database on port 5432
+//   - api on port 8080
+//   - auth on port 5000
+//   - web on port 3000
+//   - cache on port 6379
+
+// Filter services by domain containing "example"
+var filteredServices = PaginationHelper.Filter(services, s => s.Domain.Contains("example"));
+Console.WriteLine($"\nFiltered services ({filteredServices.Count}):");
+foreach (var service in filteredServices)
+{
+    Console.WriteLine($"  - {service.Name}");
+}
+// Output:
+// Filtered services (6):
+//   - api
+//   - web
+//   - cache
+//   - database
+//   - auth
+//   - storage
+
+// Using QueryBuilder for fluent pagination and filtering
+var queryResult = new QueryBuilder<ManagedService>(services)
+    .Where(s => s.Port > 5000)  // Filter services with port > 5000
+    .Page(1)
+    .PageSize(2)
+    .Execute();
+
+Console.WriteLine($"\nQuery result - Page {queryResult.Page} of {queryResult.TotalPages}:");
+foreach (var service in queryResult.Items)
+{
+    Console.WriteLine($"  - {service.Name} on port {service.Port}");
+}
+// Output:
+// Query result - Page 1 of 2:
+//   - api on port 8080
+//   - database on port 5432
+```
+
 ## SystemdUnitConfigTests
 
 `SystemdUnitConfigTests` validates the `SystemdUnitConfig` class, which generates and validates systemd unit files for managed services. This test suite verifies that unit file generation produces correct `[Unit]`, `[Service]`, and `[Install]` sections with proper directives, handles environment variables and files correctly, validates required fields, and maintains proper section ordering in the generated content.
