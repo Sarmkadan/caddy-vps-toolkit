@@ -971,6 +971,112 @@ webhookHandler.Unregister(
 );
 ```
 
+## Result
+
+The `Result` type is a simple, type-safe wrapper for operation results that provides a consistent way to handle both success and failure states without throwing exceptions. It's commonly used throughout the application to return operation outcomes where failures are expected and should be handled gracefully. The generic `Result<T>` variant carries data for successful operations, while the non-generic `Result` is used for operations that don't need to return values.
+
+### Public Members
+
+The `Result` type provides the following public members:
+
+- **Non-generic Result:**
+  - `bool IsSuccess` - Indicates whether the operation succeeded
+  - `string ErrorMessage` - Error message if the operation failed
+  - `string ErrorCode` - Optional error code (e.g., "BAD_REQUEST")
+  - `static Result Success()` - Creates a successful result
+  - `static Result Failure(string errorMessage)` - Creates a failed result
+  - `static Result Failure(string errorMessage, string errorCode)` - Creates a failed result with error code
+
+- **Generic Result<T>:**
+  - `bool IsSuccess` - Indicates whether the operation succeeded
+  - `T Data` - The returned data if successful
+  - `string ErrorMessage` - Error message if the operation failed
+  - `string ErrorCode` - Optional error code (e.g., "NOT_FOUND")
+  - `static Result<T> Success(T data)` - Creates a successful result with data
+  - `static Result<T> Success()` - Creates a successful result with default data
+  - `static Result<T> Failure(string errorMessage)` - Creates a failed result
+  - `static Result<T> Failure(string errorMessage, string errorCode)` - Creates a failed result with error code
+
+- **Pagination Result (Result<List<T>>):**
+  - `List<T> Items` - The collection of items
+  - `int Page` - Current page number
+  - `int PageSize` - Number of items per page
+  - `int TotalCount` - Total number of items across all pages
+
+### Usage Examples
+
+**Successful result with data:**
+
+```csharp
+var userResult = Result<User>.Success(new User { Id = 1, Name = "Alice", Email = "alice@example.com" });
+
+if (userResult.IsSuccess)
+{
+    User user = userResult.Data;
+    Console.WriteLine($"Retrieved user: {user.Name}");
+    Console.WriteLine($"Email: {userResult.Data.Email}");
+}
+```
+
+**Successful result with default data:**
+
+```csharp
+var countResult = Result<int>.Success();
+Console.WriteLine($"Default count: {countResult.Data}"); // Outputs: Default count: 0
+```
+
+**Failed result with error message:**
+
+```csharp
+var errorResult = Result<string>.Failure("User not found");
+
+if (!errorResult.IsSuccess)
+{
+    Console.WriteLine($"Error: {errorResult.ErrorMessage}"); // Outputs: Error: User not found
+}
+```
+
+**Failed result with error code:**
+
+```csharp
+var apiError = Result<ApiResponse>.Failure("Invalid request", "BAD_REQUEST");
+Console.WriteLine($"Error code: {apiError.ErrorCode}"); // Outputs: Error code: BAD_REQUEST
+```
+
+**Non-generic result for operations without return values:**
+
+```csharp
+var operationResult = Result.Success();
+
+if (operationResult.IsSuccess)
+{
+    Console.WriteLine("Operation completed successfully");
+}
+else
+{
+    Console.WriteLine($"Operation failed: {operationResult.ErrorMessage}");
+}
+```
+
+**Pagination result with collection data:**
+
+```csharp
+var servicesResult = Result<List<ManagedService>>.Success(services);
+
+if (servicesResult.IsSuccess)
+{
+    Console.WriteLine($"Total services: {servicesResult.Data.Count}");
+    Console.WriteLine($"Page: {servicesResult.Items.Page}");
+    Console.WriteLine($"Page size: {servicesResult.Items.PageSize}");
+    Console.WriteLine($"Total count: {servicesResult.Items.TotalCount}");
+    
+    foreach (var service in servicesResult.Data)
+    {
+        Console.WriteLine($" - {service.Name} on port {service.Port}");
+    }
+}
+```
+
 ## ServiceCollectionExtensions
 
 The `ServiceCollectionExtensions` class provides extension methods for `IServiceCollection` that simplify dependency injection registration for infrastructure services. It offers a fluent API for adding caching, HTTP clients, webhooks, logging, event bus, rate limiting, and service discovery services to your ASP.NET Core application's service collection.
