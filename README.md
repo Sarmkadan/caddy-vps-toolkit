@@ -1289,6 +1289,79 @@ app.Run();
 - **RateLimitCapacity** (int, default: 100) - Maximum number of requests allowed in the bucket
 - **RateLimitRefillRate** (int, default: 10) - Number of tokens added per second
 
+## ServicePort
+
+The `ServicePort` type represents port configuration for exposing services to external traffic. It defines how internal service ports are mapped to external ports with protocol specification, and includes validation logic to ensure proper port configuration and security constraints. Service ports are used by the system to generate Caddy reverse proxy rules, systemd unit configurations, and health check endpoints.
+
+### Example Usage
+
+```csharp
+// Create a service port mapping for a web application
+var webPort = new ServicePort
+{
+    Id = Guid.NewGuid().ToString(),
+    ServiceId = "web-app-01",
+    InternalPort = 3000,
+    ExternalPort = 80,
+    Protocol = PortProtocol.Tcp,
+    Description = "HTTP web traffic",
+    IsPublic = true,
+    CreatedAt = DateTime.UtcNow
+};
+
+// Validate the port configuration
+webPort.Validate();
+
+// Get port mapping string for Caddy/systemd configuration
+string portMapping = webPort.GetPortMapping();
+Console.WriteLine($"Port mapping: {portMapping}"); // Outputs: "3000:80/tcp"
+
+// Create a secure HTTPS port mapping
+var httpsPort = new ServicePort
+{
+    Id = Guid.NewGuid().ToString(),
+    ServiceId = "web-app-01",
+    InternalPort = 3001,
+    ExternalPort = 443,
+    Protocol = PortProtocol.Tcp,
+    Description = "HTTPS web traffic",
+    IsPublic = true,
+    CreatedAt = DateTime.UtcNow
+};
+
+// Create an internal database port (non-public)
+var dbPort = new ServicePort
+{
+    Id = Guid.NewGuid().ToString(),
+    ServiceId = "database-01",
+    InternalPort = 5432,
+    ExternalPort = 5432,
+    Protocol = PortProtocol.Tcp,
+    Description = "PostgreSQL database",
+    IsPublic = false,
+    CreatedAt = DateTime.UtcNow
+};
+
+// Generate Caddy configuration for the service with these ports
+Console.WriteLine("Generated Caddy configuration:");
+Console.WriteLine($"  HTTP: :80 -> 3000/tcp");
+Console.WriteLine($"  HTTPS: :443 -> 3001/tcp");
+Console.WriteLine($"  DB: :5432 -> 5432/tcp (internal only)");
+```
+
+**Key Properties:**
+
+- **Id**: Unique identifier for the port mapping
+- **ServiceId**: Reference to the parent service
+- **InternalPort**: The port the service listens on internally (1-65535)
+- **ExternalPort**: The port exposed externally (1-65535)
+- **Protocol**: Transport protocol (TCP or UDP)
+- **Description**: Human-readable description of the port usage
+- **IsPublic**: Whether the port is exposed to external traffic
+- **CreatedAt**: Timestamp when the port mapping was created
+- **Validate()**: Validates port ranges and security constraints
+- **GetPortMapping()**: Returns formatted port mapping string (e.g., "3000:80/tcp")
+
 ## ManagedService
 
 The `ManagedService` type represents a service that is managed by the system. It has the following properties:
