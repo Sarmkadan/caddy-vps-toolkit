@@ -1746,6 +1746,50 @@ Console.WriteLine("Generated Caddy configuration:");
 Console.WriteLine(caddyConfig);
 ```
 
+## UpstreamMetricsSummary
+
+The `UpstreamMetricsSummary` type provides an immutable point-in-time summary of aggregated request performance metrics for a single upstream server. It captures key performance indicators including latency percentiles (P50, P95, P99), error rates, throughput, and sample statistics, enabling intelligent load balancing decisions based on recent service behavior.
+
+The summary is derived from a sliding observation window of request samples and is designed to be used by the adaptive scoring model to evaluate upstream health and performance for routing decisions.
+
+
+
+### Example Usage
+
+```csharp
+// Create a metrics window for tracking upstream performance
+var metricsWindow = new UpstreamMetricsWindow("api-server-01", maxSamples: 200);
+
+// Add request observations to the window (automatically maintains sliding window)
+metricsWindow.Add(responseTimeMs: 45, succeeded: true);
+metricsWindow.Add(responseTimeMs: 89, succeeded: true);
+metricsWindow.Add(responseTimeMs: 125, succeeded: false);
+metricsWindow.Add(responseTimeMs: 67, succeeded: true);
+metricsWindow.Add(responseTimeMs: 203, succeeded: true);
+
+// Generate a summary of current metrics
+var summary = metricsWindow.Summarize();
+
+if (summary != null)
+{
+    Console.WriteLine(summary.ToString());
+    // Output: [api-server-01] n=5 p50=67.0ms p99=203.0ms err=20.0% rps=X.XX
+    
+    Console.WriteLine($"Upstream: {summary.UpstreamId}");
+    Console.WriteLine($"Samples: {summary.SampleCount}");
+    Console.WriteLine($"P50 Latency: {summary.P50LatencyMs:F1}ms");
+    Console.WriteLine($"P99 Latency: {summary.P99LatencyMs:F1}ms");
+    Console.WriteLine($"Mean Latency: {summary.MeanLatencyMs:F1}ms");
+    Console.WriteLine($"Error Rate: {summary.ErrorRate:P1}");
+    Console.WriteLine($"Throughput: {summary.ThroughputRps:F2} req/s");
+    Console.WriteLine($"Window: {summary.WindowStartUtc:u} to {summary.WindowEndUtc:u}");
+    Console.WriteLine($"Statistically Significant: {summary.IsStatisticallySignificant}");
+}
+
+// Clear the window to start fresh
+metricsWindow.Clear();
+```
+
 ## SlidingWindowMetricsAggregator
 
 `SlidingWindowMetricsAggregator` is a thread-safe utility class that maintains a rolling window of metrics over time, enabling real-time aggregation and analysis of upstream performance data. It tracks request counts, response times, error rates, and other key performance indicators across a configurable time window, allowing the adaptive load balancer to make data-driven routing decisions based on recent service behavior rather than historical averages.
@@ -1932,6 +1976,50 @@ Console.WriteLine($"Total active connections: {totalConnections}");
 var caddyConfig = pool.GenerateCaddyUpstreamBlock("/*");
 Console.WriteLine("Generated Caddy configuration:");
 Console.WriteLine(caddyConfig);
+```
+
+## UpstreamMetricsSummary
+
+The `UpstreamMetricsSummary` type provides an immutable point-in-time summary of aggregated request performance metrics for a single upstream server. It captures key performance indicators including latency percentiles (P50, P95, P99), error rates, throughput, and sample statistics, enabling intelligent load balancing decisions based on recent service behavior.
+
+The summary is derived from a sliding observation window of request samples and is designed to be used by the adaptive scoring model to evaluate upstream health and performance for routing decisions.
+
+
+
+### Example Usage
+
+```csharp
+// Create a metrics window for tracking upstream performance
+var metricsWindow = new UpstreamMetricsWindow("api-server-01", maxSamples: 200);
+
+// Add request observations to the window (automatically maintains sliding window)
+metricsWindow.Add(responseTimeMs: 45, succeeded: true);
+metricsWindow.Add(responseTimeMs: 89, succeeded: true);
+metricsWindow.Add(responseTimeMs: 125, succeeded: false);
+metricsWindow.Add(responseTimeMs: 67, succeeded: true);
+metricsWindow.Add(responseTimeMs: 203, succeeded: true);
+
+// Generate a summary of current metrics
+var summary = metricsWindow.Summarize();
+
+if (summary != null)
+{
+    Console.WriteLine(summary.ToString());
+    // Output: [api-server-01] n=5 p50=67.0ms p99=203.0ms err=20.0% rps=X.XX
+    
+    Console.WriteLine($"Upstream: {summary.UpstreamId}");
+    Console.WriteLine($"Samples: {summary.SampleCount}");
+    Console.WriteLine($"P50 Latency: {summary.P50LatencyMs:F1}ms");
+    Console.WriteLine($"P99 Latency: {summary.P99LatencyMs:F1}ms");
+    Console.WriteLine($"Mean Latency: {summary.MeanLatencyMs:F1}ms");
+    Console.WriteLine($"Error Rate: {summary.ErrorRate:P1}");
+    Console.WriteLine($"Throughput: {summary.ThroughputRps:F2} req/s");
+    Console.WriteLine($"Window: {summary.WindowStartUtc:u} to {summary.WindowEndUtc:u}");
+    Console.WriteLine($"Statistically Significant: {summary.IsStatisticallySignificant}");
+}
+
+// Clear the window to start fresh
+metricsWindow.Clear();
 ```
 
 ## SlidingWindowMetricsAggregator
