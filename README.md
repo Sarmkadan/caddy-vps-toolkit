@@ -967,6 +967,46 @@ var unitName = validation.ManagedService_GetSystemdUnitName_WithSpacesInName_For
 Assert.Equal("my-production-service.service", unitName);
 ```
 
+## SystemdUnitConfigTests
+
+`SystemdUnitConfigTests` validates the `SystemdUnitConfig` class, which generates and validates systemd unit files for managed services. This test suite verifies that unit file generation produces correct `[Unit]`, `[Service]`, and `[Install]` sections with proper directives, handles environment variables and files correctly, validates required fields, and maintains proper section ordering in the generated content.
+
+The tests cover validation scenarios (missing required fields, negative values), directive emission (environment variables, working directory, restart policies), and structural requirements (section ordering, lowercase directives).
+
+```csharp
+// Example: Creating and validating a systemd unit configuration
+var unitConfig = new SystemdUnitConfig
+{
+    ServiceId = "my-service-123",
+    UnitName = "my-web-app.service",
+    Description = "My web application service",
+    ExecStart = "/usr/bin/dotnet /opt/my-app/MyApp.dll",
+    User = "www-data",
+    Group = "www-data",
+    WorkingDirectory = "/opt/my-app",
+    RestartPolicy = RestartPolicy.OnFailure,
+    Environment = new Dictionary<string, string>
+    {
+        {"ASPNETCORE_ENVIRONMENT", "Production"},
+        {"PORT", "8080"}
+    },
+    Wants = new List<string> { "postgresql.service", "redis.service" }
+};
+
+// Validate the configuration - throws ValidationException if invalid
+unitConfig.Validate();
+
+// Generate the systemd unit file content
+string systemdContent = unitConfig.GenerateSystemdContent();
+
+// The generated content contains all three required sections in order:
+// [Unit] - Contains Description, After, and Wants directives
+// [Service] - Contains ExecStart, User, Group, WorkingDirectory, Restart, Environment, etc.
+// [Install] - Contains WantedBy directive
+
+Console.WriteLine(systemdContent);
+```
+
 ## ServiceManagementServiceTests
 
 `ServiceManagementServiceTests` provides unit tests for the `ServiceManagementService` class, which manages the lifecycle of systemd services including creation, retrieval, updating, and deletion. This test suite validates that service operations correctly handle null inputs, duplicate service names, running service constraints, and valid status transitions, ensuring robust error handling and correct behavior for service management workflows.
