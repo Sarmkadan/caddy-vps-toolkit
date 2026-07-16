@@ -1045,6 +1045,66 @@ var unitName = validation.ManagedService_GetSystemdUnitName_WithSpacesInName_For
 Assert.Equal("my-production-service.service", unitName);
 ```
 
+## TemplateEngineTests
+
+`TemplateEngineTests` provides unit tests for the `TemplateEngine` class, which enables template-based string substitution with support for variables, null safety, and dictionary-based rendering. This test suite validates that the template engine correctly handles single and multiple variable substitutions, null and empty inputs, missing variables, and constructor-based initialization, ensuring robust text templating functionality for configuration generation and message formatting.
+
+```csharp
+// Example: Using TemplateEngine for configuration string templating
+var engine = new TemplateEngine();
+
+// Set variables for template substitution
+engine.Set("service", "caddy-vps-toolkit");
+engine.Set("version", "2.0.0");
+engine.Set("port", 8080);
+
+// Render a template with single variable substitution
+var serviceConfig = engine.Render("Service: {{service}}");
+Console.WriteLine(serviceConfig); // Outputs: Service: caddy-vps-toolkit
+
+// Render a template with multiple variable substitutions
+var connectionString = engine.Render("http://{{host}}:{{port}}/api/v{{version}}");
+Console.WriteLine(connectionString); // Outputs: http://:8080/api/v2.0.0
+
+// Set additional variables and render again
+engine.Set("host", "localhost");
+var fullConnectionString = engine.Render("http://{{host}}:{{port}}/api/v{{version}}");
+Console.WriteLine(fullConnectionString); // Outputs: http://localhost:8080/api/v2.0.0
+
+// Render with unknown variable - placeholder remains unchanged
+var unknownVarResult = engine.Render("Path: {{unknownPath}}");
+Console.WriteLine(unknownVarResult); // Outputs: Path: {{unknownPath}}
+
+// Handle null template gracefully
+var nullResult = engine.Render(null!);
+Console.WriteLine(nullResult); // Outputs: (null)
+
+// Handle empty template
+var emptyResult = engine.Render(string.Empty);
+Console.WriteLine(emptyResult); // Outputs: (empty string)
+
+// Static method for quick rendering from dictionary
+var templateVars = new Dictionary<string, object>
+{
+    ["app"] = "web-server",
+    ["env"] = "production"
+};
+
+var staticRender = TemplateEngine.Render("{{app}} in {{env}} environment", templateVars);
+Console.WriteLine(staticRender); // Outputs: web-server in production environment
+
+// Constructor with initial variables
+var preConfiguredEngine = new TemplateEngine(new Dictionary<string, object> { ["key"] = "value" });
+var preRender = preConfiguredEngine.Render("{{key}}");
+Console.WriteLine(preRender); // Outputs: value
+
+// Handle null variable values - substitutes empty string
+var nullValueEngine = new TemplateEngine();
+nullValueEngine.Set("missing", null!);
+var nullValueResult = nullValueEngine.Render("Value: {{missing}}");
+Console.WriteLine(nullValueResult); // Outputs: Value: 
+```
+
 ## StateMachineTests
 
 `StateMachineTests` provides unit tests for the `StateMachine<TState, TTrigger>` class, a generic finite state machine implementation for managing state transitions in applications. This test suite validates state transition behavior, validation of valid/invalid transitions, callback invocation on state entry/exit, reset functionality, and available transition queries, ensuring robust state management for workflows and service lifecycle operations.
