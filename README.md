@@ -875,6 +875,52 @@ dotnet test --collect:"XPlat Code Coverage"
 
 The test suite covers argument parsing and validation (`ArgumentParserTests`), string extension utilities (`StringExtensionsTests`), and configuration validation helpers (`ValidationHelperTests`).
 
+## CaddyConfigurationServiceTests
+
+`CaddyConfigurationServiceTests` provides unit tests for the `CaddyConfigurationService` class, which validates the Caddy configuration generation functionality. This test suite verifies that the service correctly handles null inputs, generates valid Caddyfile configurations, creates proper route blocks, and validates configuration content, ensuring robust error handling and correct behavior for all public methods.
+
+```csharp
+// Example: Using CaddyConfigurationService with validation
+var serviceRepositoryMock = Substitute.For<IServiceRepository>();
+var serviceManager = new ServiceManagementService(serviceRepositoryMock);
+var caddyService = new CaddyConfigurationService(serviceManager);
+
+// Test null global configuration handling
+Func<Task> nullConfigTest = async () => await caddyService.GenerateCaddyfileAsync(null!, new List<CaddyRoute>());
+await nullConfigTest.Should().ThrowAsync<ArgumentNullException>();
+
+// Test valid configuration generation
+var config = new CaddyConfig { AdminEmail = "admin@example.com" };
+var routes = new List<CaddyRoute> 
+{
+    new CaddyRoute { Domain = "test.com", UpstreamUrl = "http://localhost:8080", IsActive = true }
+};
+
+var result = await caddyService.GenerateCaddyfileAsync(config, routes);
+result.Should().NotBeNullOrWhiteSpace();
+result.Should().Contain("test.com {");
+result.Should().Contain("reverse_proxy http://localhost:8080");
+
+// Test route block generation with valid service
+var service = new ManagedService { Id = Guid.NewGuid().ToString(), HostBinding = "127.0.0.1", Port = 5000 };
+var route = caddyService.GenerateRouteForService(service, "app.test.com");
+route.Should().NotBeNull();
+route.Domain.Should().Be("app.test.com");
+route.UpstreamUrl.Should().Be("http://127.0.0.1:5000");
+
+// Test null route validation
+Action nullRouteTest = () => caddyService.GenerateRouteBlock(null!);
+nullRouteTest.Should().Throw<ArgumentNullException>();
+
+// Test null service validation
+Action nullServiceTest = () => caddyService.GenerateRouteForService(null!, "domain.com");
+nullServiceTest.Should().Throw<ArgumentNullException>();
+
+// Test empty content validation
+Func<Task> emptyContentTest = async () => await caddyService.ValidateCaddyfileAsync(string.Empty);
+await emptyContentTest.Should().ThrowAsync<ArgumentException>();
+```
+
 ## ValidationHelperTests
 
 `ValidationHelperTests` provides unit tests for input validation utilities used throughout the application. It validates port numbers, domain names, service identifiers, and error result merging, ensuring that configuration inputs meet the required constraints before being processed by other components. The test class exercises both success and failure paths for common validation scenarios.
