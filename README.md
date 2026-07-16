@@ -1198,6 +1198,78 @@ Console.WriteLine($"TCP health check URL: {tcpUrl}");
 // Outputs: TCP health check URL: (null)
 ```
 
+## ManagedServiceTests
+
+`ManagedServiceTests` provides unit tests for the `ManagedService` class, which represents a managed systemd service configuration. This test suite validates service validation logic, status management, and systemd unit name generation, ensuring that service configurations meet required constraints before being processed by other components.
+
+```csharp
+// Example: Creating and validating a managed service
+var service = new ManagedService
+{
+    Name = "my-web-app",
+    ExecutablePath = "/usr/bin/dotnet",
+    WorkingDirectory = "/opt/my-app",
+    Port = 8080
+};
+
+// Validate the service configuration - throws ValidationException if invalid
+service.Validate();
+
+// Update service status
+service.UpdateStatus(ServiceStatus.Running);
+Console.WriteLine($"Service status: {service.Status}"); // Outputs: Service status: Running
+
+// Get systemd unit name - uses explicit name if provided, otherwise generates from service name
+var explicitUnitName = service.GetSystemdUnitName();
+Console.WriteLine(explicitUnitName); // Outputs: custom.service (if SystemdUnitName was set)
+
+// Generate systemd unit name from service name when not explicitly set
+var generatedUnitName = new ManagedService { Name = "My Production App" }.GetSystemdUnitName();
+Console.WriteLine(generatedUnitName); // Outputs: vps-my-production-app.service
+
+// Test validation scenarios
+try
+{
+    // This will throw ValidationException - missing required Name property
+    var invalidService = new ManagedService
+    {
+        ExecutablePath = "/usr/bin/dotnet",
+        WorkingDirectory = "/opt/my-app",
+        Port = 8080
+    };
+    invalidService.Validate();
+}
+catch (ValidationException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}"); // Outputs: Validation failed: name is required
+}
+
+try
+{
+    // This will throw ValidationException - invalid port number
+    var invalidPortService = new ManagedService
+    {
+        Name = "my-service",
+        ExecutablePath = "/usr/bin/dotnet",
+        WorkingDirectory = "/opt/my-app",
+        Port = 0 // Invalid port
+    };
+    invalidPortService.Validate();
+}
+catch (ValidationException ex)
+{
+    Console.WriteLine($"Validation failed: {ex.Message}"); // Outputs: Validation failed: Port must be between 1 and 65535
+}
+
+// Verify status transitions and timestamps
+var testService = new ManagedService();
+var originalTime = testService.UpdatedAt;
+System.Threading.Thread.Sleep(10);
+testService.UpdateStatus(ServiceStatus.Stopped);
+Console.WriteLine($"Status changed: {testService.Status}"); // Outputs: Status changed: Stopped
+Console.WriteLine($"Updated at changed: {testService.UpdatedAt > originalTime}"); // Outputs: true
+```
+
 ## ArgumentParserEdgeCaseTests
 
 `ArgumentParserEdgeCaseTests` validates the edge case behavior of the CLI argument parser, ensuring robust handling of null values, empty argument lists, out-of-bounds access, and various flag parsing scenarios. These tests verify that the parser gracefully handles malformed inputs and edge cases without throwing exceptions, maintaining application stability in production environments.
