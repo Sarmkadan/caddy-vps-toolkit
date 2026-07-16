@@ -859,6 +859,63 @@ curl http://localhost:9090/metrics
 # health_check_duration_seconds{name="api"} 0.125
 ```
 
+## CommandRegistry
+
+The `CommandRegistry` class provides centralized registration and discovery of CLI commands with metadata and validation rules. It serves as the command catalog for the caddy-vps-toolkit CLI tool, enabling dynamic command registration, lookup, and help text generation. The registry maintains a collection of `CommandDescriptor` objects that describe each command's name, description, usage patterns, required arguments, and optional flags.
+
+This design allows for extensible command architecture where new commands can be registered at runtime without modifying core CLI parsing logic, making it ideal for CLI tools that need to support plugins or modular features.
+
+**Key Features:**
+- Command registration with metadata (name, description, usage patterns)
+- Command lookup by name (case-insensitive)
+- Help text generation for all registered commands
+- Validation support through RequiredArguments and OptionalFlags
+- Extensible architecture for dynamic command discovery
+
+**Example Usage:**
+
+```csharp
+// Create command registry
+var registry = new CommandRegistry();
+
+// Register a new command with basic metadata
+registry.Register(new CommandDescriptor("service", "Service management commands")
+    .WithUsage("service <action> [serviceName] [--flags]")
+    .RequireArgument("action")
+    .AllowFlag("verbose")
+    .AllowFlag("force"));
+
+// Register additional commands
+registry.Register(new CommandDescriptor("caddy", "Caddy configuration generation")
+    .WithUsage("caddy <action> [--flags]"));
+
+registry.Register(new CommandDescriptor("health", "Health monitoring commands")
+    .WithUsage("health <action> [serviceName] [--flags]"));
+
+// Check if a command exists
+bool hasServiceCommand = registry.Exists("service"); // Returns true
+bool hasUnknownCommand = registry.Exists("unknown"); // Returns false
+
+// Get a command descriptor for detailed inspection
+var serviceCommand = registry.Get("service");
+if (serviceCommand != null)
+{
+    Console.WriteLine($"Command: {serviceCommand.Name}");
+    Console.WriteLine($"Description: {serviceCommand.Description}");
+    Console.WriteLine($"Usage: {serviceCommand.Usage}");
+    Console.WriteLine($"Required Arguments: {string.Join(", ", serviceCommand.RequiredArguments)}");
+    Console.WriteLine($"Optional Flags: {string.Join(", ", serviceCommand.OptionalFlags)}");
+}
+
+// Generate comprehensive help text for all registered commands
+string helpText = registry.GenerateHelpText();
+Console.WriteLine(helpText);
+
+// Get all registered commands
+var allCommands = registry.GetAll();
+Console.WriteLine($"Total registered commands: {allCommands.Count}");
+```
+
 ## IWebhookHandler
 
 The `IWebhookHandler` interface provides a mechanism for external system integration through webhook notifications. It allows registration of webhook URLs for specific event types and triggers notifications when those events occur. The interface supports registering and unregistering webhook endpoints, triggering events with payload data, and retrieving current registrations.
