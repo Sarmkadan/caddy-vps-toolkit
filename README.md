@@ -4519,6 +4519,43 @@ public class HealthMonitoringService
 - **Use meaningful aggregate IDs**: Choose IDs that represent the entity or aggregate root
 - **Keep events immutable**: Once published, events should not be modified
 
+## LogEntry
+
+The `LogEntry` type represents a single parsed log entry from any log source. It captures structured log data including timestamp, severity level, message content, and source information.
+
+Usage example:
+
+```csharp
+// Create a log entry for an application event
+var logEntry = new LogEntry
+{
+    Timestamp = DateTime.UtcNow,
+    Level = "Info",
+    Message = "Service started successfully",
+    Source = "/var/log/myapp/service.log",
+    ServiceId = "api-service-01"
+};
+
+// Log an error event
+var errorEntry = new LogEntry
+{
+    Timestamp = DateTime.UtcNow,
+    Level = "Error",
+    Message = "Failed to connect to database: connection timeout",
+    Source = "/var/log/myapp/database.log",
+    ServiceId = "api-service-01"
+};
+
+// Create a warning entry for monitoring
+var warningEntry = new LogEntry
+{
+    Timestamp = DateTime.UtcNow,
+    Level = "Warning",
+    Message = "High memory usage detected: 92%",
+    Source = "/var/log/system/memory.log"
+};
+```
+
 ## ServiceCreatedEvent
 
 The `ServiceCreatedEvent` is raised when a new service is created and registered in the system. This event provides essential information about the newly created service, enabling other components to react to service creation events for logging, monitoring, configuration generation, or integration purposes.
