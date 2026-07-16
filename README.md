@@ -1180,6 +1180,60 @@ var cleanupResult = await healthMonitoringService.CleanupOldRecordsAsync(30);
 cleanupResult.Should().BeTrue();
 ```
 
+## LogAggregationServiceTests
+
+`LogAggregationServiceTests` validates the `LogAggregationService` class, which aggregates and filters log files from a specified directory. This test suite verifies that the service correctly handles empty directories, parses standard log formats, filters by minimum log level, respects line limits, returns logs in chronological order, and filters by date ranges. It also validates that the service can identify and return available log sources.
+
+```csharp
+// Example: Using LogAggregationService to view and filter service logs
+var logAggregationService = new LogAggregationService("/var/log/my-service");
+
+// Get all logs from the directory
+var allLogs = await logAggregationService.GetLogsAsync();
+Console.WriteLine($"Found {allLogs.Count} log entries");
+
+// Filter logs by minimum level (Info, Warning, Error, etc.)
+var warningAndAbove = await logAggregationService.GetLogsAsync(new LogQueryOptions
+{
+    MinLevel = "Warning",
+    Lines = 100
+});
+
+// Filter logs by date range (only show entries from the last 24 hours)
+var since = DateTime.UtcNow.AddHours(-24);
+var recentLogs = await logAggregationService.GetLogsAsync(new LogQueryOptions
+{
+    Since = since,
+    Lines = 50
+});
+
+// Get available log sources/files
+var logSources = logAggregationService.GetLogSources();
+foreach (var source in logSources)
+{
+    Console.WriteLine($"Log source: {source.Name} ({source.Size} bytes)");
+}
+
+// Example: Testing various log aggregation scenarios
+var tempDir = Path.Combine(Path.GetTempPath(), "log-agg-test");
+Directory.CreateDirectory(tempDir);
+
+// Test empty directory handling
+var emptyService = new LogAggregationService(tempDir);
+var emptyLogs = await emptyService.GetLogsAsync();
+emptyLogs.Should().BeEmpty();
+
+// Test standard log format parsing
+var logContent = "[2025-01-15T10:00:00.000+00:00] [Info] Application started\n" +
+                 "[2025-01-15T10:01:00.000+00:00] [Error] Database connection failed";
+File.WriteAllText(Path.Combine(tempDir, "app.log"), logContent);
+
+var parsedLogs = await emptyService.GetLogsAsync();
+parsedLogs.Should().HaveCount(2);
+parsedLogs[0].Level.Should().Be("Info");
+parsedLogs[1].Level.Should().Be("Error");
+```
+
 ## EventBusTests
 
 `EventBusTests` validates the `EventBus` class, a lightweight publish-subscribe event bus implementation that enables decoupled communication between components. The tests cover core functionality including event publishing with subscribers, null event handling, multiple subscriber scenarios, handler management (subscribe/unsubscribe), subscriber counting, event type isolation, and concurrent publishing.
