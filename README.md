@@ -971,6 +971,63 @@ webhookHandler.Unregister(
 );
 ```
 
+## ServiceCollectionExtensions
+
+The `ServiceCollectionExtensions` class provides extension methods for `IServiceCollection` that simplify dependency injection registration for infrastructure services. It offers a fluent API for adding caching, HTTP clients, webhooks, logging, event bus, rate limiting, and service discovery services to your ASP.NET Core application's service collection.
+
+These extension methods follow the common .NET dependency injection pattern and return the `IServiceCollection` to enable method chaining. Each method validates its parameters and throws appropriate exceptions for invalid inputs.
+
+### Example Usage
+
+```csharp
+// Configure services in your ASP.NET Core application's Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Add infrastructure services with default configuration
+builder.Services
+    .AddCachingServices()
+    .AddHttpClientServices()
+    .AddWebhookServices()
+    .AddLoggingServices()
+    .AddEventBus()
+    .AddRateLimiting()
+    .AddServiceDiscovery();
+
+// Or configure all services at once with custom options
+builder.Services.AddInfrastructureServices(options =>
+{
+    options.HttpTimeoutMs = 15000;      // 15 second timeout
+    options.MaxRetries = 5;             // Retry up to 5 times
+    options.LogPath = "/var/log/my-app.log";
+    options.MinLogLevel = LogLevel.Debug;  // Log debug messages
+    options.RateLimitCapacity = 200;       // Allow 200 requests
+    options.RateLimitRefillRate = 20;    // 20 tokens per second
+});
+
+var app = builder.Build();
+app.Run();
+```
+
+### Available Extension Methods
+
+- **AddCachingServices()** - Registers in-memory caching services
+- **AddHttpClientServices(timeoutMs, maxRetries)** - Configures HTTP client with retry policy
+- **AddWebhookServices()** - Sets up webhook notification handler
+- **AddLoggingServices(logPath, minLevel)** - Configures file-based logging
+- **AddEventBus()** - Registers event bus for publish-subscribe messaging
+- **AddRateLimiting(capacity, refillRate)** - Configures rate limiting with token bucket algorithm
+- **AddServiceDiscovery()** - Registers service discovery client
+- **AddInfrastructureServices(configure)** - Convenience method to add all infrastructure services at once
+
+### InfrastructureOptions Properties
+
+- **HttpTimeoutMs** (int, default: 30000) - HTTP request timeout in milliseconds
+- **MaxRetries** (int, default: 3) - Maximum number of retry attempts
+- **LogPath** (string, default: "logs/app.log") - Path to the log file
+- **MinLogLevel** (LogLevel, default: LogLevel.Info) - Minimum log level to record
+- **RateLimitCapacity** (int, default: 100) - Maximum number of requests allowed in the bucket
+- **RateLimitRefillRate** (int, default: 10) - Number of tokens added per second
+
 ## ArgumentParser
 
 The `ArgumentParser` class provides command-line argument parsing functionality for the CLI tool. It parses command-line arguments into structured command objects using a simple key-value pattern for flags and supports positional arguments. The parser efficiently handles both boolean flags (like `--verbose`, `--force`) and flags with values (like `--port 8080` or `--domain example.com`), using span-based comparisons to avoid unnecessary string allocations.
