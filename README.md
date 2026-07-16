@@ -914,6 +914,97 @@ webhookHandler.Unregister(
 );
 ```
 
+## IHttpClient
+
+The `IHttpClient` interface provides a clean abstraction for HTTP communication with built-in retry, timeout, and error handling. It simplifies making HTTP requests by handling common concerns like retry policies, timeouts, and JSON serialization/deserialization, allowing service code to focus on business logic rather than HTTP plumbing.
+
+**Key Features:**
+- Automatic retry on transient failures
+- Configurable timeout (default: 30 seconds)
+- JSON serialization/deserialization
+- Response wrapper with status, data, and error information
+- Header management
+- Async/await support
+
+**Example Usage:**
+
+```csharp
+// Create HTTP client with default timeout (30s) and retry policy
+var httpClient = new HttpClientWrapper();
+
+// Make a GET request to retrieve data
+var getResponse = await httpClient.GetAsync<ApiResponse>(
+    url: "https://api.example.com/users/123",
+    headers: new Dictionary<string, string> { { "Authorization", "Bearer token123" } }
+);
+
+if (getResponse.IsSuccess)
+{
+    Console.WriteLine($"Retrieved user: {getResponse.Data.Name}");
+    Console.WriteLine($"Status: {getResponse.StatusCode}");
+}
+else
+{
+    Console.WriteLine($"Error: {getResponse.Error}");
+}
+
+// Make a POST request to create a resource
+var newUser = new { Name = "John Doe", Email = "john@example.com" };
+var postResponse = await httpClient.PostAsync<ApiResponse>(
+    url: "https://api.example.com/users",
+    data: newUser,
+    headers: new Dictionary<string, string> { { "Authorization", "Bearer token123" } }
+);
+
+if (postResponse.IsSuccess)
+{
+    Console.WriteLine($"Created user with ID: {postResponse.Data.Id}");
+}
+
+// Make a PUT request to update a resource
+var updateData = new { Name = "John Updated", Status = "active" };
+var putResponse = await httpClient.PutAsync<ApiResponse>(
+    url: $"https://api.example.com/users/{userId}",
+    data: updateData
+);
+
+// Make a DELETE request
+var deleteResponse = await httpClient.DeleteAsync(
+    url: $"https://api.example.com/users/{userId}"
+);
+
+Console.WriteLine($"Delete successful: {deleteResponse.IsSuccess}");
+```
+
+## IWebhookHandler
+{
+    ServiceName = "api-service",
+    Port = 8080,
+    Domain = "api.example.com",
+    Status = "created"
+};
+
+bool success = await webhookHandler.TriggerAsync(
+    WebhookEventType.ServiceCreated,
+    serviceCreatedPayload
+);
+
+Console.WriteLine($"Webhook triggered successfully: {success}");
+
+// Get all registered URLs for a specific event type
+var healthCheckUrls = webhookHandler.GetRegistrations(WebhookEventType.HealthCheckFailed);
+foreach (var url in healthCheckUrls)
+{
+    Console.WriteLine($"Health check webhook registered at: {url}");
+}
+
+// Unregister a webhook URL
+webhookHandler.Unregister(
+    url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+    eventType: WebhookEventType.ServiceCreated
+);
+```
+
 ## DateTimeExtensionsTests
 
 `DateTimeExtensionsTests` provides unit tests for the `DateTimeExtensions` utility class, which extends `DateTime` with common formatting and calculation methods. This test suite validates that all extension methods correctly handle various date and time scenarios, including relative time formatting, ISO 8601 serialization, start-of-day calculations, past/future checks, and working day counting.
