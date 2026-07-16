@@ -859,6 +859,35 @@ curl http://localhost:9090/metrics
 # health_check_duration_seconds{name="api"} 0.125
 ```
 
+## DateTimeExtensionsTests
+
+`DateTimeExtensionsTests` provides unit tests for the `DateTimeExtensions` utility class, which extends `DateTime` with common formatting and calculation methods. This test suite validates that all extension methods correctly handle various date and time scenarios, including relative time formatting, ISO 8601 serialization, start-of-day calculations, past/future checks, and working day counting.
+
+```csharp
+// Example: Using DateTimeExtensions for human-readable time formatting and calculations
+var now = DateTime.UtcNow;
+
+// Convert to relative time string (e.g., "5 minutes ago", "just now")
+string relativeTime = now.AddMinutes(-5).ToRelativeTime();
+Console.WriteLine(relativeTime); // Outputs: "5 minutes ago"
+
+// Convert to ISO 8601 format
+string iso8601 = now.ToIso8601();
+Console.WriteLine(iso8601); // Outputs: "2026-07-16T12:34:56.7890000Z"
+
+// Get start of day (midnight)
+DateTime startOfDay = now.StartOfDay();
+Console.WriteLine(startOfDay); // Outputs: "2026-07-16T00:00:00.0000000"
+
+// Check if a date is in the past
+bool isPast = new DateTime(2020, 1, 1).IsPast();
+Console.WriteLine(isPast); // Outputs: true
+
+// Count working days between two dates (Monday-Friday only)
+int workingDays = new DateTime(2026, 7, 13).WorkingDaysBetween(new DateTime(2026, 7, 17));
+Console.WriteLine(workingDays); // Outputs: 5
+```
+
 ## Testing
 
 Run the unit test suite:
@@ -873,7 +902,7 @@ Run with code coverage:
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-The test suite covers argument parsing and validation (`ArgumentParserTests`), string extension utilities (`StringExtensionsTests`), and configuration validation helpers (`ValidationHelperTests`).
+The test suite covers argument parsing and validation (`ArgumentParserTests`), string extension utilities (`StringExtensionsTests`), configuration validation helpers (`ValidationHelperTests`), and date/time utility methods (`DateTimeExtensionsTests`).
 
 ## CaddyConfigurationServiceTests
 
