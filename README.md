@@ -2188,6 +2188,43 @@ Console.WriteLine($"Backup created at: {manifest.CreatedAt}");
 Console.WriteLine($"Description: {manifest.Description}");
 ```
 
+## CaddyVpsException
+
+`CaddyVpsException` is the base exception class for the caddy-vps-toolkit application. It provides structured error handling with an `ErrorCode` property for categorizing failures and a `Details` property for additional context. This exception type serves as the foundation for all application-specific exceptions in the toolkit.
+
+### Members
+
+- `ErrorCode` (string): A string identifier for categorizing the exception type
+- `Details` (object): An optional object containing additional error context
+
+### Usage Example
+
+```csharp
+try
+{
+    // Example: Attempting to start a non-existent service
+    var serviceManagement = new ServiceManagementService(serviceRepository);
+    await serviceManagement.StartServiceAsync("non-existent-service");
+}
+catch (CaddyVpsException ex)
+{
+    // Handle application-specific exceptions
+    Console.WriteLine($"Error Code: {ex.ErrorCode}");
+    Console.WriteLine($"Message: {ex.Message}");
+    
+    if (ex.Details != null)
+    {
+        Console.WriteLine($"Details: {ex.Details}");
+    }
+    
+    // Re-throw or handle specific error codes
+    if (ex.ErrorCode == "SERVICE_NOT_FOUND")
+    {
+        Console.WriteLine("Service not found - please check the service name");
+    }
+}
+```
+
 ## CaddyConfigPipelineIntegrationTests
 
 `CaddyConfigPipelineIntegrationTests` provides end-to-end integration tests for the complete Caddy configuration generation pipeline. This test suite validates the full workflow from service configuration inputs through route generation, Caddyfile output, and validation, ensuring all components work together correctly in realistic scenarios.
