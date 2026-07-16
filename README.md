@@ -1984,6 +1984,62 @@ Console.WriteLine($"TCP health check URL: {tcpUrl}");
 // Outputs: TCP health check URL: (null)
 ```
 
+## RetryPolicyTests
+
+`RetryPolicyTests` provides unit tests for retry policy implementations that handle transient failures in service operations. This test suite validates that retry mechanisms correctly handle immediate success, transient failures followed by success, maximum retry limits, null operation validation, and void overload scenarios, ensuring robust error handling for service operations that may temporarily fail.
+
+```csharp
+// Example: Using retry policies for resilient service operations
+var retryPolicy = new RetryPolicy(maxRetries: 3, delay: TimeSpan.FromSeconds(1));
+
+// Execute an operation that might fail transiently
+var result = await retryPolicy.ExecuteAsync(async () => 
+{
+    // Your service operation that might throw transient exceptions
+    var response = await httpClient.GetAsync("https://api.example.com/data");
+    response.EnsureSuccessStatusCode();
+    return await response.Content.ReadAsStringAsync();
+});
+
+Console.WriteLine($"Operation succeeded after retries: {result}");
+
+// Example with linear backoff retry policy
+var linearBackoffPolicy = new LinearBackoffRetryPolicy(
+    maxRetries: 5,
+    initialDelay: TimeSpan.FromSeconds(1),
+    maxDelay: TimeSpan.FromSeconds(30)
+);
+
+// Use the retry policy with exponential backoff
+var serviceResult = await linearBackoffPolicy.ExecuteAsync(async () => 
+{
+    var serviceResponse = await serviceClient.GetServiceStatusAsync("database-service");
+    if (!serviceResponse.IsHealthy)
+    {
+        throw new ServiceUnavailableException("Service temporarily unavailable");
+    }
+    return serviceResponse;
+});
+
+Console.WriteLine($"Service status: {serviceResult.Status}");
+
+// Example with no retry policy (fail immediately)
+var noRetryPolicy = new NoRetryPolicy();
+
+try
+{
+    await noRetryPolicy.ExecuteAsync(async () => 
+    {
+        // This operation will fail immediately without retries
+        throw new InvalidOperationException("Service configuration error");
+    });
+}
+catch (InvalidOperationException ex)
+{
+    Console.WriteLine($"Operation failed immediately: {ex.Message}");
+}
+```
+
 ## ManagedServiceTests
 
 `ManagedServiceTests` provides unit tests for the `ManagedService` class, which represents a managed systemd service configuration. This test suite validates service validation logic, status management, and systemd unit name generation, ensuring that service configurations meet required constraints before being processed by other components.
