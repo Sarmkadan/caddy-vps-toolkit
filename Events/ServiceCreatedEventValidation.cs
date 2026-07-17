@@ -17,11 +17,11 @@ namespace CaddyVpsToolkit.Events
     public static class ServiceCreatedEventValidation
     {
         /// <summary>
-        /// Validates a <see cref="ServiceCreatedEvent"/> instance
+        /// Validates a <see cref="ServiceCreatedEvent"/> instance.
         /// </summary>
-        /// <param name="value">The event to validate</param>
-        /// <returns>A list of validation errors; empty if valid</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
+        /// <param name="value">The event to validate. Cannot be null.</param>
+        /// <returns>A list of validation errors; empty if valid.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
         public static IReadOnlyList<string> Validate(this ServiceCreatedEvent value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -64,11 +64,11 @@ namespace CaddyVpsToolkit.Events
         }
 
         /// <summary>
-        /// Determines whether a <see cref="ServiceCreatedEvent"/> instance is valid
+        /// Determines whether a <see cref="ServiceCreatedEvent"/> instance is valid.
         /// </summary>
-        /// <param name="value">The event to check</param>
-        /// <returns>True if valid; otherwise false</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
+        /// <param name="value">The event to check. Cannot be null.</param>
+        /// <returns>True if valid; otherwise false.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
         public static bool IsValid(this ServiceCreatedEvent value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -78,9 +78,9 @@ namespace CaddyVpsToolkit.Events
         /// <summary>
         /// Ensures that a <see cref="ServiceCreatedEvent"/> instance is valid, throwing an exception if not
         /// </summary>
-        /// <param name="value">The event to validate</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
-        /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is not valid</exception>
+        /// <param name="value">The event to validate. Cannot be null.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is not valid.</exception>
         public static void EnsureValid(this ServiceCreatedEvent value)
         {
             ArgumentNullException.ThrowIfNull(value);
