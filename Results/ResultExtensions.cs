@@ -123,9 +123,7 @@ namespace CaddyVpsToolkit.Results
         /// <param name="action">Action to execute on success</param>
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is null</exception>
         /// <exception cref="ArgumentNullException"><paramref name="action"/> is null</exception>
-        public static void OnSuccess<T>(
-            this Result<T> result,
-            Action<T> action)
+        public static void OnSuccess<T>(this Result<T> result, Action<T> action)
         {
             ArgumentNullException.ThrowIfNull(result);
             ArgumentNullException.ThrowIfNull(action);
@@ -144,9 +142,7 @@ namespace CaddyVpsToolkit.Results
         /// <param name="action">Action to execute on success</param>
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is null</exception>
         /// <exception cref="ArgumentNullException"><paramref name="action"/> is null</exception>
-        public static void OnSuccess(
-            this Result result,
-            Action action)
+        public static void OnSuccess(this Result result, Action action)
         {
             ArgumentNullException.ThrowIfNull(result);
             ArgumentNullException.ThrowIfNull(action);
@@ -187,9 +183,7 @@ namespace CaddyVpsToolkit.Results
         /// <param name="action">Action to execute on failure</param>
         /// <exception cref="ArgumentNullException"><paramref name="result"/> is null</exception>
         /// <exception cref="ArgumentNullException"><paramref name="action"/> is null</exception>
-        public static void OnFailure(
-            this Result result,
-            Action<string, string> action)
+        public static void OnFailure(this Result result, Action<string, string> action)
         {
             ArgumentNullException.ThrowIfNull(result);
             ArgumentNullException.ThrowIfNull(action);
@@ -207,9 +201,11 @@ namespace CaddyVpsToolkit.Results
         /// <typeparam name="T">The item type</typeparam>
         /// <param name="result">The paginated result</param>
         /// <returns>Read-only list of items, or empty list on failure</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="result"/> is null</exception>
         public static IReadOnlyList<T> ToReadOnlyList<T>(this PaginatedResult<T>? result)
         {
-            return result?.Items.AsReadOnly() ?? Array.Empty<T>().AsReadOnly();
+            ArgumentNullException.ThrowIfNull(result);
+            return result.Items.AsReadOnly();
         }
 
         /// <summary>
