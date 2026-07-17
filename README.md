@@ -2199,6 +2199,57 @@ Console.WriteLine($"Current state: {state}");
 Console.WriteLine($"Subscriber count: {observer.GetSubscriberCount()}");
 ```
 
+## AppConfigurationBuilderTestsExtensions
+
+The `AppConfigurationBuilderTestsExtensions` class provides extension methods for `AppConfigurationBuilder` that simplify building test configurations. It includes methods for adding test-specific settings, web server configurations, Caddy configurations, and validation helpers to ensure configurations meet test requirements.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Tests.Configuration;
+using Microsoft.Extensions.Configuration;
+
+// Create a test configuration with default test settings
+var config = new AppConfigurationBuilder()
+    .WithTestDefaults()
+    .Build();
+
+// Verify that required test settings are present
+config.ShouldContainSettings("Test:ApiUrl", "https://api.test.local");
+config.ShouldContainSettings("Test:DatabaseConnection", "Server=test-db;Database=test");
+
+// Check specific configuration values
+config.ShouldHaveValue<string>("Test:Timeout", "30000");
+
+// Create configuration with custom test settings
+var customConfig = new AppConfigurationBuilder()
+    .WithTestSettings(
+        timeout: 60000,
+        apiUrl: "https://custom-api.test.local",
+        databaseConnection: "Server=custom-db;Database=custom"
+    )
+    .Build();
+
+// Create configuration with web server settings
+var webConfig = new AppConfigurationBuilder()
+    .WithWebServerSettings(
+        port: 8080,
+        environment: "Test",
+        enableHealthChecks: true
+    )
+    .Build();
+
+// Create configuration with Caddy settings
+var caddyConfig = new AppConfigurationBuilder()
+    .WithCaddySettings(
+        adminPort: 2019,
+        httpPort: 80,
+        httpsPort: 443,
+        enableMetrics: true
+    )
+    .Build();
+```
+
 // Partition - split collection based on predicate
 var (matching, notMatching) = services.Partition(s => s.Port > 5000);
 Console.WriteLine($"Matching (>5000): {matching.Count} items"); // Outputs: Matching (>5000): 2 items
