@@ -136,6 +136,75 @@ class Program
 
 The example demonstrates the three public extension members (`ToJson`, `FromJson`, `TryFromJson`) together with the repository methods (`GetValueAsync`, `SetValueAsync`, `DeleteAsync`, `GetAllAsync`) that are used internally by the deserialized service.
 
+## ServiceRepositoryJsonExtensions
+
+`ServiceRepositoryJsonExtensions` provides JSON serialization and deserialization helpers for `ManagedService` objects and collections. It simplifies working with service configurations by allowing you to serialize services to JSON strings and deserialize them back into objects, with support for both individual services and collections. The extension methods handle null safety and provide both throwing and non-throwing variants for robust error handling.
+
+Example usage:
+```csharp
+using System;
+using System.Collections.Generic;
+using CaddyVpsToolkit.Data;
+using CaddyVpsToolkit.Domain.Models;
+
+class Program
+{
+    static void Main()
+    {
+        // Create a sample managed service
+        var service = new ManagedService
+        {
+            Id = "web-app-01",
+            Name = "Web Application",
+            Description = "Main web application service",
+            Status = ServiceStatus.Running,
+            Ports = new List<ServicePort>
+            {
+                new ServicePort { InternalPort = 8080, ExternalPort = 80, Protocol = "tcp" }
+            },
+            EnvironmentVariables = new Dictionary<string, string>
+            {
+                { "ASPNETCORE_ENVIRONMENT", "Production" },
+                { "ASPNETCORE_URLS", "http://+:8080" }
+            }
+        };
+
+        // Serialize a single service to JSON
+        string json = service.ToJson(indented: true);
+        Console.WriteLine("Single service JSON:");
+        Console.WriteLine(json);
+
+        // Deserialize back to a service
+        var deserialized = ServiceRepositoryJsonExtensions.FromJson(json);
+        Console.WriteLine($"\nDeserialized service: {deserialized?.Name}");
+
+        // Try-parse example that never throws
+        if (ServiceRepositoryJsonExtensions.TryFromJson(json, out var parsed))
+        {
+            Console.WriteLine($"TryFromJson succeeded: {parsed?.Id}");
+        }
+
+        // Serialize a collection of services
+        var services = new List<ManagedService> { service };
+        string collectionJson = services.ToJson(indented: true);
+        Console.WriteLine("\nCollection JSON:");
+        Console.WriteLine(collectionJson);
+
+        // Deserialize collection back to a list
+        var deserializedList = ServiceRepositoryJsonExtensions.FromJsonToList(collectionJson);
+        Console.WriteLine($"\nDeserialized list count: {deserializedList.Count}");
+
+        // Try-parse collection example
+        if (ServiceRepositoryJsonExtensions.TryFromJsonToList(collectionJson, out var parsedList))
+        {
+            Console.WriteLine($"TryFromJsonToList succeeded: {parsedList.Count} services");
+        }
+    }
+}
+```
+
+The example demonstrates all five public extension members: `ToJson` and `FromJson` for individual services, `TryFromJson` for safe parsing, `ToJson` and `FromJsonToList` for collections, and `TryFromJsonToList` for safe collection parsing.
+
 ## UpstreamManagerServiceExtensions
 
 The `UpstreamManagerServiceExtensions` class provides extension methods for `UpstreamManagerService` that add convenience and batch operations for upstream pool management, health monitoring, and configuration generation. These methods simplify common operations like retrieving pools, checking health status, generating Caddy configuration, and recording upstream results.
