@@ -50,12 +50,9 @@ namespace CaddyVpsToolkit.Domain.Models
         /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
         public static UpstreamServer? FromJson(string json)
         {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return null;
-            }
-
-            return JsonSerializer.Deserialize<UpstreamServer>(json, _jsonOptions);
+            return string.IsNullOrWhiteSpace(json)
+                ? null
+                : JsonSerializer.Deserialize<UpstreamServer>(json, _jsonOptions);
         }
 
         /// <summary>
