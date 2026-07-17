@@ -25,7 +25,7 @@ namespace CaddyVpsToolkit.Domain.Models
         public static bool IsPrivilegedPort(this ServicePort port)
         {
             ArgumentNullException.ThrowIfNull(port);
-            return port.ExternalPort <= 1023;
+            return port.ExternalPort is >= 1 and <= 1023;
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace CaddyVpsToolkit.Domain.Models
         public static bool IsWellKnownPort(this ServicePort port)
         {
             ArgumentNullException.ThrowIfNull(port);
-            return port.ExternalPort <= 1023;
+            return port.IsPrivilegedPort();
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace CaddyVpsToolkit.Domain.Models
         public static bool IsDynamicPort(this ServicePort port)
         {
             ArgumentNullException.ThrowIfNull(port);
-            return port.ExternalPort >= 49152;
+            return port.ExternalPort is >= 49152 and <= 65535;
         }
 
         /// <summary>
@@ -119,22 +119,13 @@ namespace CaddyVpsToolkit.Domain.Models
         {
             ArgumentNullException.ThrowIfNull(port);
 
-            if (port.ExternalPort <= 1023)
+            return port.ExternalPort switch
             {
-                return "Well-known port";
-            }
-
-            if (port.ExternalPort >= 1024 && port.ExternalPort <= 49151)
-            {
-                return "Registered port";
-            }
-
-            if (port.ExternalPort >= 49152)
-            {
-                return "Dynamic/Private port";
-            }
-
-            return "Reserved";
+                <= 1023 => "Well-known port",
+                >= 1024 and <= 49151 => "Registered port",
+                >= 49152 and <= 65535 => "Dynamic/Private port",
+                _ => "Reserved"
+            };
         }
 
         /// <summary>
