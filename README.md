@@ -6123,6 +6123,64 @@ await monitor.StartMonitoringAsync(TimeSpan.FromSeconds(30));
 
 We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
+## StateMachine
+
+The `StateMachine<TState, TTrigger>` class provides a simple yet powerful state machine implementation for managing state workflows with transition validation and callback support. It's ideal for scenarios requiring explicit state transitions, workflow orchestration, and state-dependent behavior validation.
+
+### Public Members
+
+- `Configure(TState from, TTrigger trigger, TState to)`: Defines a transition from one state to another when a specific trigger occurs
+- `OnEnter(TState state, Action callback)`: Registers a callback to execute when entering a specific state
+- `OnExit(TState state, Action callback)`: Registers a callback to execute when exiting a specific state
+- `CanFire(TTrigger trigger)`: Checks if the current state allows the specified trigger to fire
+- `Fire(TTrigger trigger)`: Attempts to transition to the next state using the specified trigger, returns true if successful
+- `GetCurrentState()`: Returns the current state
+- `Reset(TState state)`: Resets the state machine to the specified state
+- `GetAvailableTransitions()`: Returns a list of triggers that can be fired from the current state
+
+### Example Usage
+
+```csharp
+// Define states and triggers
+public enum ServiceState { Stopped, Starting, Running, Stopping, Failed }
+public enum ServiceTrigger { Start, Stop, Restart, Fail }
+
+// Create a state machine for service lifecycle management
+var stateMachine = new StateMachine<ServiceState, ServiceTrigger>(ServiceState.Stopped);
+
+// Configure state transitions
+stateMachine.Configure(ServiceState.Stopped, ServiceTrigger.Start, ServiceState.Starting);
+stateMachine.Configure(ServiceState.Starting, ServiceTrigger.Restart, ServiceState.Starting);
+stateMachine.Configure(ServiceState.Starting, ServiceTrigger.Fail, ServiceState.Failed);
+stateMachine.Configure(ServiceState.Starting, ServiceTrigger.Stop, ServiceState.Stopped);
+stateMachine.Configure(ServiceState.Running, ServiceTrigger.Stop, ServiceState.Stopping);
+stateMachine.Configure(ServiceState.Running, ServiceTrigger.Restart, ServiceState.Starting);
+stateMachine.Configure(ServiceState.Stopping, ServiceTrigger.Stop, ServiceState.Stopped);
+stateMachine.Configure(ServiceState.Failed, ServiceTrigger.Start, ServiceState.Starting);
+
+// Register state entry/exit callbacks
+stateMachine.OnEnter(ServiceState.Starting, () => Console.WriteLine("Entering Starting state"));
+stateMachine.OnExit(ServiceState.Starting, () => Console.WriteLine("Exiting Starting state"));
+stateMachine.OnEnter(ServiceState.Running, () => Console.WriteLine("Service is now running!"));
+
+// Check if a transition is allowed
+bool canStart = stateMachine.CanFire(ServiceTrigger.Start); // true when in Stopped state
+Console.WriteLine($"Can start: {canStart}");
+
+// Fire a trigger to transition states
+bool transitionSuccess = stateMachine.Fire(ServiceTrigger.Start);
+Console.WriteLine($"Transition successful: {transitionSuccess}"); // true
+Console.WriteLine($"Current state: {stateMachine.GetCurrentState()}"); // Starting
+
+// Get available transitions from current state
+var available = stateMachine.GetAvailableTransitions();
+Console.WriteLine($"Available triggers from Starting: {string.Join(", ", available)}");
+
+// Reset to initial state
+stateMachine.Reset(ServiceState.Stopped);
+Console.WriteLine($"Reset to: {stateMachine.GetCurrentState()}"); // Stopped
+```
+
 ## License
 
 MIT License - see [LICENSE](./LICENSE) file for details.
