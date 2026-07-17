@@ -2224,6 +2224,55 @@ var immediateResult = await noRetry.ExecuteAsync(async () =>
 });
 ```
 
+## StringExtensions
+
+The `StringExtensions` class provides a collection of extension methods for common string manipulation and validation operations. These methods improve code readability by adding domain-specific string operations that handle null safety, whitespace, and edge cases consistently across the codebase.
+
+### Example Usage
+
+```csharp
+// Create service configuration with kebab-case naming convention
+var serviceName = "MyWebApplication".ToKebabCase(); // "my-web-application"
+
+// Validate service configuration values
+if ("admin@example.com".IsValidEmail())
+{
+    Console.WriteLine("Email is valid");
+}
+
+if ("https://api.example.com".IsValidUrl())
+{
+    Console.WriteLine("URL is valid");
+}
+
+// Generate human-readable service names
+var displayName = "myWebService".ToTitleCase(); // "Myweb service"
+
+// Create configuration keys in consistent format
+var configKey = $"service:{serviceName}:timeout".ToCamelCase(); // "service:my-web-application:timeout"
+
+// Format log messages with truncated content
+var logMessage = $"Service {serviceName} started successfully on port 8080".Truncate(50); // "Service my-web-application started successfully on..."
+
+// Check if service name starts with common prefixes
+var isCoreService = serviceName.StartsWithAny("core-", "api-", "web-");
+
+// Repeat configuration patterns
+var separatorLine = "=".Repeat(80); // "================================================================================"
+
+// Validate numeric service ports
+if ("8080".IsNumeric())
+{
+    Console.WriteLine("Port is numeric");
+}
+
+// Escape service names for shell commands
+var escapedName = serviceName.EscapeShell(); // Wraps in single quotes and escapes internal quotes
+
+// Safe substring operations for parsing configuration strings
+var serviceType = "web-service-api-production".SafeSubstring(4, 8); // "service-a"
+```
+
 ## ILogger
 
 The `ILogger` interface provides structured logging capabilities with support for multiple log levels and asynchronous operations. It serves as the primary logging abstraction for the application, enabling consistent log formatting and output to different destinations (file, console, or in-memory for testing).
