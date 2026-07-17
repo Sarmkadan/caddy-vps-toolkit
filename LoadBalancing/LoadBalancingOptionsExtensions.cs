@@ -2,10 +2,8 @@
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
 // =====================================================================
-
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using CaddyVpsToolkit.Domain.Models;
 
 namespace CaddyVpsToolkit.LoadBalancing
@@ -20,12 +18,13 @@ namespace CaddyVpsToolkit.LoadBalancing
         /// Configures the load balancer to use round-robin strategy with the specified health check settings.
         /// </summary>
         /// <param name="options">The load balancing options to configure.</param>
-        /// <param name="healthCheckIntervalSeconds">Interval in seconds between health probes.</param>
-        /// <param name="healthProbeTimeoutMs">TCP connection timeout for health probes in milliseconds.</param>
-        /// <param name="unhealthyThreshold">Number of consecutive failures to mark upstream as unhealthy.</param>
-        /// <param name="healthyThreshold">Number of consecutive successes to restore unhealthy upstream.</param>
+        /// <param name="healthCheckIntervalSeconds">Interval in seconds between health probes. Must be positive.</param>
+        /// <param name="healthProbeTimeoutMs">TCP connection timeout for health probes in milliseconds. Must be positive.</param>
+        /// <param name="unhealthyThreshold">Number of consecutive failures to mark upstream as unhealthy. Must be positive.</param>
+        /// <param name="healthyThreshold">Number of consecutive successes to restore unhealthy upstream. Must be positive.</param>
         /// <returns>The configured <see cref="LoadBalancingOptions"/> for method chaining.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when any parameter is negative.</exception>
         public static LoadBalancingOptions UseRoundRobinWithHealthChecks(
             this LoadBalancingOptions options,
             int healthCheckIntervalSeconds = 30,
@@ -34,6 +33,10 @@ namespace CaddyVpsToolkit.LoadBalancing
             int healthyThreshold = 2)
         {
             ArgumentNullException.ThrowIfNull(options);
+            ArgumentOutOfRangeException.ThrowIfNegative(healthCheckIntervalSeconds);
+            ArgumentOutOfRangeException.ThrowIfNegative(healthProbeTimeoutMs);
+            ArgumentOutOfRangeException.ThrowIfNegative(unhealthyThreshold);
+            ArgumentOutOfRangeException.ThrowIfNegative(healthyThreshold);
 
             options.DefaultStrategy = LoadBalancingStrategy.RoundRobin;
             options.HealthCheckIntervalSeconds = healthCheckIntervalSeconds;
@@ -49,12 +52,13 @@ namespace CaddyVpsToolkit.LoadBalancing
         /// Configures the load balancer to use least-connections strategy with active health monitoring.
         /// </summary>
         /// <param name="options">The load balancing options to configure.</param>
-        /// <param name="healthCheckIntervalSeconds">Interval in seconds between health probes.</param>
-        /// <param name="healthProbeTimeoutMs">TCP connection timeout for health probes in milliseconds.</param>
-        /// <param name="unhealthyThreshold">Number of consecutive failures to mark upstream as unhealthy.</param>
-        /// <param name="healthyThreshold">Number of consecutive successes to restore unhealthy upstream.</param>
+        /// <param name="healthCheckIntervalSeconds">Interval in seconds between health probes. Must be positive.</param>
+        /// <param name="healthProbeTimeoutMs">TCP connection timeout for health probes in milliseconds. Must be positive.</param>
+        /// <param name="unhealthyThreshold">Number of consecutive failures to mark upstream as unhealthy. Must be positive.</param>
+        /// <param name="healthyThreshold">Number of consecutive successes to restore unhealthy upstream. Must be positive.</param>
         /// <returns>The configured <see cref="LoadBalancingOptions"/> for method chaining.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when any parameter is negative.</exception>
         public static LoadBalancingOptions UseLeastConnectionsWithHealthChecks(
             this LoadBalancingOptions options,
             int healthCheckIntervalSeconds = 30,
@@ -63,6 +67,10 @@ namespace CaddyVpsToolkit.LoadBalancing
             int healthyThreshold = 2)
         {
             ArgumentNullException.ThrowIfNull(options);
+            ArgumentOutOfRangeException.ThrowIfNegative(healthCheckIntervalSeconds);
+            ArgumentOutOfRangeException.ThrowIfNegative(healthProbeTimeoutMs);
+            ArgumentOutOfRangeException.ThrowIfNegative(unhealthyThreshold);
+            ArgumentOutOfRangeException.ThrowIfNegative(healthyThreshold);
 
             options.DefaultStrategy = LoadBalancingStrategy.LeastConnections;
             options.HealthCheckIntervalSeconds = healthCheckIntervalSeconds;
@@ -138,7 +146,6 @@ namespace CaddyVpsToolkit.LoadBalancing
         public static int GetHealthCheckIntervalMs(this LoadBalancingOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
-
             return options.HealthCheckIntervalSeconds * 1000;
         }
 
@@ -151,7 +158,6 @@ namespace CaddyVpsToolkit.LoadBalancing
         public static double GetHealthProbeTimeoutSeconds(this LoadBalancingOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
-
             return options.HealthProbeTimeoutMs / 1000.0;
         }
 
@@ -164,7 +170,6 @@ namespace CaddyVpsToolkit.LoadBalancing
         public static bool IsStrictCircuitBreaker(this LoadBalancingOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
-
             return options.CircuitBreakerHealthThreshold == 0.0;
         }
 
