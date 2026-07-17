@@ -918,6 +918,49 @@ await serviceManagement.UpdateServiceStatusAsync(serviceId, ServiceStatus.Stoppe
 await serviceManagement.DeleteServiceAsync(serviceId);
 ```
 
+## MetricsCollector
+
+The `MetricsCollector` class provides real-time metrics collection and reporting capabilities for monitoring application performance and system health. It supports three metric types: counters for tracking occurrences, gauges for measuring current values, and histograms for analyzing distributions of measurements.
+
+### Example Usage
+
+```csharp
+// Create metrics collector instance
+var metrics = new MetricsCollector();
+
+// Increment a counter for tracking API requests
+metrics.IncrementCounter("api.requests.total");
+metrics.IncrementCounter("api.requests.total");
+metrics.IncrementCounter("api.requests.total");
+
+// Increment counter with custom value
+metrics.IncrementCounter("api.errors", 5); // Record 5 errors
+
+// Set gauge values for current system state
+metrics.SetGauge("system.memory.usage", 75.5); // 75.5% memory used
+metrics.SetGauge("system.cpu.load", 2.3); // Current CPU load
+
+// Record histogram values for response times
+metrics.RecordHistogram("api.response.time.ms", 45.2);
+metrics.RecordHistogram("api.response.time.ms", 89.1);
+metrics.RecordHistogram("api.response.time.ms", 12.7);
+metrics.RecordHistogram("api.response.time.ms", 203.4);
+metrics.RecordHistogram("api.response.time.ms", 67.8);
+
+// Retrieve metric values
+long totalRequests = metrics.GetCounter("api.requests.total");
+double memoryUsage = metrics.GetGauge("system.memory.usage");
+var responseStats = metrics.GetHistogramStats("api.response.time.ms");
+
+Console.WriteLine($"Total API requests: {totalRequests}");
+Console.WriteLine($"Memory usage: {memoryUsage}%");
+Console.WriteLine($"Response time stats: count={responseStats.Count}, min={responseStats.Min:F2}ms, max={responseStats.Max:F2}ms, avg={responseStats.Average:F2}ms, median={responseStats.Median:F2}ms");
+
+// Generate comprehensive report
+string report = metrics.GenerateReport();
+Console.WriteLine(report);
+```
+
 ## CaddyConfig
 
 The `CaddyConfig` type represents the global configuration for Caddy reverse proxy. It controls core settings like ports, timeouts, logging behavior, and TLS configuration that apply across all services managed by the toolkit.
