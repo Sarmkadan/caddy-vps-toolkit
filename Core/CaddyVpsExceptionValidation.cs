@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace CaddyVpsToolkit.Core;
 
@@ -60,7 +59,7 @@ public static class CaddyVpsExceptionValidation
         if (problems.Count > 0)
         {
             throw new ArgumentException(
-                "The CaddyVpsException instance is invalid. Problems:\n" + string.Join("\n", problems),
+                $"The CaddyVpsException instance is invalid. Problems:{Environment.NewLine}" + string.Join(Environment.NewLine, problems),
                 nameof(value));
         }
     }
