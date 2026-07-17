@@ -20,7 +20,8 @@ namespace CaddyVpsToolkit.Data
             WriteIndented = false,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            ReferenceHandler = ReferenceHandler.IgnoreCycles
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
         };
 
         /// <summary>
@@ -30,15 +31,13 @@ namespace CaddyVpsToolkit.Data
         /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
         /// <returns>A JSON string representation of the repository.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+        /// <exception cref="JsonException">Thrown when serialization fails.</exception>
         public static string ToJson(this ConfigurationRepository value, bool indented = false)
         {
             ArgumentNullException.ThrowIfNull(value);
 
             var options = indented
-                ? new JsonSerializerOptions(_jsonOptions)
-                {
-                    WriteIndented = true
-                }
+                ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
                 : _jsonOptions;
 
             return JsonSerializer.Serialize(value, options);
@@ -66,6 +65,7 @@ namespace CaddyVpsToolkit.Data
         /// <param name="json">The JSON string to deserialize.</param>
         /// <param name="value">Receives the deserialized instance if successful.</param>
         /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
         public static bool TryFromJson(string json, out ConfigurationRepository? value)
         {
             value = null;
