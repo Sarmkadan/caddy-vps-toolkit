@@ -899,6 +899,31 @@ var servicePools = await repository.GetByServiceIdAsync("api-service");
 await repository.DeleteAsync(poolId);
 ```
 
+## ConfigurationRepository
+
+The `ConfigurationRepository` is a SQLite-based repository for managing application-level configuration values. It provides asynchronous methods to store, retrieve, delete, and list configuration entries, ensuring persistent storage for application settings.
+
+### Example Usage
+
+```csharp
+// Instantiate the repository
+var repo = new ConfigurationRepository();
+
+// Set a configuration value
+await repo.SetValueAsync("app:theme", "dark");
+
+// Retrieve a specific value
+string theme = await repo.GetValueAsync("app:theme");
+Console.WriteLine($"Current theme: {theme}");
+
+// Retrieve all configuration values
+var allConfig = await repo.GetAllAsync();
+Console.WriteLine($"Total settings: {allConfig.Count}");
+
+// Delete a setting
+await repo.DeleteAsync("app:theme");
+```
+
 ## Configuration Reference
 
 ### appsettings.json
