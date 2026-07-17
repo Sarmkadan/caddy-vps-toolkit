@@ -698,6 +698,72 @@ Output includes expiry date, days remaining, and a status classification:
 - `Expired` — certificate has already expired
 - `Error` — could not connect or retrieve the certificate
 
+## TemplateEngine
+
+The `TemplateEngine` class provides simple string template substitution using `{{variable}}` syntax. It's ideal for generating configuration files, service definitions, and other text-based content where you need to substitute placeholders with actual values. The engine supports both instance-based variable management and static rendering with inline dictionaries.
+
+### Example Usage
+
+```csharp
+// Create a template engine with predefined variables
+var engine = new TemplateEngine();
+
+// Set template variables
+engine.Set("serviceName", "api-service");
+engine.Set("port", 8080);
+engine.Set("domain", "api.example.com");
+engine.Set("timeout", 30000);
+
+// Render a template with variable substitution
+string template = @"
+service {{serviceName}} {
+    listen {{port}};
+    domain {{domain}};
+    timeout {{timeout}};
+}
+";
+
+string rendered = engine.Render(template);
+Console.WriteLine(rendered);
+
+// Output:
+// service api-service {
+//     listen 8080;
+//     domain api.example.com;
+//     timeout 30000;
+// }
+
+// Create template engine with initial variables
+var variables = new Dictionary<string, object>
+{
+    ["appName"] = "web-app",
+    ["port"] = 3000,
+    ["environment"] = "production"
+};
+var engineWithVars = new TemplateEngine(variables);
+
+// Render template
+string configTemplate = "Application {{appName}} running on port {{port}} in {{environment}} mode";
+string appConfig = engineWithVars.Render(configTemplate);
+Console.WriteLine(appConfig);
+// Output: Application web-app running on port 3000 in production mode
+
+// Static rendering with inline dictionary
+string staticRender = TemplateEngine.Render(
+    "Service {{name}} listening on {{port}}",
+    new Dictionary<string, object> { ["name"] = "cache", ["port"] = 6379 }
+);
+Console.WriteLine(staticRender);
+// Output: Service cache listening on 6379
+
+// Access and modify variables
+var engine = new TemplateEngine();
+engine.Set("version", "1.0.0");
+Console.WriteLine(engine.Get("version")); // Output: 1.0.0
+engine.Set("version", "2.0.0");
+Console.WriteLine(engine.Get("version")); // Output: 2.0.0
+```
+
 ## IServiceRepository
 
 The `IServiceRepository` interface provides data access methods for managing service configurations in the SQLite database. It serves as the primary contract for CRUD operations on managed services, enabling the application to persist service definitions, retrieve service information, and maintain system state across application restarts.
