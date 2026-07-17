@@ -2286,6 +2286,92 @@ Console.WriteLine($"  DB: :5432 -> 5432/tcp (internal only)");
 - **Validate()**: Validates port ranges and security constraints
 - **GetPortMapping()**: Returns formatted port mapping string (e.g., "3000:80/tcp")
 
+## PaginationHelper
+
+The `PaginationHelper` class provides utility methods for paginating, sorting, and filtering collections in a fluent and type-safe manner. It includes both simple static methods for quick operations and a fluent `QueryBuilder` API for building complex data queries with chained operations.
+
+### Example Usage
+
+```csharp
+// Sample data model for pagination
+public class ServiceDto
+{
+    public string Name { get; set; }
+    public int Port { get; set; }
+    public string Domain { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public bool IsActive { get; set; }
+}
+
+// Create a list of services
+var services = new List<ServiceDto>
+{
+    new ServiceDto { Name = "api-service", Port = 8080, Domain = "api.example.com", CreatedAt = DateTime.Now.AddDays(-5), IsActive = true },
+    new ServiceDto { Name = "web-app", Port = 3000, Domain = "web.example.com", CreatedAt = DateTime.Now.AddDays(-2), IsActive = true },
+    new ServiceDto { Name = "cache-service", Port = 6379, Domain = "cache.example.com", CreatedAt = DateTime.Now.AddDays(-10), IsActive = false },
+    new ServiceDto { Name = "database", Port = 5432, Domain = "db.example.com", CreatedAt = DateTime.Now.AddDays(-1), IsActive = true },
+    new ServiceDto { Name = "monitoring", Port = 9090, Domain = "monitor.example.com", CreatedAt = DateTime.Now.AddDays(-15), IsActive = true }
+};
+
+// Example 1: Simple pagination
+var page1 = PaginationHelper.Paginate(services, page: 1, pageSize: 2);
+Console.WriteLine($"Page 1: {page1.Items.Count} items");
+foreach (var item in page1.Items)
+{
+    Console.WriteLine($"  - {item.Name} on port {item.Port}");
+}
+
+// Example 2: Sort by property name
+var sortedByName = PaginationHelper.SortBy(services, "Name");
+Console.WriteLine("\nSorted by name:");
+foreach (var item in sortedByName)
+{
+    Console.WriteLine($"  - {item.Name}");
+}
+
+// Example 3: Sort descending by date
+var sortedByDate = PaginationHelper.SortBy(services, "CreatedAt", ascending: false);
+Console.WriteLine("\nSorted by creation date (newest first):");
+foreach (var item in sortedByDate)
+{
+    Console.WriteLine($"  - {item.Name} created {item.CreatedAt:yyyy-MM-dd}");
+}
+
+// Example 4: Filter by property value
+var activeServices = PaginationHelper.FilterBy(services, "IsActive", true);
+Console.WriteLine($"\nActive services: {activeServices.Count}");
+
+// Example 5: Filter with predicate
+var recentServices = PaginationHelper.Filter(services, s => s.CreatedAt > DateTime.Now.AddDays(-7));
+Console.WriteLine($"\nServices created in last 7 days: {recentServices.Count}");
+
+// Example 6: Fluent QueryBuilder API
+var queryResult = new QueryBuilder<ServiceDto>(services)
+    .Where(s => s.IsActive)
+    .SortBy("CreatedAt", ascending: false)
+    .Page(1)
+    .PageSize(3)
+    .Execute();
+
+Console.WriteLine($"\nQuery result - Page {queryResult.Page} of {queryResult.TotalCount} items:");
+foreach (var item in queryResult.Items)
+{
+    Console.WriteLine($"  - {item.Name} (created: {item.CreatedAt:yyyy-MM-dd})");
+}
+
+// Example 7: Unpaged query for all matching items
+var allActive = new QueryBuilder<ServiceDto>(services)
+    .Where(s => s.IsActive)
+    .SortBy("Name")
+    .ExecuteUnpaged();
+
+Console.WriteLine($"\nAll active services ({allActive.Count}):");
+foreach (var item in allActive)
+{
+    Console.WriteLine($"  - {item.Name}");
+}
+```
+
 ## ManagedService
 
 The `ManagedService` type represents a service that is managed by the system. It has the following properties:
