@@ -48,15 +48,15 @@ namespace CaddyVpsToolkit.Data
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized service, or null if the JSON is null or empty.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
         /// <exception cref="JsonException">Thrown when the JSON is invalid.</exception>
         public static ManagedService? FromJson(string json)
         {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return null;
-            }
+            ArgumentNullException.ThrowIfNull(json);
 
-            return JsonSerializer.Deserialize<ManagedService>(json, _jsonOptions);
+            return string.IsNullOrWhiteSpace(json)
+                ? null
+                : JsonSerializer.Deserialize<ManagedService>(json, _jsonOptions);
         }
 
         /// <summary>
@@ -108,16 +108,16 @@ namespace CaddyVpsToolkit.Data
         /// </summary>
         /// <param name="json">The JSON array string to deserialize.</param>
         /// <returns>A list of deserialized services.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
         /// <exception cref="JsonException">Thrown when the JSON is invalid.</exception>
         public static IReadOnlyList<ManagedService> FromJsonToList(string json)
         {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return Array.Empty<ManagedService>();
-            }
+            ArgumentNullException.ThrowIfNull(json);
 
-            return JsonSerializer.Deserialize<IReadOnlyList<ManagedService>>(json, _jsonOptions)
-                   ?? Array.Empty<ManagedService>();
+            return string.IsNullOrWhiteSpace(json)
+                ? Array.Empty<ManagedService>()
+                : JsonSerializer.Deserialize<IReadOnlyList<ManagedService>>(json, _jsonOptions)
+                    ?? Array.Empty<ManagedService>();
         }
 
         /// <summary>
