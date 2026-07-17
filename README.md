@@ -1911,6 +1911,42 @@ if (someCondition)
 }
 ```
 
+## EnvironmentHelper
+
+The `EnvironmentHelper` class provides a set of static methods for accessing environment variables, application paths, and system-level information. It ensures consistent and safe access to environment-specific data across different operating systems.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Utilities;
+
+// Check environment
+if (EnvironmentHelper.IsDevelopment())
+{
+    Console.WriteLine("Development mode active.");
+}
+else if (EnvironmentHelper.IsProduction())
+{
+    Console.WriteLine("Production mode active.");
+}
+
+// Get application paths and info
+Console.WriteLine($"Root: {EnvironmentHelper.GetApplicationRoot()}");
+Console.WriteLine($"Home: {EnvironmentHelper.GetHomeDirectory()}");
+Console.WriteLine($"Temp: {EnvironmentHelper.GetTempDirectory()}");
+Console.WriteLine($"Current: {EnvironmentHelper.GetCurrentDirectory()}");
+Console.WriteLine($"Version: {EnvironmentHelper.GetApplicationVersion()}");
+Console.WriteLine($"Processors: {EnvironmentHelper.GetProcessorCount()}");
+
+// Environment variables
+EnvironmentHelper.SetEnvironmentVariable("APP_MODE", "debug");
+string appMode = EnvironmentHelper.GetEnvironmentVariable("APP_MODE", "prod");
+
+// OS detection
+if (EnvironmentHelper.IsWindows()) Console.WriteLine("Running on Windows");
+if (EnvironmentHelper.IsUnix()) Console.WriteLine("Running on Unix/Linux/Mac");
+```
+
 ## PathUtilities
 
 The `PathUtilities` class provides utility methods for file system path operations, including path manipulation, size calculations, and file system safety checks. It handles cross-platform path handling with security considerations for path traversal prevention and provides human-readable formatting for file sizes.
