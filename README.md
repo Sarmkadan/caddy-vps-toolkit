@@ -360,6 +360,65 @@ caddy-vps-toolkit service update api \
   --recovery-script-timeout 30s
 ```
 
+## AuditLogEntry
+
+The `AuditLogEntry` type represents a single entry in the audit log, tracking important operations performed within the caddy-vps-toolkit system. It captures metadata about actions including who performed them, when they occurred, what was affected, and the outcome. This type is essential for compliance, troubleshooting, and maintaining an operational history of all system changes.
+
+Example usage:
+
+```csharp
+// Create a new audit log entry for a service creation
+var entry = new AuditLogEntry
+{
+    Action = "ServiceCreated",
+    Actor = "admin@sarmkadan.com",
+    Target = "web-app-01",
+    Result = "Success",
+    Details = new Dictionary<string, object>
+    {
+        ["ServiceName"] = "web-app-01",
+        ["Port"] = 3000,
+        ["Domain"] = "web.example.com",
+        ["UserId"] = "vlad-123",
+        ["IpAddress"] = "192.168.1.100"
+    }
+};
+
+// Log the entry using the audit log service
+var auditLog = new FileAuditLog("/var/log/caddy-vps-toolkit/audit.log");
+await auditLog.LogAsync(
+    action: "ServiceCreated",
+    actor: "admin@sarmkadan.com",
+    target: "web-app-01",
+    result: "Success",
+    details: new Dictionary<string, object>
+    {
+        ["ServiceName"] = "web-app-01",
+        ["Port"] = 3000,
+        ["Domain"] = "web.example.com"
+    }
+);
+
+// Retrieve audit entries within a specific time range
+var entries = await auditLog.GetEntriesAsync(
+    from: DateTime.UtcNow.AddDays(-7),
+    to: DateTime.UtcNow
+);
+
+Console.WriteLine($"Found {entries.Count} audit entries in the last 7 days");
+
+// Get summary of actions performed
+var actionSummary = auditLog.GetActionSummary();
+foreach (var kvp in actionSummary)
+{
+    Console.WriteLine($"{kvp.Key}: {kvp.Value} occurrences");
+}
+
+// Get all entries by a specific actor
+var userEntries = auditLog.GetEntriesByActor("admin@sarmkadan.com");
+Console.WriteLine($"User has {userEntries.Count} entries in the audit log");
+```
+
 ## CLI Reference
 
 ### Global Options
