@@ -19,7 +19,7 @@ public static class HealthCheckConfigEdgeCaseTestsValidation
     /// </summary>
     /// <param name="value">The configuration to validate</param>
     /// <returns>A list of human-readable validation problems, or empty if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
     public static IReadOnlyList<string> Validate(this HealthCheckConfig value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -56,6 +56,16 @@ public static class HealthCheckConfigEdgeCaseTestsValidation
             problems.Add("HTTP health check requires an endpoint");
         }
 
+        if (string.IsNullOrWhiteSpace(value.ServiceId))
+        {
+            problems.Add("Service ID cannot be null or empty");
+        }
+
+        if (value.Type == HealthCheckType.Exec && string.IsNullOrWhiteSpace(value.ExpectedResponse))
+        {
+            problems.Add("Exec health check requires an expected response pattern");
+        }
+
         return problems.AsReadOnly();
     }
 
@@ -64,13 +74,18 @@ public static class HealthCheckConfigEdgeCaseTestsValidation
     /// </summary>
     /// <param name="value">The configuration to check</param>
     /// <returns>True if valid, false otherwise</returns>
-    public static bool IsValid(this HealthCheckConfig value) => Validate(value).Count == 0;
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
+    public static bool IsValid(this HealthCheckConfig value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return Validate(value).Count == 0;
+    }
 
     /// <summary>
     /// Ensures that a HealthCheckConfig instance is valid, throwing an exception with details if not.
     /// </summary>
     /// <param name="value">The configuration to validate</param>
-    /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
     /// <exception cref="ValidationException">Thrown with validation problems if invalid</exception>
     public static void EnsureValid(this HealthCheckConfig value)
     {
