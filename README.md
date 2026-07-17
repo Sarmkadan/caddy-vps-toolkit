@@ -6026,6 +6026,62 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 
 [Portfolio](https://sarmkadan.com) | [GitHub](https://github.com/Sarmkadan) | [Telegram](https://t.me/sarmkadan)
 
+## SerializationHelper
+
+The `SerializationHelper` class provides utility methods for serializing and deserializing objects to/from JSON and XML formats, as well as converting objects to dictionaries and creating deep clones. It's designed to simplify common serialization tasks throughout the application with support for both JSON and XML formats.
+
+### Example Usage
+
+```csharp
+// Serialize an object to JSON
+var config = new Dictionary<string, object>
+{
+    ["ServiceName"] = "api-service",
+    ["Port"] = 8080,
+    ["Domain"] = "api.example.com",
+    ["IsEnabled"] = true
+};
+
+string json = SerializationHelper.ToJson(config);
+Console.WriteLine(json);
+// Output: {"ServiceName":"api-service","Port":8080,"Domain":"api.example.com","IsEnabled":true}
+
+// Deserialize JSON back to an object
+var deserializedConfig = SerializationHelper.FromJson<Dictionary<string, object>>(json);
+Console.WriteLine(deserializedConfig["ServiceName"]); // Output: api-service
+
+// Try to deserialize with error handling
+var parsedConfig = SerializationHelper.TryFromJson<Dictionary<string, object>>(json);
+if (parsedConfig != null)
+{
+    Console.WriteLine("Successfully parsed JSON");
+}
+
+// Serialize to XML
+string xml = SerializationHelper.ToXml(config);
+Console.WriteLine(xml);
+
+// Deserialize from XML
+var xmlConfig = SerializationHelper.FromXml<Dictionary<string, object>>(xml);
+Console.WriteLine(xmlConfig["Port"]); // Output: 8080
+
+// Convert object to dictionary
+var service = new ManagedService
+{
+    Name = "web-app",
+    Port = 3000,
+    Domain = "web.example.com",
+    IsEnabled = true
+};
+
+var serviceDict = SerializationHelper.ToDictionary(service);
+Console.WriteLine(serviceDict["Name"]); // Output: web-app
+
+// Create a deep clone of an object
+var clonedService = SerializationHelper.DeepClone(service);
+Console.WriteLine(clonedService.Name); // Output: web-app
+```
+
 ## StringExtensionsBenchmarks
 
 The `StringExtensionsBenchmarks` class provides performance benchmarks for string extension methods that convert and analyze strings. These methods are commonly used throughout the application for configuration parsing, service naming, and data formatting.
