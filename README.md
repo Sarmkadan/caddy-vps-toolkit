@@ -1999,6 +1999,34 @@ Console.WriteLine($"Sanitized: {sanitized}");
 
 The `ProcessUtilities` class provides robust tools for executing external system commands, managing process lifecycle, and capturing output asynchronously. It includes functionality for running commands with timeouts, verifying process execution status, and safely terminating processes to ensure system stability.
 
+## IOutputFormatter
+
+The `IOutputFormatter` interface provides a standardized contract for converting structured data into various output formats such as JSON, CSV, and formatted tables for console display. By implementing this interface, different formatters can be seamlessly swapped to control how service data or monitoring results are presented to the user.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Formatters;
+using System.Collections.Generic;
+
+// Data to format
+var services = new List<ManagedService>
+{
+    new ManagedService { Name = "api-service", Port = 8080 },
+    new ManagedService { Name = "web-app", Port = 3000 }
+};
+
+// Use TableFormatter to generate a console-friendly table
+IOutputFormatter tableFormatter = new TableFormatter("Name", "Port");
+string tableOutput = tableFormatter.Format(services);
+Console.WriteLine(tableOutput);
+
+// Use JsonFormatter for structured API-like output
+IOutputFormatter jsonFormatter = new JsonFormatter();
+string jsonOutput = jsonFormatter.Format(services);
+Console.WriteLine(jsonOutput);
+```
+
 ### Example Usage
 
 ```csharp
