@@ -47,35 +47,37 @@ namespace CaddyVpsToolkit.Configuration
         /// <param name="includeEmpty">Whether to include environment variables with empty values.</param>
         /// <returns>The configuration builder for method chaining.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="builder"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="prefix"/> is null.</exception>
         public static AppConfigurationBuilder WithEnvironmentVariables(
             this AppConfigurationBuilder builder,
             string prefix = "",
             bool includeEmpty = false)
         {
             ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(prefix);
 
             var existingConfig = builder.Build().GetAll();
-            var newConfig = new Dictionary<string, object>();
+            var newConfig = new Dictionary<string, object>(StringComparer.Ordinal);
 
             foreach (var envVar in Environment.GetEnvironmentVariables().Keys)
             {
                 var key = envVar.ToString();
-                if (string.IsNullOrEmpty(prefix) || key.StartsWith(prefix, StringComparison.Ordinal))
+                if (string.IsNullOrEmpty(prefix) || key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 {
                     var value = Environment.GetEnvironmentVariable(key);
                     if (includeEmpty || !string.IsNullOrEmpty(value))
                     {
-                        newConfig[key] = value;
+                        newConfig[key] = value ?? string.Empty;
                     }
                 }
             }
 
-            // Merge with existing configuration, preserving existing values
-            foreach (var kvp in newConfig)
+            // Merge with existing configuration using pattern matching
+            foreach (var (key, value) in newConfig)
             {
-                if (!existingConfig.ContainsKey(kvp.Key))
+                if (!existingConfig.ContainsKey(key))
                 {
-                    builder.WithSetting(kvp.Key, kvp.Value);
+                    builder.WithSetting(key, value);
                 }
             }
 
@@ -116,6 +118,7 @@ namespace CaddyVpsToolkit.Configuration
         /// <param name="defaults">Dictionary of default configuration values.</param>
         /// <returns>The configuration builder for method chaining.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="builder"/> or <paramref name="defaults"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="defaults"/> is null.</exception>
         public static AppConfigurationBuilder WithDefaultSettings(
             this AppConfigurationBuilder builder,
             Dictionary<string, object> defaults)
@@ -142,11 +145,11 @@ namespace CaddyVpsToolkit.Configuration
             params string[] requiredKeys)
         {
             ArgumentNullException.ThrowIfNull(builder);
-            ArgumentException.ThrowIfNullOrEmpty(json);
+            ArgumentException.ThrowIfNullOrWhiteSpace(json);
 
             using var doc = System.Text.Json.JsonDocument.Parse(json);
             var root = doc.RootElement;
-            var configDict = new Dictionary<string, object>();
+            var configDict = new Dictionary<string, object>(StringComparer.Ordinal);
 
             foreach (var prop in root.EnumerateObject())
             {
@@ -210,7 +213,12 @@ namespace CaddyVpsToolkit.Configuration
 
                     builder.WithSetting(key, value);
                 }
-                catch
+                catch (System.Reflection.TargetInvocationException)
+                {
+                    // Skip properties that throw when accessed
+                    continue;
+                }
+                catch (System.Reflection.TargetException)
                 {
                     // Skip properties that can't be read
                     continue;
