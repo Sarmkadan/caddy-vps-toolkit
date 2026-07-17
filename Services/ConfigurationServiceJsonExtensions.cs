@@ -28,11 +28,12 @@ namespace CaddyVpsToolkit.Services
         /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
         /// <returns>A JSON string representation of the configuration service.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+        /// <exception cref="JsonException">Thrown when serialization fails.</exception>
         public static string ToJson(this ConfigurationService value, bool indented = false)
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            var config = value.GetAllAsync().GetAwaiter().GetResult();
+            var config = value.GetAllAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             var options = indented
                 ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
                 : _jsonOptions;
