@@ -2166,6 +2166,64 @@ var allCommands = registry.GetAll();
 Console.WriteLine($"Total registered commands: {allCommands.Count}");
 ```
 
+## IRetryPolicy
+
+The `IRetryPolicy` interface defines a contract for implementing retry strategies when handling transient failures in asynchronous operations. It provides a standardized way to wrap operations with retry logic using different backoff strategies, making it ideal for network operations, database calls, and other operations that may fail temporarily.
+
+This interface is implemented by three concrete policies:
+- `ExponentialBackoffRetryPolicy` - Implements exponential backoff with jitter to prevent thundering herd scenarios
+- `LinearBackoffRetryPolicy` - Uses a fixed delay increment between retry attempts
+- `NoRetryPolicy` - Executes operations exactly once without retry
+
+### Example Usage
+
+```csharp
+// Create an exponential backoff retry policy with default settings
+var retryPolicy = new ExponentialBackoffRetryPolicy(
+    maxRetries: 5,
+    initialDelayMs: 200,
+    backoffMultiplier: 2.0,
+    maxDelayMs: 10000
+);
+
+// Execute an async operation with retry logic
+try
+{
+    var result = await retryPolicy.ExecuteAsync(async () =>
+    {
+        // Your transient operation here
+        return await httpClient.GetAsync("https://api.example.com/data");
+    });
+    
+    Console.WriteLine($"Success after retry attempts! Status: {result.StatusCode}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Operation failed after retries: {ex.Message}");
+}
+
+// Execute a void async operation with retry
+var fileLogger = new FileLogger("/var/log/app.log");
+await retryPolicy.ExecuteAsync(async () =>
+{
+    await fileLogger.LogInfoAsync("Processing data...");
+    await ProcessDataAsync();
+});
+
+// Use linear backoff for predictable delays
+var linearRetry = new LinearBackoffRetryPolicy(
+    maxRetries: 3,
+    delayIncrementMs: 1000
+);
+
+// Use no retry policy when failures should not be retried
+var noRetry = new NoRetryPolicy();
+var immediateResult = await noRetry.ExecuteAsync(async () =>
+{
+    return await GetImmediateResultAsync();
+});
+```
+
 ## ILogger
 
 The `ILogger` interface provides structured logging capabilities with support for multiple log levels and asynchronous operations. It serves as the primary logging abstraction for the application, enabling consistent log formatting and output to different destinations (file, console, or in-memory for testing).
