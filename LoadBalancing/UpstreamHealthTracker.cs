@@ -16,6 +16,15 @@ namespace CaddyVpsToolkit.LoadBalancing
     {
         private readonly IUpstreamPoolRepository _poolRepository;
 
+    /// <summary>
+    /// Gets the pool repository used by this tracker.
+    /// </summary>
+    /// <returns>Read-only list of all upstream pools.</returns>
+    internal async Task<IReadOnlyList<UpstreamPool>> GetAllPoolsAsync()
+    {
+        return (await _poolRepository.GetAllAsync()).AsReadOnly();
+    }
+
         public UpstreamHealthTracker(IUpstreamPoolRepository poolRepository)
         {
             _poolRepository = poolRepository ?? throw new ArgumentNullException(nameof(poolRepository));

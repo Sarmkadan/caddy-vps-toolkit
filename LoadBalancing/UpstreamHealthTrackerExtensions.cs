@@ -2,8 +2,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Domain.Models;
 
@@ -213,98 +213,104 @@ namespace CaddyVpsToolkit.LoadBalancing
                     return true;
                 }
 
-                await Task.Delay(pollInterval, cancellationToken);
+                try
+                {
+                    await Task.Delay(pollInterval, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    return false;
+                }
             }
 
             return false;
         }
 
+        /// <summary>
+        /// Gets all upstream pools from the tracker's repository.
+        /// </summary>
+        /// <param name="tracker">The health tracker instance.</param>
+        /// <returns>Read-only collection of all upstream pools, or empty collection if none found.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="tracker"/> is null.</exception>
         private static async Task<IReadOnlyList<UpstreamPool>> GetAllPoolsAsync(this UpstreamHealthTracker tracker)
         {
-            // This is a helper method to access the internal repository
-            // We use reflection to get the private field
-            var field = typeof(UpstreamHealthTracker).GetField("_poolRepository", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (field?.GetValue(tracker) is IUpstreamPoolRepository repository)
+            ArgumentNullException.ThrowIfNull(tracker);
+            return await tracker.GetAllPoolsAsync();
+        }
+
+        /// <summary>
+        /// Represents a probe result for batch processing.
+        /// </summary>
+        public sealed class UpstreamProbeResult
+        {
+            public string UpstreamId { get; }
+            public string PoolId { get; }
+            public bool ProbeSucceeded { get; }
+            public int ResponseTimeMs { get; }
+
+            public UpstreamProbeResult(string upstreamId, string poolId, bool probeSucceeded, int responseTimeMs = 0)
             {
-                return await repository.GetAllAsync();
+                UpstreamId = upstreamId ?? throw new ArgumentNullException(nameof(upstreamId));
+                PoolId = poolId ?? throw new ArgumentNullException(nameof(poolId));
+                ProbeSucceeded = probeSucceeded;
+                ResponseTimeMs = responseTimeMs;
             }
-
-            return Array.Empty<UpstreamPool>();
         }
-    }
 
-    /// <summary>
-    /// Represents a probe result for batch processing.
-    /// </summary>
-    public sealed class UpstreamProbeResult
-    {
-        public string UpstreamId { get; }
-        public string PoolId { get; }
-        public bool ProbeSucceeded { get; }
-        public int ResponseTimeMs { get; }
-
-        public UpstreamProbeResult(string upstreamId, string poolId, bool probeSucceeded, int responseTimeMs = 0)
+        /// <summary>
+        /// Summary of health status for a pool.
+        /// </summary>
+        public sealed class PoolHealthSummary
         {
-            UpstreamId = upstreamId ?? throw new ArgumentNullException(nameof(upstreamId));
-            PoolId = poolId ?? throw new ArgumentNullException(nameof(poolId));
-            ProbeSucceeded = probeSucceeded;
-            ResponseTimeMs = responseTimeMs;
+            public string PoolId { get; }
+            public string PoolName { get; }
+            public int ActiveServers { get; }
+            public int UnhealthyServers { get; }
+            public int DrainingServers { get; }
+            public int DisabledServers { get; }
+            public int TotalServers { get; }
+            public int UnhealthyThreshold { get; }
+            public int HealthyThreshold { get; }
+
+            public PoolHealthSummary(string poolId, string poolName, int activeServers, int unhealthyServers, int drainingServers, int disabledServers, int totalServers, int unhealthyThreshold, int healthyThreshold)
+            {
+                PoolId = poolId ?? throw new ArgumentNullException(nameof(poolId));
+                PoolName = poolName ?? throw new ArgumentNullException(nameof(poolName));
+                ActiveServers = activeServers;
+                UnhealthyServers = unhealthyServers;
+                DrainingServers = drainingServers;
+                DisabledServers = disabledServers;
+                TotalServers = totalServers;
+                UnhealthyThreshold = unhealthyThreshold;
+                HealthyThreshold = healthyThreshold;
+            }
         }
-    }
 
-    /// <summary>
-    /// Summary of health status for a pool.
-    /// </summary>
-    public sealed class PoolHealthSummary
-    {
-        public string PoolId { get; }
-        public string PoolName { get; }
-        public int ActiveServers { get; }
-        public int UnhealthyServers { get; }
-        public int DrainingServers { get; }
-        public int DisabledServers { get; }
-        public int TotalServers { get; }
-        public int UnhealthyThreshold { get; }
-        public int HealthyThreshold { get; }
-
-        public PoolHealthSummary(string poolId, string poolName, int activeServers, int unhealthyServers, int drainingServers, int disabledServers, int totalServers, int unhealthyThreshold, int healthyThreshold)
+        /// <summary>
+        /// Summary of health status for the entire system.
+        /// </summary>
+        public sealed class SystemHealthSummary
         {
-            PoolId = poolId ?? throw new ArgumentNullException(nameof(poolId));
-            PoolName = poolName ?? throw new ArgumentNullException(nameof(poolName));
-            ActiveServers = activeServers;
-            UnhealthyServers = unhealthyServers;
-            DrainingServers = drainingServers;
-            DisabledServers = disabledServers;
-            TotalServers = totalServers;
-            UnhealthyThreshold = unhealthyThreshold;
-            HealthyThreshold = healthyThreshold;
-        }
-    }
+            public int TotalUpstreams { get; }
+            public int TotalActive { get; }
+            public int TotalUnhealthy { get; }
+            public int TotalDraining { get; }
+            public int TotalDisabled { get; }
+            public int UnhealthyPools { get; }
+            public int HealthyPools { get; }
+            public DateTime Timestamp { get; }
 
-    /// <summary>
-    /// Summary of health status for the entire system.
-    /// </summary>
-    public sealed class SystemHealthSummary
-    {
-        public int TotalUpstreams { get; }
-        public int TotalActive { get; }
-        public int TotalUnhealthy { get; }
-        public int TotalDraining { get; }
-        public int TotalDisabled { get; }
-        public int UnhealthyPools { get; }
-        public int HealthyPools { get; }
-        public DateTime Timestamp { get; }
-
-        public SystemHealthSummary(int totalUpstreams, int totalActive, int totalUnhealthy, int totalDraining, int totalDisabled, int unhealthyPools, int healthyPools, DateTime timestamp)
-        {
-            TotalUpstreams = totalUpstreams;
-            TotalActive = totalActive;
-            TotalUnhealthy = totalUnhealthy;
-            TotalDraining = totalDraining;
-            TotalDisabled = totalDisabled;
-            UnhealthyPools = unhealthyPools;
-            HealthyPools = healthyPools;
-            Timestamp = timestamp;
+            public SystemHealthSummary(int totalUpstreams, int totalActive, int totalUnhealthy, int totalDraining, int totalDisabled, int unhealthyPools, int healthyPools, DateTime timestamp)
+            {
+                TotalUpstreams = totalUpstreams;
+                TotalActive = totalActive;
+                TotalUnhealthy = totalUnhealthy;
+                TotalDraining = totalDraining;
+                TotalDisabled = totalDisabled;
+                UnhealthyPools = unhealthyPools;
+                HealthyPools = healthyPools;
+                Timestamp = timestamp;
+            }
         }
     }
 }
