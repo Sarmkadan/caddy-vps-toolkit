@@ -94,3 +94,44 @@ The example demonstrates how to:
 * Search collections for ports sharing the same internal or external port (`GetPortsByInternalPort`, `GetPortsByExternalPort`).
 * Detect port conflicts (`ConflictsWith`).
 * Produce a formatted description that includes protocol, category, and optional IANA name (`GetFormattedDescription`).
+
+## ConfigurationServiceJsonExtensions
+
+`ConfigurationServiceJsonExtensions` adds JSON‑serialization helpers for `ConfigurationService`. It lets you turn the whole configuration into a JSON string, recreate a service from JSON, and safely attempt deserialization without throwing exceptions. Internally it uses a lightweight in‑memory `IConfigurationRepository` implementation to hold the deserialized key/value pairs.
+
+Example usage:
+```csharp
+using System;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Services;
+
+class Program
+{
+    static async Task Main()
+    {
+        // Create a service and populate some configuration values
+        var configService = new ConfigurationService();
+        await configService.SetValueAsync("AppName", "Demo");
+        await configService.SetValueAsync("Version", "1.0");
+
+        // Serialize the whole configuration to JSON (indented for readability)
+        string json = configService.ToJson(indented: true);
+        Console.WriteLine("Serialized JSON:");
+        Console.WriteLine(json);
+
+        // Deserialize back to a new ConfigurationService instance
+        var deserialized = ConfigurationServiceJsonExtensions.FromJson(json);
+        Console.WriteLine("\nDeserialized value:");
+        Console.WriteLine(await deserialized!.GetValueAsync("AppName"));
+
+        // Try‑parse example that never throws
+        if (ConfigurationServiceJsonExtensions.TryFromJson(json, out var parsed))
+        {
+            Console.WriteLine("\nTryFromJson succeeded:");
+            Console.WriteLine(await parsed.GetValueAsync("Version"));
+        }
+    }
+}
+```
+
+The example demonstrates the three public extension members (`ToJson`, `FromJson`, `TryFromJson`) together with the repository methods (`GetValueAsync`, `SetValueAsync`, `DeleteAsync`, `GetAllAsync`) that are used internally by the deserialized service.
