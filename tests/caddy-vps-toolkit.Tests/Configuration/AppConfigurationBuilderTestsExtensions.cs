@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using CaddyVpsToolkit.Configuration;
-using FluentAssertions;
 
 namespace CaddyVpsToolkit.Tests.Configuration
 {
@@ -25,7 +24,7 @@ namespace CaddyVpsToolkit.Tests.Configuration
         /// <param name="builder">The builder instance (can be null for first call)</param>
         /// <param name="settings">Collection of key-value pairs to add as settings</param>
         /// <returns>A configured AppConfigurationBuilder</returns>
-        /// <exception cref="ArgumentNullException">Thrown when settings is null</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="settings"/> is null</exception>
         public static AppConfigurationBuilder WithTestSettings(this AppConfigurationBuilder? builder, IDictionary<string, object> settings)
         {
             ArgumentNullException.ThrowIfNull(settings);
@@ -34,7 +33,7 @@ namespace CaddyVpsToolkit.Tests.Configuration
 
             foreach (var (key, value) in settings)
             {
-                builder.WithSetting(key, value.ToString()!);
+                builder.WithSetting(key, value?.ToString() ?? string.Empty);
             }
 
             return builder;
@@ -55,7 +54,7 @@ namespace CaddyVpsToolkit.Tests.Configuration
             builder.WithSetting("Server:Port", port.ToString(CultureInfo.InvariantCulture));
             builder.WithSetting("Server:Host", "localhost");
 
-            if (httpsPort.HasValue)
+            if (httpsPort is not null)
             {
                 builder.WithSetting("Server:HttpsPort", httpsPort.Value.ToString(CultureInfo.InvariantCulture));
             }
@@ -88,7 +87,7 @@ namespace CaddyVpsToolkit.Tests.Configuration
             var domainList = new List<string>(domains);
             for (var i = 0; i < domainList.Count; i++)
             {
-                builder.WithSetting($"Caddy:Domains:{i}", domainList[i]);
+                builder.WithSetting($"Caddy:Domains:{i}", domainList[i] ?? string.Empty);
             }
 
             if (enableTls)
@@ -123,10 +122,10 @@ namespace CaddyVpsToolkit.Tests.Configuration
                     throw new ArgumentException($"Configuration is missing expected key: {key}");
                 }
 
-                if (!string.Equals(actualValue, expectedValue.ToString(), StringComparison.Ordinal))
-                {
-                    throw new ArgumentException($"Configuration key '{key}' has value '{actualValue}' but expected '{expectedValue}'");
-                }
+                if (!string.Equals(actualValue, expectedValue?.ToString(), StringComparison.Ordinal))
+        {
+            throw new ArgumentException($"Configuration key '{key}' has value '{actualValue ?? "<null>"}' but expected '{expectedValue ?? "<null>"}'");
+        }
             }
         }
 
@@ -147,13 +146,13 @@ namespace CaddyVpsToolkit.Tests.Configuration
             var stringValue = config.GetString(key);
             if (stringValue is null)
             {
-                throw new ArgumentException($"Configuration is missing key: {key}");
+                throw new ArgumentException($"Configuration key '{key}' is missing");
             }
 
             var parsedValue = (T)Convert.ChangeType(stringValue, typeof(T), CultureInfo.InvariantCulture);
             if (!parsedValue.Equals(expectedValue))
             {
-                throw new ArgumentException($"Configuration key '{key}' has value '{parsedValue}' but expected '{expectedValue}'");
+                throw new ArgumentException($"Configuration key '{key}' has value '{parsedValue}' but expected '{(expectedValue is null ? "<null>" : expectedValue)}'");
             }
         }
 
@@ -164,11 +163,12 @@ namespace CaddyVpsToolkit.Tests.Configuration
         /// <returns>A configured AppConfigurationBuilder with common test defaults</returns>
         public static AppConfigurationBuilder WithTestDefaults(this AppConfigurationBuilder? builder)
         {
-            return builder
+            builder ??= new AppConfigurationBuilder();
+    return builder
                 .WithSetting("Test:Environment", "UnitTest")
                 .WithSetting("Test:Timeout", "30000")
-                .WithSetting("Test:RetryCount", "3")
-                .WithSetting("Test:IsolationLevel", "ReadCommitted");
+                        .WithSetting("Test:RetryCount", "3")
+                        .WithSetting("Test:IsolationLevel", "ReadCommitted");
+                }
+            }
         }
-    }
-}
