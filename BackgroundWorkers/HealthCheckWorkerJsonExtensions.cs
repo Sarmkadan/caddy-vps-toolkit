@@ -14,6 +14,10 @@ namespace CaddyVpsToolkit.BackgroundWorkers
     /// <summary>
     /// Provides System.Text.Json serialization and deserialization extensions for <see cref="HealthCheckWorker"/>.
     /// </summary>
+    /// <remarks>
+    /// This static class offers convenience methods for converting <see cref="HealthCheckWorker"/> instances
+    /// to and from JSON format, using camelCase property naming and null-ignoring serialization options.
+    /// </remarks>
     public static class HealthCheckWorkerJsonExtensions
     {
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
@@ -66,6 +70,10 @@ namespace CaddyVpsToolkit.BackgroundWorkers
         /// <param name="value">Receives the deserialized worker instance if successful; otherwise, null.</param>
         /// <returns>True if deserialization succeeded; otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+        /// <remarks>
+        /// This method safely handles malformed JSON by catching <see cref="JsonException"/> and returning false
+        /// instead of throwing, making it suitable for defensive programming scenarios.
+        /// </remarks>
         public static bool TryFromJson(string json, out HealthCheckWorker? value)
         {
             ArgumentNullException.ThrowIfNull(json);
