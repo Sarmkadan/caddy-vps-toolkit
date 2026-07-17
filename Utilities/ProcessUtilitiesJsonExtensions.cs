@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Text.Json;
@@ -25,18 +25,22 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Serializes process execution configuration to a JSON string.
         /// </summary>
-        /// <param name="timeoutMs">The timeout in milliseconds for process execution.</param>
+        /// <param name="timeoutMs">The timeout in milliseconds for process execution. Must be positive.</param>
         /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
         /// <returns>A JSON string representation of the process execution configuration.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeoutMs"/> is less than or equal to 0.</exception>
         public static string ToJson(int timeoutMs = 30000, bool indented = false)
         {
+            if (timeoutMs <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeoutMs), "Timeout must be a positive value.");
+            }
+
             var config = new ProcessExecutionConfig { TimeoutMs = timeoutMs };
 
             var options = indented
                 ? new JsonSerializerOptions(_jsonSerializerOptions)
-                {
-                    WriteIndented = true
-                }
+                { WriteIndented = true }
                 : _jsonSerializerOptions;
 
             return JsonSerializer.Serialize(config, options);
