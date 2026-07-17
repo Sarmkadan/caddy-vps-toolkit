@@ -639,6 +639,45 @@ Output includes expiry date, days remaining, and a status classification:
 - `Expired` — certificate has already expired
 - `Error` — could not connect or retrieve the certificate
 
+## ServiceManagementService
+
+The `ServiceManagementService` is the primary interface for managing the lifecycle of VPS services, including creating, updating, removing, and querying service status. It acts as a wrapper around the `IServiceRepository` to ensure all operations are validated and follow consistent configuration rules.
+
+### Example Usage
+
+```csharp
+// Assuming you have an IServiceRepository implementation
+var repository = new ServiceRepository(dbContext);
+var serviceManagement = new ServiceManagementService(repository);
+
+// Create a new managed service
+var newService = new ManagedService
+{
+    Name = "my-api",
+    Type = ServiceType.WebApplication,
+    Port = 8080,
+    Domain = "api.example.com",
+    IsEnabled = true
+};
+string serviceId = await serviceManagement.CreateServiceAsync(newService);
+
+// Update service status to Running
+await serviceManagement.UpdateServiceStatusAsync(serviceId, ServiceStatus.Running);
+
+// Check if service exists
+bool exists = await serviceManagement.ServiceExistsAsync(serviceId);
+
+// Get all enabled services
+var enabledServices = await serviceManagement.GetEnabledServicesAsync();
+
+// Update priority
+await serviceManagement.UpdateServicePriorityAsync(serviceId, 50);
+
+// Delete the service if it's not running
+await serviceManagement.UpdateServiceStatusAsync(serviceId, ServiceStatus.Stopped);
+await serviceManagement.DeleteServiceAsync(serviceId);
+```
+
 ## CaddyConfig
 
 The `CaddyConfig` type represents the global configuration for Caddy reverse proxy. It controls core settings like ports, timeouts, logging behavior, and TLS configuration that apply across all services managed by the toolkit.
