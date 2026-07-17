@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace CaddyVpsToolkit.Tests.Utilities
 {
     /// <summary>
-    /// Extension methods for <see cref="DateTimeExtensionsTests"/> to provide additional testing utilities.
+    /// Extension methods for <see cref="DateTime"/> to provide date/time utilities.
     /// </summary>
     public static class DateTimeExtensionsTestsExtensions
     {
@@ -14,7 +13,7 @@ namespace CaddyVpsToolkit.Tests.Utilities
         /// </summary>
         /// <param name="dateTime">The date to convert.</param>
         /// <returns>The Unix timestamp in seconds.</returns>
-        /// <exception cref="ArgumentException">Thrown when the date is before the Unix epoch.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the date is before the Unix epoch.</exception>
         public static long ToUnixTimestamp(this DateTime dateTime)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(dateTime, DateTime.UnixEpoch);
@@ -58,7 +57,7 @@ namespace CaddyVpsToolkit.Tests.Utilities
         /// <param name="startDate">The start date.</param>
         /// <param name="endDate">The end date.</param>
         /// <returns>An enumerable of dates between the start and end dates.</returns>
-        /// <exception cref="ArgumentException">Thrown when start date is after end date.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when start date is after end date.</exception>
         public static IEnumerable<DateTime> GetDatesBetween(this DateTime startDate, DateTime endDate)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startDate, endDate);
@@ -77,7 +76,7 @@ namespace CaddyVpsToolkit.Tests.Utilities
         /// <param name="startDate">The start date.</param>
         /// <param name="endDate">The end date.</param>
         /// <returns>The number of business days between the dates.</returns>
-        /// <exception cref="ArgumentException">Thrown when start date is after end date.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when start date is after end date.</exception>
         public static int BusinessDaysBetween(this DateTime startDate, DateTime endDate)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startDate, endDate);
