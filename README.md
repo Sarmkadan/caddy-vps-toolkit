@@ -2032,6 +2032,34 @@ foreach (var batch in batches)
     Console.WriteLine($"Batch has {batch.Count} items");
 }
 
+## IObserver
+
+The `IObserver` interface provides a lightweight, flexible implementation of the observer pattern, enabling decoupled event-driven communication between system components. It supports both classic observer-based attachment/detachment and subscription-based notification mechanisms, allowing for versatile event handling throughout the toolkit.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Utilities;
+
+// Create an instance (assuming an implementation exists)
+var observer = new Observer<string>();
+
+// Use subscriber-based mechanism
+observer.Subscribe(msg => Console.WriteLine($"Received: {msg}"));
+observer.Publish("Event occurred");
+
+// Use observer-based mechanism
+var myObserver = new MyObserverImplementation();
+observer.Attach(myObserver);
+observer.NotifyObservers();
+
+// Manage state and inspect
+observer.SetState("Idle");
+var state = observer.GetState();
+Console.WriteLine($"Current state: {state}");
+Console.WriteLine($"Subscriber count: {observer.GetSubscriberCount()}");
+```
+
 // Partition - split collection based on predicate
 var (matching, notMatching) = services.Partition(s => s.Port > 5000);
 Console.WriteLine($"Matching (>5000): {matching.Count} items"); // Outputs: Matching (>5000): 2 items
