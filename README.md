@@ -857,6 +857,48 @@ var tcpHealthCheck = new HealthCheckConfig
 tcpHealthCheck.Validate();
 ```
 
+## UpstreamPoolRepository
+
+The `UpstreamPoolRepository` provides an interface to manage `UpstreamPool` configurations in the SQLite database. It handles the persistence of upstream pool definitions, including health check settings, load balancing strategies, and server lists.
+
+### Example Usage
+
+```csharp
+// Instantiate the repository (ensures database and table exist)
+var repository = new UpstreamPoolRepository();
+
+// Create a new upstream pool
+var newPool = new UpstreamPool
+{
+    Name = "api-pool",
+    ServiceId = "api-service",
+    Strategy = LoadBalancingStrategy.RoundRobin,
+    Servers = new List<UpstreamServer> { new UpstreamServer("localhost", 8080) },
+    IsEnabled = true
+};
+
+// Add to database
+string poolId = await repository.AddAsync(newPool);
+
+// Check if it exists
+if (await repository.ExistsAsync(poolId))
+{
+    // Update the pool
+    var pool = await repository.GetByIdAsync(poolId);
+    if (pool != null)
+    {
+        pool.PassiveHealthEnabled = true;
+        await repository.UpdateAsync(pool);
+    }
+}
+
+// Retrieve all pools for a specific service
+var servicePools = await repository.GetByServiceIdAsync("api-service");
+
+// Delete a pool
+await repository.DeleteAsync(poolId);
+```
+
 ## Configuration Reference
 
 ### appsettings.json
