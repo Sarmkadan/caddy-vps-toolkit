@@ -1043,6 +1043,49 @@ var tcpHealthCheck = new HealthCheckConfig
 tcpHealthCheck.Validate();
 ```
 
+## UpstreamManagementOptions
+
+The `UpstreamManagementOptions` type provides configuration for the v2 adaptive upstream management and health-aware load-balancing subsystem. It controls how upstream servers are scored, penalized, and selected for traffic routing based on latency, error rates, and connection pressure.
+
+This type is typically bound from `appsettings.json` under the `"UpstreamManagement"` key or supplied programmatically via dependency injection.
+
+### Example Usage
+
+```csharp
+// Configure upstream management options in appsettings.json
+var upstreamManagementConfig = new UpstreamManagementOptions
+{
+    // Composite score weights (sum doesn't need to equal 1.0 - they're normalized internally)
+    LatencyWeight = 0.45,      // Prefer low-latency backends
+    ErrorRateWeight = 0.40,     // Penalize error-prone upstreams
+    ConnectionWeight = 0.15,    // Consider connection pressure
+    
+    // Latency target and normalization
+    TargetLatencyMs = 150.0,    // Target p99 latency in milliseconds
+    MaxExpectedConnections = 200, // Expected max concurrent connections
+    
+    // Adaptive weight adjustment
+    WeightAdaptationAlpha = 0.20, // Faster adaptation to changing conditions
+    
+    // Failure penalty configuration
+    PenaltyMultiplier = 0.25,   // Reduce score to 25% after failure
+    PenaltyDecaySeconds = 45.0,  // Penalty decays over 45 seconds
+    
+    // Metrics and windowing
+    MetricsWindowSize = 250,     // Track 250 request samples per upstream
+    
+    // Periodic recalibration
+    AutoRecalibrationEnabled = true,      // Enable automatic recalibration
+    RecalibrationIntervalSeconds = 600     // Recalibrate every 10 minutes
+};
+
+// Register with dependency injection (typically in Program.cs or Startup.cs)
+builder.Services.AddUpstreamManagement(upstreamManagementConfig);
+
+// Or use default configuration
+builder.Services.AddUpstreamManagement();
+```
+
 ## UpstreamPoolRepository
 
 The `UpstreamPoolRepository` provides an interface to manage `UpstreamPool` configurations in the SQLite database. It handles the persistence of upstream pool definitions, including health check settings, load balancing strategies, and server lists.
