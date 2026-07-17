@@ -6,12 +6,12 @@ using System.Reflection;
 namespace CaddyVpsToolkit.Tests
 {
     /// <summary>
-    /// Extension methods that operate on <see cref="StringExtensionsTests"/> instances.
+    /// Provides extension methods for invoking test methods on <see cref="StringExtensionsTests"/> instances.
     /// </summary>
     public static class StringExtensionsTestsExtensions
     {
         /// <summary>
-        /// Executes all parameter‑less public test methods on the supplied <see cref="StringExtensionsTests"/> instance.
+        /// Executes all parameterless public test methods on the supplied <see cref="StringExtensionsTests"/> instance.
         /// </summary>
         /// <param name="tests">The test class instance whose methods should be run.</param>
         /// <returns>
@@ -40,11 +40,11 @@ namespace CaddyVpsToolkit.Tests
                 }
             }
 
-            return passed;
+            return passed.AsReadOnly();
         }
 
         /// <summary>
-        /// Retrieves the names of all public, parameter‑less test methods declared on <see cref="StringExtensionsTests"/>.
+        /// Retrieves the names of all public, parameterless test methods declared on <see cref="StringExtensionsTests"/>.
         /// </summary>
         /// <param name="tests">The test class instance.</param>
         /// <returns>An <see cref="IEnumerable{T}"/> of method names.</returns>
@@ -77,12 +77,17 @@ namespace CaddyVpsToolkit.Tests
             var method = typeof(StringExtensionsTests)
                 .GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
 
-            if (method is null || method.GetParameters().Length != 0 || method.ReturnType != typeof(void))
-                return false;
+            return method is not null
+                && method.GetParameters().Length == 0
+                && method.ReturnType == typeof(void)
+                && TryInvokeMethod(tests, method);
+        }
 
+        private static bool TryInvokeMethod(StringExtensionsTests instance, MethodInfo method)
+        {
             try
             {
-                method.Invoke(tests, null);
+                method.Invoke(instance, null);
                 return true;
             }
             catch
