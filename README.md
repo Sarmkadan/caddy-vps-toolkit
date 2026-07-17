@@ -1,20 +1,28 @@
-## ResultExtensions
+## SslCertificateInfoExtensions
 
-ResultExtensions is a static class that provides extension methods for working with results.
+The `SslCertificateInfoExtensions` class provides a set of extension methods for working with `SslCertificateInfo` objects. These methods simplify common certificate operations, such as determining the certificate's status, formatting its validity period, and checking its issuer.
 
 Example usage:
 ```csharp
-public static Result<TResult> Map<T, TResult>(this Result<T> result, Func<T, TResult> func)
-public static Result<TResult> Bind<T, TResult>(this Result<T> result, Func<T, TResult> func)
-public static bool ToBoolean<T>(this Result<T> result)
-public static bool ToBoolean(this Result result)
-public static string? GetErrorOrNull<T>(this Result<T> result)
-public static string? GetErrorOrNull(this Result result)
-public static void OnSuccess<T>(this Result<T> result, Action<T> action)
-public static void OnSuccess(this Result result, Action action)
-public static void OnFailure<T>(this Result<T> result, Action action)
-public static void OnFailure(this Result result, Action action)
-public static IReadOnlyList<T> ToReadOnlyList<T>(this Result<T> result)
-public static (bool IsSuccess, T Data) ToTuple<T>(this Result<T> result)
-public static (bool Success, string ErrorMessage) ToTuple(this Result result)
+var certificate = new SslCertificateInfo { ExpiresAt = DateTime.UtcNow.AddDays(30) };
+var (status, message) = certificate.GetStatus();
+Console.WriteLine($"Certificate status: {status}, Message: {message}");
+
+var validityPeriod = certificate.FormatValidityPeriod();
+Console.WriteLine($"Validity period: {validityPeriod}");
+
+var daysUntilExpiry = certificate.FormatDaysUntilExpiry();
+Console.WriteLine($"Days until expiry: {daysUntilExpiry}");
+
+var isIssuedBy = certificate.IsIssuedBy("Example CA");
+Console.WriteLine($"Is issued by: {isIssuedBy}");
+
+var expiredCertificates = certificate.GetExpiredCertificates();
+Console.WriteLine($"Expired certificates: {expiredCertificates.Count()}");
+
+var expiringCertificates = certificate.GetExpiringCertificates();
+Console.WriteLine($"Expiring certificates: {expiringCertificates.Count()}");
+
+var issuerOrganization = certificate.GetIssuerOrganization();
+Console.WriteLine($"Issuer organization: {issuerOrganization}");
 ```
