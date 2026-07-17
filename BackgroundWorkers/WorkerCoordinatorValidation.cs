@@ -27,11 +27,22 @@ namespace CaddyVpsToolkit.BackgroundWorkers
 
             var problems = new List<string>();
 
-            // The logger is validated by the constructor, so we can't check it here
-            // We can only validate the state of the coordinator itself
+            var workerNames = value.GetWorkerNames();
+            if (workerNames.Count == 0)
+            {
+                problems.Add("WorkerCoordinator has no registered workers");
+            }
 
-            // Validate that workers dictionary is initialized (it always is due to constructor)
-            // No other validation is possible without accessing private fields
+            var runningWorkerCount = workerNames.Count(name => value.IsWorkerRunning(name));
+            if (runningWorkerCount > 0 && runningWorkerCount == workerNames.Count)
+            {
+                problems.Add("All workers are running, which may indicate they were not properly stopped");
+            }
+
+            var invalidWorkerNames = workerNames
+                .Where(name => string.IsNullOrWhiteSpace(name))
+                .Select(name => $"Worker with empty name");
+            problems.AddRange(invalidWorkerNames);
 
             return problems.AsReadOnly();
         }
@@ -41,10 +52,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
         /// </summary>
         /// <param name="value">The coordinator to check.</param>
         /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-        public static bool IsValid(this WorkerCoordinator value)
-        {
-            return value is not null && !value.Validate().Any();
-        }
+        public static bool IsValid(this WorkerCoordinator value) => value?.Validate().Count == 0;
 
         /// <summary>
         /// Ensures that the specified <see cref="WorkerCoordinator"/> is valid.
