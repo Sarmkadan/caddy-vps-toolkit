@@ -205,6 +205,49 @@ class Program
 
 The example demonstrates all five public extension members: `ToJson` and `FromJson` for individual services, `TryFromJson` for safe parsing, `ToJson` and `FromJsonToList` for collections, and `TryFromJsonToList` for safe collection parsing.
 
+## AppConfigurationBuilderExtensions
+
+The `AppConfigurationBuilderExtensions` class provides extension methods for configuring application settings. It simplifies loading configuration from various sources including JSON files, environment variables, settings files, default settings, JSON strings, or object-based configurations.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Configuration;
+
+class Program
+{
+    static void Main()
+    {
+        // Configure application settings from a JSON file
+        var builder1 = new AppConfigurationBuilder()
+            .WithJsonFile("appsettings.json");
+
+        // Configure application settings from environment variables
+        var builder2 = new AppConfigurationBuilder()
+            .WithEnvironmentVariables();
+
+        // Configure application settings from a settings file
+        var builder3 = new AppConfigurationBuilder()
+            .WithSettings("custom-settings.json");
+
+        // Configure application settings with default settings
+        var builder4 = new AppConfigurationBuilder()
+            .WithDefaultSettings();
+
+        // Configure application settings from a JSON string
+        var builder5 = new AppConfigurationBuilder()
+            .WithJsonString("{\"Key\": \"Value\"}");
+
+        // Configure application settings from an object configuration
+        var builder6 = new AppConfigurationBuilder()
+            .WithObjectConfiguration(config =>
+            {
+                config["CustomKey"] = "CustomValue";
+            });
+    }
+}
+```
+
 ## UpstreamManagerServiceExtensions
 
 The `UpstreamManagerServiceExtensions` class provides extension methods for `UpstreamManagerService` that add convenience and batch operations for upstream pool management, health monitoring, and configuration generation. These methods simplify common operations like retrieving pools, checking health status, generating Caddy configuration, and recording upstream results.
