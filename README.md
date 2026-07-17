@@ -695,6 +695,77 @@ bool deleteSuccess = await repository.DeleteAsync(serviceId);
 Console.WriteLine($"Service deleted: {deleteSuccess}");
 ```
 
+## ServiceRepository
+
+The `ServiceRepository` class provides a concrete implementation of the `IServiceRepository` interface for managing service configurations in a SQLite database. It handles all CRUD operations for `ManagedService` entities, including retrieval by ID, name, service type, and enabled status, as well as searching and counting services.
+
+This repository is responsible for persisting service definitions to the SQLite database, enabling the application to maintain system state across application restarts and providing efficient data access methods for service management operations.
+
+### Example Usage
+
+```csharp
+// Create a service repository instance
+var repository = new ServiceRepository();
+
+// Add a new managed service
+var newService = new ManagedService
+{
+    Name = "api-service",
+    Type = ServiceType.WebApplication,
+    Port = 8080,
+    Domain = "api.example.com",
+    IsEnabled = true,
+    HostBinding = "localhost",
+    ExecutablePath = "/usr/bin/dotnet",
+    WorkingDirectory = "/opt/api-service",
+    Description = "Production API service",
+    Status = ServiceStatus.Stopped,
+    AutoStart = true,
+    Priority = 100,
+    EnvironmentVariables = "ASPNETCORE_ENVIRONMENT=Production"
+};
+
+string serviceId = await repository.AddAsync(newService);
+Console.WriteLine($"Created service with ID: {serviceId}");
+
+// Retrieve a service by ID
+var retrievedService = await repository.GetByIdAsync(serviceId);
+Console.WriteLine($"Retrieved service: {retrievedService.Name} on port {retrievedService.Port}");
+
+// Retrieve a service by name
+var serviceByName = await repository.GetByNameAsync("api-service");
+Console.WriteLine($"Found service by name: {serviceByName.Name}");
+
+// Update service properties
+retrievedService.Port = 9090;
+bool updateSuccess = await repository.UpdateAsync(retrievedService);
+Console.WriteLine($"Update successful: {updateSuccess}");
+
+// Get all enabled services
+var enabledServices = await repository.GetEnabledServicesAsync();
+Console.WriteLine($"Found {enabledServices.Count} enabled services");
+
+// Get services by type
+var webServices = await repository.GetByTypeAsync(ServiceType.WebApplication);
+Console.WriteLine($"Found {webServices.Count} web application services");
+
+// Check if service exists
+bool exists = await repository.ExistsAsync(serviceId);
+Console.WriteLine($"Service exists: {exists}");
+
+// Get total service count
+int totalServices = await repository.GetCountAsync();
+Console.WriteLine($"Total services in database: {totalServices}");
+
+// Search for services by name
+var searchResults = await repository.SearchAsync("api");
+Console.WriteLine($"Found {searchResults.Count} services matching 'api'");
+
+// Delete a service
+bool deleteSuccess = await repository.DeleteAsync(serviceId);
+Console.WriteLine($"Service deleted: {deleteSuccess}");
+```
+
 ## ServiceManagementService
 
 The `ServiceManagementService` is the primary interface for managing the lifecycle of VPS services, including creating, updating, removing, and querying service status. It acts as a wrapper around the `IServiceRepository` to ensure all operations are validated and follow consistent configuration rules.
