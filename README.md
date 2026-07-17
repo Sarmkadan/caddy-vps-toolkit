@@ -360,6 +360,44 @@ caddy-vps-toolkit service update api \
   --recovery-script-timeout 30s
 ```
 
+## PerformanceMonitor
+
+The `PerformanceMonitor` class is used to measure the performance of operations, providing detailed timing metrics for profiling and identifying bottlenecks. It allows you to mark milestones during an operation, measure the total elapsed time, and generate a structured report.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Utilities;
+
+// Initialize and start timing
+using (var monitor = new PerformanceMonitor("DataProcessing"))
+{
+    // Perform operations...
+    monitor.MarkMilestone("Step1Complete");
+    
+    // Simulate some work
+    await Task.Delay(100);
+    monitor.MarkMilestone("Step2Complete");
+
+    // Get total elapsed time
+    long elapsedMs = monitor.GetElapsedMs();
+    Console.WriteLine($"Total time: {elapsedMs}ms");
+
+    // Generate a detailed report
+    string report = monitor.GetReport();
+    Console.WriteLine(report);
+}
+
+// Measure async operations using static helper methods
+var (result, elapsed) = await PerformanceMonitor.TimeAsync(async () =>
+{
+    await Task.Delay(50);
+    return "OperationResult";
+});
+
+Console.WriteLine($"Result: {result}, Elapsed: {elapsed}ms");
+```
+
 ## AuditLogEntry
 
 The `AuditLogEntry` type represents a single entry in the audit log, tracking important operations performed within the caddy-vps-toolkit system. It captures metadata about actions including who performed them, when they occurred, what was affected, and the outcome. This type is essential for compliance, troubleshooting, and maintaining an operational history of all system changes.
