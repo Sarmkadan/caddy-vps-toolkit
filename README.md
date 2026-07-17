@@ -2250,6 +2250,47 @@ var caddyConfig = new AppConfigurationBuilder()
     .Build();
 ```
 
+## MemoryCacheTestsExtensions
+
+The `MemoryCacheTestsExtensions` class provides extension methods for testing the `MemoryCache` implementation. It offers helper methods to verify cache operations including setting values with immediate verification, getting values with existence checks, testing expiration behavior, and validating cache clearing functionality. These extensions are designed to simplify unit testing of cache-related code by providing fluent assertion patterns.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Caching;
+using CaddyVpsToolkit.Tests.Caching;
+using Xunit;
+
+public class CacheTests : MemoryCacheTests
+{
+    [Fact]
+    public async Task Cache_Operations_Work_Correctly()
+    {
+        // Set a value and immediately verify it was stored correctly
+        await this.SetAndVerifyAsync("user:123", new User { Id = 123, Name = "Alice" });
+        
+        // Verify a value exists and retrieve it
+        var user = await this.GetAndVerifyAsync<User>("user:123");
+        Assert.Equal("Alice", user.Name);
+        
+        // Verify multiple keys exist
+        var keys = new[] { "user:123", "user:456" };
+        var values = await this.GetMultipleAsync<User>(keys);
+        Assert.Single(values);
+        
+        // Create a cache key using the same logic as the cache implementation
+        string cacheKey = this.CreateCacheKey("service", "health", "api-service-01");
+        await this.SetAndVerifyAsync(cacheKey, "healthy");
+        
+        // Verify expiration behavior
+        await this.VerifyExpirationAsync("temp:data", 100, 500);
+        
+        // Verify cache clearing
+        await this.VerifyClearAsync(5);
+    }
+}
+```
+
 // Partition - split collection based on predicate
 var (matching, notMatching) = services.Partition(s => s.Port > 5000);
 Console.WriteLine($"Matching (>5000): {matching.Count} items"); // Outputs: Matching (>5000): 2 items
