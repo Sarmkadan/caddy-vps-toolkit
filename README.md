@@ -1066,6 +1066,89 @@ public class HealthMonitoringService
 }
 ```
 
+The `HealthMonitoringService` provides comprehensive health monitoring capabilities for all managed services. It performs regular health checks, tracks historical health data, and provides statistics and summaries to help maintain system reliability. The service supports both HTTP and TCP health checks with configurable intervals, timeouts, and failure thresholds.
+
+
+
+
+
+
+
+
+
+
+
+
+**Key Features:**
+- Perform individual service health checks with automatic result logging
+- Retrieve latest health status for any service
+- Access detailed health history with configurable time ranges
+- Get aggregated health statistics and trends
+- Monitor all services at once with comprehensive results
+- Generate health summaries showing overall system status
+- Clean up old health check records to maintain database performance
+- Support for HTTP and TCP health check protocols
+
+
+
+
+
+
+
+
+
+### Example Usage
+
+```csharp
+// Create required dependencies (typically injected via DI)
+var healthCheckRepository = new HealthCheckRepository(databaseService);
+var serviceManager = new ServiceManagementService(databaseService);
+var healthMonitoringService = new HealthMonitoringService(healthCheckRepository, serviceManager);
+
+// Check health of a specific service
+var healthResult = await healthMonitoringService.CheckServiceHealthAsync("api-service-01");
+
+if (healthResult.IsHealthy)
+{
+    Console.WriteLine($"Service is healthy! Response time: {healthResult.ResponseTimeMs}ms");
+}
+else
+{
+    Console.WriteLine($"Service is unhealthy: {healthResult.ErrorMessage}");
+}
+
+// Get the latest health status for a service
+var latestStatus = await healthMonitoringService.GetLatestHealthStatusAsync("api-service-01");
+Console.WriteLine($"Latest status: {latestStatus.Status} at {latestStatus.CheckedAt}");
+
+// Get health history for the last 24 hours
+var history = await healthMonitoringService.GetHealthHistoryAsync("api-service-01", 24);
+Console.WriteLine($"Found {history.Count} health checks in the last 24 hours");
+
+// Get health statistics for trend analysis
+var stats = await healthMonitoringService.GetHealthStatisticsAsync(
+    "api-service-01",
+    DateTime.UtcNow.AddDays(-7),
+    DateTime.UtcNow
+);
+Console.WriteLine($"Healthy checks: {stats.HealthyCount}, Failed: {stats.FailedCount}");
+Console.WriteLine($"Average response time: {stats.AverageResponseTimeMs}ms");
+
+// Check health of all services
+var allHealthResults = await healthMonitoringService.CheckAllServicesHealthAsync();
+Console.WriteLine($"Checked {allHealthResults.Count} services");
+
+// Get overall health summary
+var summary = await healthMonitoringService.GetHealthSummaryAsync();
+Console.WriteLine($"System Health: {summary.HealthPercentage:F1}%");
+Console.WriteLine($"Total: {summary.TotalServices}, Healthy: {summary.HealthyServices}, Unhealthy: {summary.UnhealthyServices}");
+Console.WriteLine($"Unchecked: {summary.UncheckedServices}, Disabled: {summary.DisabledServices}");
+
+// Clean up old health records (keeps 30 days of history by default)
+bool cleanupSuccess = await healthMonitoringService.CleanupOldRecordsAsync(daysToKeep: 30);
+Console.WriteLine($"Cleanup successful: {cleanupSuccess}");
+```
+
 ### ServiceCreatedEventHandlerExtensions
 
 Provides extension methods for `ServiceCreatedEventHandler` that enable enhanced event handling capabilities including validation, custom logging levels, and access to internal components.
