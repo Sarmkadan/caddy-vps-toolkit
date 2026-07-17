@@ -21,7 +21,7 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <returns>A span containing the command name, or empty span if no command.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is <see langword="null"/>.</exception>
         public static ReadOnlySpan<char> GetCommandSpan(this ArgumentParser parser)
         {
             ArgumentNullException.ThrowIfNull(parser);
@@ -33,8 +33,8 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <param name="index">The 0-based index of the positional argument.</param>
-        /// <returns>The parsed integer value, or null if the argument is not present or not a valid integer.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is null.</exception>
+        /// <returns>The parsed integer value, or <see langword="null"/> if the argument is not present or not a valid integer.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="index"/> is negative.</exception>
         public static int? GetPositionalAsInt(this ArgumentParser parser, int index)
         {
@@ -56,8 +56,8 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <param name="index">The 0-based index of the positional argument.</param>
-        /// <returns>The parsed boolean value, or null if the argument is not present or not a valid boolean string.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is null.</exception>
+        /// <returns>The parsed boolean value, or <see langword="null"/> if the argument is not present or not a valid boolean string.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="index"/> is negative.</exception>
         public static bool? GetPositionalAsBoolean(this ArgumentParser parser, int index)
         {
@@ -83,9 +83,9 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <param name="flagName">The name of the flag to check.</param>
-        /// <returns>The parsed integer value, or null if the flag is not present or its value is not a valid integer.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="flagName"/> is null or empty.</exception>
+        /// <returns>The parsed integer value, or <see langword="null"/> if the flag is not present or its value is not a valid integer.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="flagName"/> is <see langword="null"/> or empty.</exception>
         public static int? GetFlagValueAsInt(this ArgumentParser parser, string flagName)
         {
             ArgumentNullException.ThrowIfNull(parser);
@@ -111,9 +111,9 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <param name="flagName">The name of the flag to check.</param>
-        /// <returns>The parsed boolean value, or null if the flag is not present or its value is not a valid boolean string.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="flagName"/> is null or empty.</exception>
+        /// <returns>The parsed boolean value, or <see langword="null"/> if the flag is not present or its value is not a valid boolean string.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="flagName"/> is <see langword="null"/> or empty.</exception>
         public static bool? GetFlagValueAsBoolean(this ArgumentParser parser, string flagName)
         {
             ArgumentNullException.ThrowIfNull(parser);
@@ -138,9 +138,9 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <param name="flagName">The name of the flag to check.</param>
-        /// <returns>True if the flag is present and has a non-empty value; otherwise, false.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="flagName"/> is null or empty.</exception>
+        /// <returns><see langword="true"/> if the flag is present and has a non-empty value; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="flagName"/> is <see langword="null"/> or empty.</exception>
         public static bool HasFlagWithValue(this ArgumentParser parser, string flagName)
         {
             ArgumentNullException.ThrowIfNull(parser);
@@ -154,7 +154,7 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <returns>A read-only list of all positional arguments.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is <see langword="null"/>.</exception>
         public static IReadOnlyList<string> GetAllPositionalReadOnly(this ArgumentParser parser)
         {
             ArgumentNullException.ThrowIfNull(parser);
@@ -166,7 +166,7 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <returns>A read-only list of all flag names.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is <see langword="null"/>.</exception>
         public static IReadOnlyList<string> GetAllFlagsReadOnly(this ArgumentParser parser)
         {
             ArgumentNullException.ThrowIfNull(parser);
@@ -178,7 +178,7 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <returns>The count of positional arguments.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> is <see langword="null"/>.</exception>
         public static int GetPositionalCount(this ArgumentParser parser)
         {
             ArgumentNullException.ThrowIfNull(parser);
@@ -190,8 +190,8 @@ namespace CaddyVpsToolkit.Cli
         /// </summary>
         /// <param name="parser">The argument parser instance.</param>
         /// <param name="flagNames">The flag names to check.</param>
-        /// <returns>True if any of the specified flags are present; otherwise, false.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> or <paramref name="flagNames"/> is null.</exception>
+        /// <returns><see langword="true"/> if any of the specified flags are present; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="parser"/> or <paramref name="flagNames"/> is <see langword="null"/>.</exception>
         public static bool HasAnyFlag(this ArgumentParser parser, params string[] flagNames)
         {
             ArgumentNullException.ThrowIfNull(parser);
