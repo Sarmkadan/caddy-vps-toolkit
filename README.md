@@ -1379,6 +1379,37 @@ bool deleted = await configService.DeleteAsync("temp:setting");
 Console.WriteLine($"Key deleted: {deleted}");
 ```
 
+## SystemdUnitService
+
+The `SystemdUnitService` provides comprehensive management of systemd unit files and service lifecycle operations for managed services. It enables tasks such as creating, deleting, starting, stopping, restarting, and enabling/disabling systemd services, as well as querying detailed service status and unit configurations.
+
+### Example Usage
+
+```csharp
+// Instantiate the systemd unit service
+var unitService = new SystemdUnitService();
+
+// List all registered service units
+var units = await unitService.ListUnitsAsync();
+
+// Check if a specific unit file exists
+string unitName = "my-web-app.service";
+if (unitService.UnitFileExists(unitName))
+{
+    // Retrieve detailed status for the service
+    SystemdUnitStatus status = await unitService.GetDetailedStatusAsync(unitName);
+    
+    Console.WriteLine($"Service: {status.UnitName}");
+    Console.WriteLine($"Status: {status.ActiveState}");
+    Console.WriteLine($"Type: {status.Type}");
+    Console.WriteLine($"PID: {status.MainPid}");
+    Console.WriteLine($"Timeout: {status.TimeoutStartUsec}us");
+
+    // Manage service lifecycle
+    await unitService.RestartServiceAsync(unitName);
+}
+```
+
 ## Troubleshooting
 
 ### Service Won't Start
