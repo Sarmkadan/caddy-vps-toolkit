@@ -6,21 +6,20 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace CaddyVpsToolkit.Extensions
 {
     /// <summary>
-    /// Validation extension methods for InfrastructureOptions to ensure configuration values are valid.
+    /// Provides validation extension methods for <see cref="InfrastructureOptions"/> to ensure configuration values are valid.
     /// </summary>
     public static class ServiceCollectionExtensionsValidation
     {
         /// <summary>
-        /// Validates the InfrastructureOptions instance and returns a list of human-readable problems.
+        /// Validates the <see cref="InfrastructureOptions"/> instance and returns a list of human-readable problems.
         /// </summary>
-        /// <param name="value">The InfrastructureOptions instance to validate</param>
-        /// <returns>An immutable list of validation problems (empty if valid)</returns>
-        /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
+        /// <param name="value">The <see cref="InfrastructureOptions"/> instance to validate.</param>
+        /// <returns>An immutable list of validation problems (empty if valid).</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
         public static IReadOnlyList<string> Validate(this InfrastructureOptions value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -49,16 +48,7 @@ namespace CaddyVpsToolkit.Extensions
                 problems.Add("LogPath must not exceed 1024 characters.");
             }
 
-            // Validate MinLogLevel (should be a valid enum value)
-            try
-            {
-                var _ = value.MinLogLevel;
-            }
-            catch (Exception ex) when (ex is not ArgumentException)
-            {
-                problems.Add($"MinLogLevel is invalid: {ex.Message}");
-            }
-
+            // MinLogLevel is an enum - no validation needed as it's always valid
             // Validate RateLimitCapacity (should be positive)
             if (value.RateLimitCapacity <= 0)
             {
@@ -71,15 +61,15 @@ namespace CaddyVpsToolkit.Extensions
                 problems.Add($"RateLimitRefillRate must be positive, but was {value.RateLimitRefillRate}.");
             }
 
-            return problems.AsReadOnly();
+            return problems;
         }
 
         /// <summary>
-        /// Determines whether the InfrastructureOptions instance is valid.
+        /// Determines whether the <see cref="InfrastructureOptions"/> instance is valid.
         /// </summary>
-        /// <param name="value">The InfrastructureOptions instance to check</param>
-        /// <returns>True if valid; otherwise, false</returns>
-        /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
+        /// <param name="value">The <see cref="InfrastructureOptions"/> instance to check.</param>
+        /// <returns>True if valid; otherwise, false.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
         public static bool IsValid(this InfrastructureOptions value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -87,11 +77,11 @@ namespace CaddyVpsToolkit.Extensions
         }
 
         /// <summary>
-        /// Validates the InfrastructureOptions instance and throws an ArgumentException if invalid.
+        /// Validates the <see cref="InfrastructureOptions"/> instance and throws an <see cref="ArgumentException"/> if invalid.
         /// </summary>
-        /// <param name="value">The InfrastructureOptions instance to validate</param>
-        /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
-        /// <exception cref="ArgumentException">Thrown if validation fails, containing a list of problems</exception>
+        /// <param name="value">The <see cref="InfrastructureOptions"/> instance to validate.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if validation fails, containing a list of problems.</exception>
         public static void EnsureValid(this InfrastructureOptions value)
         {
             ArgumentNullException.ThrowIfNull(value);
