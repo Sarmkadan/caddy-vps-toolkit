@@ -7,8 +7,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Caching;
 using FluentAssertions;
@@ -18,15 +17,19 @@ namespace CaddyVpsToolkit.Tests.Caching
 {
     public static class MemoryCacheTestsExtensions
     {
+        private static readonly FieldInfo _cacheField = typeof(MemoryCacheTests)
+            .GetField("_cache", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("Failed to find _cache field in MemoryCacheTests");
+
         /// <summary>
         /// Creates a cache entry with the specified key and value, then immediately verifies it was stored correctly.
         /// </summary>
         /// <typeparam name="T">Type of the value to store</typeparam>
-        /// <param name="cache">The cache instance</param>
+        /// <param name="tests">The test instance containing the cache</param>
         /// <param name="key">The cache key</param>
         /// <param name="value">The value to store</param>
         /// <returns>The stored value for fluent assertions</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="cache"/> or <paramref name="key"/> is null</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="tests"/> or <paramref name="key"/> is null</exception>
         /// <exception cref="ArgumentException"><paramref name="key"/> is empty or whitespace</exception>
         public static async Task<T> SetAndVerifyAsync<T>(this MemoryCacheTests tests, string key, T value)
         {
@@ -38,14 +41,11 @@ namespace CaddyVpsToolkit.Tests.Caching
                 throw new ArgumentException("Cache key cannot be empty or whitespace.", nameof(key));
             }
 
-            // Use reflection to access the private cache field
-            var cacheField = typeof(MemoryCacheTests).GetField("_cache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var cache = (MemoryCache)cacheField!.GetValue(tests)!;
-
+            var cache = GetCache(tests);
             await cache.SetAsync(key, value);
 
             var retrieved = await cache.GetAsync<T>(key);
-            retrieved.Should().Be(value, $"Value should be retrievable immediately after storage");
+            retrieved.Should().Be(value, "Value should be retrievable immediately after storage");
 
             return value;
         }
@@ -70,9 +70,7 @@ namespace CaddyVpsToolkit.Tests.Caching
                 throw new ArgumentException("Cache key cannot be empty or whitespace.", nameof(key));
             }
 
-            var cacheField = typeof(MemoryCacheTests).GetField("_cache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var cache = (MemoryCache)cacheField!.GetValue(tests)!;
-
+            var cache = GetCache(tests);
             var value = await cache.GetAsync<T>(key);
             value.Should().NotBeNull($"Expected key '{key}' to exist in cache");
 
@@ -92,9 +90,7 @@ namespace CaddyVpsToolkit.Tests.Caching
             ArgumentNullException.ThrowIfNull(tests);
             ArgumentNullException.ThrowIfNull(keys);
 
-            var cacheField = typeof(MemoryCacheTests).GetField("_cache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var cache = (MemoryCache)cacheField!.GetValue(tests)!;
-
+            var cache = GetCache(tests);
             var result = new Dictionary<string, T>(StringComparer.Ordinal);
 
             foreach (var key in keys)
@@ -141,8 +137,7 @@ namespace CaddyVpsToolkit.Tests.Caching
                 throw new ArgumentOutOfRangeException(nameof(expectedRemainingMs), "Expected remaining time cannot be negative");
             }
 
-            var cacheField = typeof(MemoryCacheTests).GetField("_cache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var cache = (MemoryCache)cacheField!.GetValue(tests)!;
+            var cache = GetCache(tests);
 
             // Set with expiration
             await cache.SetAsync(key, "expiring-value", TimeSpan.FromMilliseconds(expectedRemainingMs + 50));
@@ -165,9 +160,10 @@ namespace CaddyVpsToolkit.Tests.Caching
         /// <summary>
         /// Creates a cache key using the same logic as the cache implementation.
         /// </summary>
+        /// <param name="tests">Test instance</param>
         /// <param name="parts">Key parts to join</param>
         /// <returns>Joined cache key</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="parts"/> is null</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="tests"/> or <paramref name="parts"/> is null</exception>
         public static string CreateCacheKey(this MemoryCacheTests tests, params string[] parts)
         {
             ArgumentNullException.ThrowIfNull(tests);
@@ -192,8 +188,7 @@ namespace CaddyVpsToolkit.Tests.Caching
                 throw new ArgumentOutOfRangeException(nameof(expectedCount), "Count cannot be negative");
             }
 
-            var cacheField = typeof(MemoryCacheTests).GetField("_cache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var cache = (MemoryCache)cacheField!.GetValue(tests)!;
+            var cache = GetCache(tests);
 
             // Store expected number of entries
             for (int i = 0; i < expectedCount; i++)
@@ -208,6 +203,12 @@ namespace CaddyVpsToolkit.Tests.Caching
 
             var sizeAfter = cache.GetCacheSize();
             sizeAfter.Should().Be(0, "Cache should be empty after ClearAsync");
+        }
+
+        private static MemoryCache GetCache(MemoryCacheTests tests)
+        {
+            return (_cacheField.GetValue(tests) as MemoryCache)
+                ?? throw new InvalidOperationException("Failed to retrieve cache instance from test");
         }
     }
 }
