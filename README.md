@@ -1834,6 +1834,54 @@ var databaseConfig = config.GetObject<Dictionary<string, string>>("database:conn
 
 The `DateTimeExtensions` class provides extension methods for `DateTime` operations, offering human-readable time formatting and common datetime calculations. These utilities are particularly useful for logging, audit trails, health monitoring, and any scenario requiring user-friendly date/time representations or date arithmetic.
 
+## PathUtilities
+
+The `PathUtilities` class provides utility methods for file system path operations, including path manipulation, size calculations, and file system safety checks. It handles cross-platform path handling with security considerations for path traversal prevention and provides human-readable formatting for file sizes.
+
+### Example Usage
+
+```csharp
+// Get relative path between two directories
+string relativePath = PathUtilities.GetRelativePath(
+    @"/var/www/services",
+    @"/var/www/services/api/bin/Debug/net8.0"
+);
+Console.WriteLine($"Relative path: {relativePath}");
+// Output: Relative path: api/bin/Debug/net8.0
+
+// Safely combine paths with security checks
+string configPath = PathUtilities.SafeCombine(
+    @"/etc/caddy-vps-toolkit",
+    "configs", "api-service.json"
+);
+Console.WriteLine($"Config path: {configPath}");
+// Output: Config path: /etc/caddy-vps-toolkit/configs/api-service.json
+
+// Normalize path separators for current OS
+string normalizedPath = PathUtilities.NormalizePath(
+    @"C:\Program Files\caddy-vps-toolkit\configs\api"
+);
+Console.WriteLine($"Normalized: {normalizedPath}");
+// Output: Normalized: C:\Program Files\caddy-vps-toolkit\configs\api
+
+// Get directory size in human-readable format
+long directorySize = PathUtilities.GetDirectorySize(@"/var/www/services/api");
+string formattedSize = PathUtilities.FormatFileSize(directorySize);
+Console.WriteLine($"Directory size: {formattedSize}");
+
+// Ensure directory exists before writing files
+PathUtilities.EnsureDirectoryExists(@"/var/log/caddy-vps-toolkit");
+
+// Get unique filename if file exists
+string uniquePath = PathUtilities.GetUniqueFilePath(@"/tmp/backup.json");
+Console.WriteLine($"Unique path: {uniquePath}");
+
+// Sanitize filename for cross-platform compatibility
+string sanitized = PathUtilities.SanitizeFileName("my:file*name?.txt");
+Console.WriteLine($"Sanitized: {sanitized}");
+// Output: Sanitized: myfilename.txt
+```
+
 ### Public Members
 
 - `ToRelativeTime()` - Get human-readable time difference (e.g., "2 hours ago")
