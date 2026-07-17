@@ -46,12 +46,14 @@ namespace CaddyVpsToolkit.Tests.Results
         /// </summary>
         /// <typeparam name="T">The type of data in the result.</typeparam>
         /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns>The deserialized result instance, or null if the JSON is invalid.</returns>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+        /// <returns>The deserialized result instance if successful; otherwise, null.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty.</exception>
         /// <exception cref="JsonException">Thrown when the JSON is invalid and cannot be deserialized.</exception>
         public static Result<T>? FromJson<T>(string json)
         {
-            ArgumentException.ThrowIfNullOrEmpty(json);
+            ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrEmpty(json);
 
             return JsonSerializer.Deserialize<Result<T>>(json, _jsonOptions);
         }
@@ -61,17 +63,19 @@ namespace CaddyVpsToolkit.Tests.Results
         /// </summary>
         /// <typeparam name="T">The type of data in the result.</typeparam>
         /// <param name="json">The JSON string to deserialize.</param>
-        /// <param name="value">The deserialized result instance, or null if deserialization failed.</param>
+        /// <param name="value">When this method returns, contains the deserialized result instance if deserialization succeeded, or null if deserialization failed or the JSON was invalid.</param>
         /// <returns>True if deserialization succeeded; otherwise, false.</returns>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty.</exception>
         public static bool TryFromJson<T>(string json, out Result<T>? value)
         {
-            ArgumentException.ThrowIfNullOrEmpty(json);
+            ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrEmpty(json);
 
             try
             {
                 value = JsonSerializer.Deserialize<Result<T>>(json, _jsonOptions);
-                return true;
+                return value is not null;
             }
             catch (JsonException)
             {
