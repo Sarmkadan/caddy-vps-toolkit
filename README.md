@@ -1752,6 +1752,76 @@ var allPositionals = parser.GetAllPositional(); // Returns ["my-service"]
 var allFlags = parser.GetAllFlags(); // Returns ["port", "domain", "verbose"]
 ```
 
+## IErrorHandler
+
+The `IErrorHandler` interface provides centralized error handling for the application by catching exceptions, logging them, and converting them to structured error responses. It enables consistent error handling across the codebase through a pipeline of specialized handlers that can process specific exception types and return appropriate user-friendly messages with exit codes.
+
+The error handling pipeline supports registering custom handlers for specific exception types using predicates, allowing fine-grained control over error responses while maintaining a default fallback for unhandled exceptions.
+
+### Public Members
+
+- `Task<ErrorResponse> HandleAsync(Exception ex)` - Processes an exception and returns a structured error response
+- `void AddHandler(Func<Exception, bool> predicate, Func<Exception, Task<ErrorResponse>> handler)` - Registers a custom error handler for exceptions matching the predicate
+
+### ErrorResponse Properties
+
+- `int ExitCode` - The exit code to return when this error occurs
+- `string Code` - A machine-readable error code (e.g., "SERVICE_NOT_FOUND", "CONFIGURATION_ERROR")
+- `string Message` - A user-friendly error message
+- `string Details` - Detailed error information including stack trace (for debugging)
+
+### Example Usage
+
+```csharp
+// Create error handler with logger
+var logger = new FileLogger("/var/log/caddy-vps-toolkit/errors.log", LogLevel.Error);
+var errorHandler = new ErrorHandlingPipeline(logger);
+
+// Add a custom handler for specific exceptions
+// For example, handle database connection failures
+var dbLogger = new FileLogger("/var/log/caddy-vps-toolkit/database-errors.log", LogLevel.Error);
+errorHandler.AddHandler(
+    ex => ex is DatabaseConnectionException,
+    async ex =>
+    {
+        await dbLogger.LogErrorAsync($"Database connection failed: {ex.Message}");
+        return new ErrorResponse
+        {
+            ExitCode = 5,
+            Message = "Database connection unavailable. Please check database status and retry.",
+            Code = "DATABASE_UNAVAILABLE"
+        };
+    }
+);
+
+// Handle an exception
+try
+{
+    // Some operation that might throw
+    await service.StartAsync();
+}
+catch (Exception ex)
+{
+    var errorResponse = await errorHandler.HandleAsync(ex);
+    
+    Console.WriteLine($"Error occurred (Code: {errorResponse.Code}): {errorResponse.Message}");
+    Console.WriteLine($"Exit code: {errorResponse.ExitCode}");
+    
+    if (!string.IsNullOrEmpty(errorResponse.Details))
+    {
+        Console.WriteLine($"Details: {errorResponse.Details}");
+    }
+    
+    Environment.Exit(errorResponse.ExitCode);
+}
+
+// Default handlers are automatically registered for common exceptions:
+// - ServiceNotFoundException -> ExitCode 1, Code "SERVICE_NOT_FOUND"
+// - ServiceConfigurationException -> ExitCode 2, Code "CONFIGURATION_ERROR"
+// - ArgumentException -> ExitCode 3, Code "INVALID_ARGUMENT"
+// - All other exceptions -> ExitCode 255, Code "UNEXPECTED_ERROR"
+```
+
 ## IServiceDiscoveryClient
 
 The `IServiceDiscoveryClient` interface provides a service discovery abstraction for locating service endpoints in distributed systems. It enables dynamic service registration, deregistration, and discovery, supporting integration with service registries like Consul, Eureka, or custom implementations. This interface is particularly useful for service-to-service communication where endpoints may change dynamically.
