@@ -36,9 +36,7 @@ namespace CaddyVpsToolkit.Domain.Models
 
             var options = indented
                 ? new JsonSerializerOptions(_jsonSerializerOptions)
-                {
-                    WriteIndented = true
-                }
+                { WriteIndented = true }
                 : _jsonSerializerOptions;
 
             return JsonSerializer.Serialize(value, options);
@@ -48,7 +46,8 @@ namespace CaddyVpsToolkit.Domain.Models
         /// Deserializes a JSON string to a <see cref="HealthCheckResult"/>.
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns>The deserialized health check result, or null if the JSON is null or empty.</returns>
+        /// <returns>The deserialized health check result, or null if the JSON is null or empty.
+        /// Returns null if <paramref name="json"/> is null or empty; otherwise returns the deserialized result.</returns>
         /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
         public static HealthCheckResult? FromJson(string json)
         {
@@ -64,10 +63,14 @@ namespace CaddyVpsToolkit.Domain.Models
         /// Attempts to deserialize a JSON string to a <see cref="HealthCheckResult"/>.
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
-        /// <param name="value">The deserialized health check result, or null if deserialization fails.</param>
+        /// <param name="value">When this method returns, contains the deserialized health check result,
+        /// or null if deserialization fails or the input is null/empty.</param>
         /// <returns>True if deserialization succeeds; otherwise, false.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
         public static bool TryFromJson(string json, out HealthCheckResult? value)
         {
+            ArgumentNullException.ThrowIfNull(json);
+
             value = null;
 
             if (string.IsNullOrEmpty(json))
