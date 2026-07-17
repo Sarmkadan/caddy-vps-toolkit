@@ -6915,3 +6915,79 @@ await eventHandler.HandleAsync(serviceEvent);
 // [INFO] Service created: {api-service} on port 8080
 // Webhook notification sent to external system with service details
 ```
+
+## UpstreamHealthTrackerExtensions
+
+The `UpstreamHealthTrackerExtensions` class provides extension methods for the `IUpstreamHealthTracker` interface, enabling health monitoring and management of upstream servers within load-balanced pools. It offers methods to record probe results, retrieve health snapshots, drain unhealthy upstreams, and wait for healthy states, making it ideal for implementing health-aware load balancing strategies.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.LoadBalancing;
+using Microsoft.Extensions.DependencyInjection;
+
+// Set up dependency injection
+var services = new ServiceCollection();
+services.AddUpstreamHealthTracking(); // Register health tracker services
+
+var serviceProvider = services.BuildServiceProvider();
+var healthTracker = serviceProvider.GetRequiredService<IUpstreamHealthTracker>();
+
+// Record probe results for an upstream server
+var probeResult = new UpstreamProbeResult
+{
+    PoolId = "api-pool",
+    UpstreamId = "api-server-01",
+    ProbeSucceeded = true,
+    ResponseTimeMs = 45,
+    CheckedAt = DateTime.UtcNow
+};
+
+await healthTracker.RecordProbeResultsAsync(probeResult);
+
+// Get all health snapshots
+var allSnapshots = await healthTracker.GetAllSnapshotsAsync();
+Console.WriteLine($"Total upstreams tracked: {allSnapshots.Count}");
+
+// Get unhealthy upstreams only
+var unhealthy = await healthTracker.GetUnhealthyUpstreamsAsync();
+if (unhealthy.Count > 0)
+{
+    Console.WriteLine("Unhealthy upstreams:");
+    foreach (var snapshot in unhealthy)
+    {
+        Console.WriteLine($"  - {snapshot.UpstreamId}: {snapshot.Status}");
+    }
+}
+
+// Get healthy upstreams
+var healthy = await healthTracker.GetHealthyUpstreamsAsync();
+Console.WriteLine($"Healthy upstreams: {healthy.Count}");
+
+// Wait for all upstreams to become healthy (with timeout)
+bool allHealthy = await healthTracker.WaitForHealthyAsync(
+    timeout: TimeSpan.FromSeconds(30),
+    pollInterval: TimeSpan.FromSeconds(2)
+);
+
+Console.WriteLine($"All upstreams healthy: {allHealthy}");
+
+// Get pool health summaries
+var poolHealth = await healthTracker.GetPoolHealthSummariesAsync();
+foreach (var pool in poolHealth)
+{
+    Console.WriteLine($"Pool {pool.PoolName}:");
+    Console.WriteLine($"  - Active: {pool.ActiveServers}");
+    Console.WriteLine($"  - Unhealthy: {pool.UnhealthyServers}");
+    Console.WriteLine($"  - Draining: {pool.DrainingServers}");
+    Console.WriteLine($"  - Disabled: {pool.DisabledServers}");
+}
+
+// Get system-wide health summary
+var systemHealth = await healthTracker.GetSystemHealthSummaryAsync();
+Console.WriteLine($"System health: {systemHealth.HealthPercentage:P0}");
+Console.WriteLine($"Total pools: {systemHealth.TotalPools}, Healthy: {systemHealth.HealthyPools}");
+
+// Drain unhealthy upstreams for maintenance
+await healthTracker.DrainAsync("api-pool", drainTimeout: TimeSpan.FromMinutes(5));
+```
