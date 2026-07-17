@@ -44,9 +44,12 @@ namespace CaddyVpsToolkit.Configuration
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
         /// <returns>The deserialized options instance, or <see langword="null"/> if the JSON is empty or whitespace.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
         /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
         public static UpstreamManagementOptions? FromJson(string json)
         {
+            ArgumentNullException.ThrowIfNull(json);
+
             if (string.IsNullOrWhiteSpace(json))
             {
                 return null;
@@ -58,11 +61,14 @@ namespace CaddyVpsToolkit.Configuration
         /// <summary>
         /// Attempts to deserialize a JSON string into an <see cref="UpstreamManagementOptions"/> instance.
         /// </summary>
-        /// <param name="json">The JSON string to deserialize.</param>
+        /// <param name="json">The JSON string to deserialize. Can be <see langword="null"/> or whitespace, in which case <see langword="true"/> is returned with <paramref name="value"/> set to <see langword="null"/>.</param>
         /// <param name="value">Receives the deserialized options instance if successful; otherwise, <see langword="null"/>.</param>
-        /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if deserialization succeeded or input was null/whitespace; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
         public static bool TryFromJson(string json, out UpstreamManagementOptions? value)
         {
+            ArgumentNullException.ThrowIfNull(json);
+
             value = null;
 
             if (string.IsNullOrWhiteSpace(json))
