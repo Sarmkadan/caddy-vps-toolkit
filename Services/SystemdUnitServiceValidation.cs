@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Collections.Generic;
@@ -52,11 +52,11 @@ namespace CaddyVpsToolkit.Services
                 errors.Add("Type cannot be null or whitespace");
             }
             else if (!status.Type.Equals("simple", StringComparison.OrdinalIgnoreCase) &&
-                    !status.Type.Equals("forking", StringComparison.OrdinalIgnoreCase) &&
-                    !status.Type.Equals("oneshot", StringComparison.OrdinalIgnoreCase) &&
-                    !status.Type.Equals("dbus", StringComparison.OrdinalIgnoreCase) &&
-                    !status.Type.Equals("notify", StringComparison.OrdinalIgnoreCase) &&
-                    !status.Type.Equals("idle", StringComparison.OrdinalIgnoreCase))
+                     !status.Type.Equals("forking", StringComparison.OrdinalIgnoreCase) &&
+                     !status.Type.Equals("oneshot", StringComparison.OrdinalIgnoreCase) &&
+                     !status.Type.Equals("dbus", StringComparison.OrdinalIgnoreCase) &&
+                     !status.Type.Equals("notify", StringComparison.OrdinalIgnoreCase) &&
+                     !status.Type.Equals("idle", StringComparison.OrdinalIgnoreCase))
             {
                 errors.Add($"Type '{status.Type}' is not a valid systemd service type");
             }
@@ -67,10 +67,10 @@ namespace CaddyVpsToolkit.Services
                 errors.Add("MainPid cannot be negative");
             }
 
-            // Validate TimeoutStartUsec
-            if (status.TimeoutStartUsec == 0)
+            // Validate TimeoutStartUsec - allow 0 as valid default value
+            if (status.TimeoutStartUsec > 0 && status.TimeoutStartUsec < 1000000)
             {
-                errors.Add("TimeoutStartUsec should be greater than 0 for proper timeout configuration");
+                errors.Add("TimeoutStartUsec should be at least 1 second (1000000 microseconds) for proper timeout configuration");
             }
 
             return errors.AsReadOnly();
@@ -81,9 +81,11 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         /// <param name="status">The status to check</param>
         /// <returns>True if valid; false otherwise</returns>
+        /// <exception cref="ArgumentNullException">Thrown if status is null</exception>
         public static bool IsValid(this SystemdUnitStatus status)
         {
-            return status.Validate().Count == 0;
+            ArgumentNullException.ThrowIfNull(status);
+            return status.Validate().Count is 0;
         }
 
         /// <summary>
