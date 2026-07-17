@@ -1628,6 +1628,45 @@ var eventLogger = handler.GetLogger();
 var webhook = handler.GetWebhookHandler();
 ```
 
+## AppConfigurationBuilder
+
+The `AppConfigurationBuilder` class provides a fluent interface for building application configuration from multiple sources including JSON files, environment variables, and programmatic settings. It supports chaining configuration sources and building a type-safe `AppConfiguration` container for accessing configuration values with automatic type conversion.
+
+### Example Usage
+
+```csharp
+// Build configuration from JSON file and environment variables
+var config = new AppConfigurationBuilder()
+    .WithJsonFile("/etc/caddy-vps-toolkit/config.json")
+    .WithEnvironmentVariables("CADDY_")
+    .WithSetting("app:timeout", 30000)
+    .WithDefaults(new Dictionary<string, object>
+    {
+        ["logging:level"] = "info",
+        ["healthcheck:enabled"] = true,
+        ["systemd:restart-policy"] = "on-failure"
+    })
+    .Build();
+
+// Access configuration values with type safety
+string adminPort = config.GetString("caddy:admin-port", "2019");
+int timeout = config.GetInt("app:timeout", 5000);
+bool healthCheckEnabled = config.GetBool("healthcheck:enabled", true);
+
+// Check if a configuration key exists
+bool hasCustomConfig = config.Exists("custom:setting");
+
+// Get all configuration as a dictionary
+var allConfig = config.GetAll();
+foreach (var kvp in allConfig)
+{
+    Console.WriteLine($"{kvp.Key} = {kvp.Value}");
+}
+
+// Get complex configuration objects
+var databaseConfig = config.GetObject<Dictionary<string, string>>("database:connection");
+```
+
 ## ConfigurationService
 
 The `ConfigurationService` provides centralized configuration management for the caddy-vps-toolkit application. It handles reading, writing, and persisting configuration values with support for typed values, caching, and file-based persistence. The service manages both application-level settings and Caddy-specific configurations like admin port, logging levels, and health check settings.
