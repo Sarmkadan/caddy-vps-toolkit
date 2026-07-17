@@ -24,7 +24,7 @@ namespace CaddyVpsToolkit.Domain.Models
         /// Validates a <see cref="LogEntry"/> instance and returns a list of validation problems.
         /// </summary>
         /// <param name="value">The log entry to validate.</param>
-        /// <returns>An enumerable of human-readable validation problems; empty if valid.</returns>
+        /// <returns>A list of human-readable validation problems; empty if valid.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
         public static IReadOnlyList<string> Validate(this LogEntry value)
         {
@@ -32,8 +32,12 @@ namespace CaddyVpsToolkit.Domain.Models
 
             var problems = new List<string>();
 
-            // Validate Timestamp
-            if (value.Timestamp == default)
+            // Validate Timestamp - ensure it's a valid UTC DateTime
+            if (value.Timestamp.Kind != DateTimeKind.Utc)
+            {
+                problems.Add("Timestamp must be a UTC DateTime value.");
+            }
+            else if (value.Timestamp == default)
             {
                 problems.Add("Timestamp must be set to a non-default DateTime value.");
             }
@@ -43,7 +47,7 @@ namespace CaddyVpsToolkit.Domain.Models
             {
                 problems.Add("Level cannot be null, empty, or whitespace.");
             }
-            else if (!ValidLevels.Contains(value.Level))
+            else if (!ValidLevels.Contains(value.Level, StringComparer.OrdinalIgnoreCase))
             {
                 problems.Add($"Level '{value.Level}' is not a valid log level. Valid levels are: Debug, Info, Warning, Error.");
             }
@@ -60,7 +64,7 @@ namespace CaddyVpsToolkit.Domain.Models
                 problems.Add("Source cannot be null, empty, or whitespace.");
             }
 
-            // Validate ServiceId (optional)
+            // Validate ServiceId - if set, must not be whitespace
             if (value.ServiceId is not null && string.IsNullOrWhiteSpace(value.ServiceId))
             {
                 problems.Add("ServiceId cannot be an empty or whitespace string when set.");
@@ -76,9 +80,7 @@ namespace CaddyVpsToolkit.Domain.Models
         /// <returns>True if the log entry is valid; otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
         public static bool IsValid(this LogEntry value)
-        {
-            return value.Validate().Count == 0;
-        }
+            => value.Validate().Count == 0;
 
         /// <summary>
         /// Ensures that a <see cref="LogEntry"/> instance is valid, throwing an <see cref="ArgumentException"/>
