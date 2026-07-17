@@ -2199,6 +2199,57 @@ Console.WriteLine($"Current state: {state}");
 Console.WriteLine($"Subscriber count: {observer.GetSubscriberCount()}");
 ```
 
+## DateTimeExtensionsTestsExtensions
+
+The `DateTimeExtensionsTestsExtensions` class provides extension methods for `DateTime` operations specifically designed for testing scenarios. These utilities offer common datetime calculations and conversions that are useful when writing tests involving date/time operations.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Tests.Utilities;
+
+// Convert a date to Unix timestamp
+var testDate = new DateTime(2025, 7, 19, 14, 30, 0, DateTimeKind.Utc);
+long unixTimestamp = testDate.ToUnixTimestamp();
+Console.WriteLine($"Unix timestamp: {unixTimestamp}"); // Output: Unix timestamp: 1752954600
+
+// Get first day of month
+var currentDate = DateTime.Now;
+DateTime firstDayOfMonth = currentDate.FirstDayOfMonth();
+Console.WriteLine($"First day of {currentDate:yyyy-MM}: {firstDayOfMonth:yyyy-MM-dd}");
+// Output: First day of 2025-07: 2025-07-01
+
+// Get last day of month
+DateTime lastDayOfMonth = currentDate.LastDayOfMonth();
+Console.WriteLine($"Last day of {currentDate:yyyy-MM}: {lastDayOfMonth:yyyy-MM-dd}");
+// Output: Last day of 2025-07: 2025-07-31
+
+// Check if date is a weekend
+bool isWeekend = new DateTime(2025, 7, 19).IsWeekend(); // Saturday
+bool isWeekday = new DateTime(2025, 7, 18).IsWeekend(); // Friday
+Console.WriteLine($"Is weekend: {isWeekend}, Is weekday: {isWeekday}");
+// Output: Is weekend: True, Is weekday: False
+
+// Get all dates between two dates
+var startDate = new DateTime(2025, 7, 18);
+var endDate = new DateTime(2025, 7, 20);
+var dates = startDate.GetDatesBetween(endDate);
+Console.WriteLine("Dates between 2025-07-18 and 2025-07-20:");
+foreach (var date in dates)
+{
+    Console.WriteLine($"  {date:yyyy-MM-dd}");
+}
+// Output: Dates between 2025-07-18 and 2025-07-20:
+//   2025-07-18
+//   2025-07-19
+//   2025-07-20
+
+// Calculate business days between two dates
+int businessDays = new DateTime(2025, 7, 18).BusinessDaysBetween(new DateTime(2025, 7, 25));
+Console.WriteLine($"Business days between 2025-07-18 and 2025-07-25: {businessDays}");
+// Output: Business days between 2025-07-18 and 2025-07-25: 5
+```
+
 ## AppConfigurationBuilderTestsExtensions
 
 The `AppConfigurationBuilderTestsExtensions` class provides extension methods for `AppConfigurationBuilder` that simplify building test configurations. It includes methods for adding test-specific settings, web server configurations, Caddy configurations, and validation helpers to ensure configurations meet test requirements.
