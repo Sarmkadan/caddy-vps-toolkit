@@ -1,4 +1,5 @@
 #nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,10 +24,10 @@ namespace CaddyVpsToolkit.Tests.Domain
             ArgumentNullException.ThrowIfNull(tests);
 
             return tests.GetType()
-                        .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
-                        .Where(m => m.Name.StartsWith("Validate_", StringComparison.Ordinal))
-                        .Select(m => m.Name)
-                        .ToArray();
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                .Where(m => m.Name.StartsWith("Validate_", StringComparison.Ordinal))
+                .Select(m => m.Name)
+                .ToArray();
         }
 
         /// <summary>
@@ -85,9 +86,9 @@ namespace CaddyVpsToolkit.Tests.Domain
             ArgumentNullException.ThrowIfNull(tests);
 
             return tests.GetType()
-                        .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
-                        .Select(m => m.Name)
-                        .ToArray();
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                .Select(m => m.Name)
+                .ToArray();
         }
     }
 }
