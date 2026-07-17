@@ -1959,6 +1959,42 @@ Console.WriteLine($"Sanitized: {sanitized}");
 // Output: Sanitized: myfilename.txt
 ```
 
+## ProcessUtilities
+
+The `ProcessUtilities` class provides robust tools for executing external system commands, managing process lifecycle, and capturing output asynchronously. It includes functionality for running commands with timeouts, verifying process execution status, and safely terminating processes to ensure system stability.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Utilities;
+
+// Execute a command asynchronously with a timeout
+var result = await ProcessUtilities.ExecuteAsync("systemctl", "status caddy", timeoutMs: 5000);
+
+if (result.IsSuccess)
+{
+    Console.WriteLine($"Command Output: {result.Output}");
+}
+else
+{
+    Console.WriteLine($"Error: {result.GetOutput()} (Exit Code: {result.ExitCode})");
+}
+
+// Manage processes by name
+if (ProcessUtilities.IsProcessRunning("caddy"))
+{
+    int count = ProcessUtilities.GetProcessCount("caddy");
+    Console.WriteLine($"Caddy is running with {count} instances.");
+    
+    // Terminate processes if needed
+    if (count > 1)
+    {
+        ProcessUtilities.KillProcess("caddy");
+    }
+}
+```
+
+
 ### Public Members
 
 - `ToRelativeTime()` - Get human-readable time difference (e.g., "2 hours ago")
