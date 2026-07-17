@@ -760,6 +760,60 @@ The `ServiceRepository` class provides a concrete implementation of the `IServic
 
 This repository is responsible for persisting service definitions to the SQLite database, enabling the application to maintain system state across application restarts and providing efficient data access methods for service management operations.
 
+## ICacheService
+
+The `ICacheService` interface provides an abstraction for caching operations with support for asynchronous operations and expiration. It's designed for in-memory caching scenarios and can be easily replaced with distributed cache implementations like Redis for production environments requiring multiple servers.
+
+This interface supports common caching patterns including get/set operations, existence checks, cache clearing, and a convenience method for getting or setting values with automatic fallback to a factory function.
+
+### Example Usage
+
+```csharp
+// Create cache service instance (typically injected via DI)
+var cache = new MemoryCache();
+
+// Basic set and get operations
+await cache.SetAsync("user:123", new User { Id = 123, Name = "Alice", Email = "alice@example.com" }, TimeSpan.FromMinutes(30));
+
+var user = await cache.GetAsync<User>("user:123");
+if (user != null)
+{
+    Console.WriteLine($"Retrieved user: {user.Name}");
+}
+
+// Check if key exists
+bool exists = await cache.ExistsAsync("user:123");
+Console.WriteLine($"Key exists: {exists}");
+
+// Remove a specific key
+await cache.RemoveAsync("user:123");
+
+// Clear entire cache
+await cache.ClearAsync();
+
+// Get or set with fallback (cache-aside pattern)
+var product = await cache.GetOrSetAsync(
+    "product:456",
+    async () => await FetchProductFromDatabaseAsync(456),
+    TimeSpan.FromHours(1)
+);
+
+// Create composite cache keys
+string cacheKey = CacheExtensions.MakeCacheKey("service", "health", "api-service-01");
+await cache.SetAsync(cacheKey, healthStatus, TimeSpan.FromSeconds(15));
+
+// Get cache statistics
+int cacheSize = cache.GetCacheSize();
+Console.WriteLine($"Current cache size: {cacheSize} entries");
+
+// Clean expired entries (optional maintenance)
+// cache.CleanExpiredEntries();
+
+// Generic type usage with expiration
+await cache.SetAsync("config:timeout", 30000, TimeSpan.FromDays(1));
+int timeout = await cache.GetAsync<int>("config:timeout");
+```
+
 ### Example Usage
 
 ```csharp
