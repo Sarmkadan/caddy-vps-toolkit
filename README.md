@@ -2204,6 +2204,70 @@ await coordinator.StopAllAsync();
 - **AddServiceDiscovery()** - Registers service discovery client
 - **AddInfrastructureServices(configure)** - Convenience method to add all infrastructure services at once
 
+## HealthCheckRepository
+
+The `HealthCheckRepository` class provides data access methods for managing health check results in the SQLite database. It serves as the primary storage mechanism for health monitoring data, enabling the application to persist health check outcomes, retrieve historical health data, and maintain system reliability metrics across application restarts.
+
+This repository handles all CRUD operations for `HealthCheckResult` entities, including retrieval of latest results, recent history, results by service ID, and aggregated statistics. It also provides methods for cleanup operations to maintain database performance by removing old health check records.
+
+### Example Usage
+
+```csharp
+// Create a health check repository instance
+var repository = new HealthCheckRepository(dbContext);
+
+// Add a new health check result
+var healthResult = HealthCheckResult.CreateSuccess(
+    serviceId: "api-service-01",
+    responseTimeMs: 125,
+    httpStatus: 200
+);
+
+string resultId = await repository.AddAsync(healthResult);
+Console.WriteLine($"Added health check result with ID: {resultId}");
+
+// Retrieve the latest health check for a service
+var latestResult = await repository.GetLatestAsync("api-service-01");
+if (latestResult != null)
+{
+    Console.WriteLine($"Latest status: {latestResult.Status}");
+    Console.WriteLine($"Response time: {latestResult.ResponseTimeMs}ms");
+    Console.WriteLine($"Checked at: {latestResult.CheckedAt}");
+}
+
+// Get recent health history for trend analysis
+var recentResults = await repository.GetRecentAsync(
+    serviceId: "api-service-01",
+    limit: 100
+);
+Console.WriteLine($"Found {recentResults.Count} recent health checks");
+
+// Get all health checks for a specific service
+var serviceResults = await repository.GetByServiceIdAsync("api-service-01");
+Console.WriteLine($"Total health checks for service: {serviceResults.Count}");
+
+// Get aggregated statistics for monitoring dashboards
+var statistics = await repository.GetStatisticsAsync(
+    serviceId: "api-service-01",
+    fromDate: DateTime.UtcNow.AddDays(-7),
+    toDate: DateTime.UtcNow
+);
+Console.WriteLine($"Healthy: {statistics.HealthyCount}, Failed: {statistics.FailedCount}");
+Console.WriteLine($"Average response time: {statistics.AverageResponseTimeMs}ms");
+Console.WriteLine($"Max response time: {statistics.MaxResponseTimeMs}ms");
+Console.WriteLine($"Min response time: {statistics.MinResponseTimeMs}ms");
+
+// Clean up old health records (keeps 30 days of history by default)
+bool cleanupSuccess = await repository.DeleteOlderThanAsync(
+    DateTime.UtcNow.AddDays(-30)
+);
+Console.WriteLine($"Cleanup successful: {cleanupSuccess}");
+
+// Delete a specific health check result
+bool deleteSuccess = await repository.DeleteAsync(resultId);
+Console.WriteLine($"Health check result deleted: {deleteSuccess}");
+```
+
 ### InfrastructureOptions Properties
 
 - **HttpTimeoutMs** (int, default: 30000) - HTTP request timeout in milliseconds
