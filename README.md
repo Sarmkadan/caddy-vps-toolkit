@@ -1195,6 +1195,55 @@ Console.WriteLine(caddyRouteBlock);
 - **WriteTimeout**: Write timeout in seconds (default: 30)
 
 
+## SslCertificateExtensions
+
+The `SslCertificateExtensions` class provides extension methods for registering SSL certificate monitoring services into the dependency injection container and utility methods for checking SSL certificate status. It simplifies SSL certificate monitoring integration and provides clear status indicators for certificate health.
+
+### Example Usage
+
+```csharp
+// Register SSL certificate monitoring in your application startup
+var services = new ServiceCollection();
+services.AddSslCertificateMonitoring();
+
+// For a specific managed service with public host binding
+var webService = new ManagedService
+{
+    Id = "web-app-01",
+    Name = "Web Application",
+    HostBinding = "example.com",
+    Port = 443,
+    Protocol = "https"
+};
+
+services.AddSslCertificateMonitoring(webService);
+
+// Check certificate status
+var certificate = new SslCertificateInfo
+{
+    Issuer = "Let's Encrypt R3",
+    Subject = "CN=example.com",
+    ExpiresAt = DateTime.UtcNow.AddDays(15),
+    DaysUntilExpiry = 15,
+    SerialNumber = "1234567890ABCDEF",
+    Thumbprint = "A1B2C3D4E5F6"
+};
+
+// Get certificate status
+var status = certificate.GetCertificateStatus();
+Console.WriteLine($"Certificate status: {status}");
+
+// Check if renewal is required
+if (certificate.RequiresRenewal())
+{
+    Console.WriteLine("Certificate requires immediate renewal!");
+}
+
+// Get human-readable status message
+string statusMessage = certificate.GetStatusMessage();
+Console.WriteLine(statusMessage);
+```
+
 ## HealthCheckConfig
 
 The `HealthCheckConfig` type represents configuration for service health monitoring. It defines parameters for checking service availability and responsiveness, including check intervals, timeout settings, failure thresholds, and expected response conditions. Health checks are essential for automatic service recovery and maintaining system reliability.
