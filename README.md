@@ -1177,6 +1177,53 @@ var eventLogger = handler.GetLogger();
 var webhook = handler.GetWebhookHandler();
 ```
 
+## ConfigurationService
+
+The `ConfigurationService` provides centralized configuration management for the caddy-vps-toolkit application. It handles reading, writing, and persisting configuration values with support for typed values, caching, and file-based persistence. The service manages both application-level settings and Caddy-specific configurations like admin port, logging levels, and health check settings.
+
+### Example Usage
+
+```csharp
+// Create configuration service with repository dependency
+var configurationRepository = new ConfigurationRepository();
+var configService = new ConfigurationService(configurationRepository);
+
+// Set application-level configuration
+await configService.SetCaddyAdminPortAsync(2019);
+await configService.SetLoggingLevelAsync("debug");
+await configService.SetHealthCheckEnabledAsync(true);
+
+// Get configuration values
+int adminPort = await configService.GetCaddyAdminPortAsync();
+Console.WriteLine($"Caddy admin port: {adminPort}"); // Outputs: Caddy admin port: 2019
+
+string logLevel = await configService.GetLoggingLevelAsync();
+Console.WriteLine($"Current log level: {logLevel}"); // Outputs: Current log level: debug
+
+bool healthCheckEnabled = await configService.IsHealthCheckEnabledAsync();
+Console.WriteLine($"Health checks enabled: {healthCheckEnabled}"); // Outputs: Health checks enabled: True
+
+// Set and get typed configuration values
+await configService.SetValueAsync("service:timeout", "30000");
+int timeout = await configService.GetValueAsync<int>("service:timeout", 5000);
+Console.WriteLine($"Service timeout: {timeout}ms"); // Outputs: Service timeout: 30000ms
+
+// Load and save configuration from/to file
+await configService.LoadFromFileAsync("/etc/caddy-vps-toolkit/config.json");
+await configService.SaveToFileAsync("/etc/caddy-vps-toolkit/config.json");
+
+// Get all configuration as dictionary
+var allConfig = await configService.GetAllAsync();
+foreach (var kvp in allConfig)
+{
+    Console.WriteLine($"{kvp.Key} = {kvp.Value}");
+}
+
+// Delete configuration key
+bool deleted = await configService.DeleteAsync("temp:setting");
+Console.WriteLine($"Key deleted: {deleted}");
+```
+
 ## Troubleshooting
 
 ### Service Won't Start
