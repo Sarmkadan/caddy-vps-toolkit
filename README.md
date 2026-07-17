@@ -1877,6 +1877,54 @@ var eventLogger = handler.GetLogger();
 var webhook = handler.GetWebhookHandler();
 ```
 
+## ArgumentParserExtensions
+
+The `ArgumentParserExtensions` class provides extension methods for the `ArgumentParser` type that simplify command-line argument parsing. These extensions offer convenient methods for extracting and converting positional arguments and flags to common data types like integers and booleans, along with utility methods for checking flag presence and counting arguments. This class is particularly useful for CLI tools that need robust argument handling with proper error checking.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Cli;
+
+// Create argument parser with sample command-line arguments
+var args = new[] { "service", "add", "--port", "8080", "--enabled", "true", "debug", "production" };
+var parser = new ArgumentParser(args);
+
+// Get command name as span for zero-allocation scenarios
+ReadOnlySpan<char> commandSpan = parser.GetCommandSpan();
+Console.WriteLine($"Command: {commandSpan.ToString()}"); // Output: "Command: service"
+
+// Get positional arguments and parse them
+int? port = parser.GetPositionalAsInt(0);
+Console.WriteLine($"Port: {port}"); // Output: "Port: 8080"
+
+bool? enabled = parser.GetFlagValueAsBoolean("enabled");
+Console.WriteLine($"Enabled: {enabled}"); // Output: "Enabled: True"
+
+string environment = parser.GetPositional(1);
+Console.WriteLine($"Environment: {environment}"); // Output: "Environment: production"
+
+// Check if flag exists and has a value
+bool hasDebugFlag = parser.HasFlagWithValue("debug");
+Console.WriteLine($"Has debug flag: {hasDebugFlag}"); // Output: "Has debug flag: True"
+
+// Get all positional arguments as read-only list
+var allPositional = parser.GetAllPositionalReadOnly();
+Console.WriteLine($"All positional count: {allPositional.Count}"); // Output: "All positional count: 2"
+
+// Get all flags as read-only list
+var allFlags = parser.GetAllFlagsReadOnly();
+Console.WriteLine($"All flags count: {allFlags.Count}"); // Output: "All flags count: 2"
+
+// Get total positional count
+int positionalCount = parser.GetPositionalCount();
+Console.WriteLine($"Positional count: {positionalCount}"); // Output: "Positional count: 2"
+
+// Check if any of multiple flags are present
+bool hasAnyConfigFlag = parser.HasAnyFlag("debug", "verbose", "quiet");
+Console.WriteLine($"Has any config flag: {hasAnyConfigFlag}"); // Output: "Has any config flag: True"
+```
+
 ## AppConfigurationBuilder
 
 The `AppConfigurationBuilder` class provides a fluent interface for building application configuration from multiple sources including JSON files, environment variables, and programmatic settings. It supports chaining configuration sources and building a type-safe `AppConfiguration` container for accessing configuration values with automatic type conversion.
