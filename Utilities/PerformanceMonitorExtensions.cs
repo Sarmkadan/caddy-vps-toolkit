@@ -23,7 +23,7 @@ namespace CaddyVpsToolkit.Utilities
         /// <param name="monitor">The performance monitor instance.</param>
         /// <param name="action">The action to measure.</param>
         /// <returns>A tuple containing the action result and elapsed milliseconds.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="action"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="monitor"/> or <paramref name="action"/> is null.</exception>
         public static (T Result, long ElapsedMs) Measure<T>(this PerformanceMonitor monitor, Func<T> action)
         {
             ArgumentNullException.ThrowIfNull(monitor);
@@ -43,7 +43,7 @@ namespace CaddyVpsToolkit.Utilities
         /// <param name="monitor">The performance monitor instance.</param>
         /// <param name="action">The async action to measure.</param>
         /// <returns>A tuple containing the action result and elapsed milliseconds.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="action"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="monitor"/> or <paramref name="action"/> is null.</exception>
         public static async System.Threading.Tasks.Task<(T Result, long ElapsedMs)> MeasureAsync<T>(this PerformanceMonitor monitor, Func<System.Threading.Tasks.Task<T>> action)
         {
             ArgumentNullException.ThrowIfNull(monitor);
@@ -67,60 +67,41 @@ namespace CaddyVpsToolkit.Utilities
         {
             ArgumentNullException.ThrowIfNull(monitor);
 
-            var report = monitor.GetReport();
-
-            if (!includeStatistics || monitor.GetMilestoneCount() == 0)
+            if (!includeStatistics)
             {
-                return report;
+                return monitor.GetReport();
             }
 
-            // Parse existing report to extract timing data
-            var lines = new List<string>(report.Split(new[] { Environment.NewLine }, StringSplitOptions.None));
+            var reportLines = new List<string>();
+            var baseReport = monitor.GetReport();
+            reportLines.AddRange(baseReport.Split(new[] { Environment.NewLine }, StringSplitOptions.None));
 
-            // Find the line with "Total Time:"
-            for (int i = 0; i < lines.Count; i++)
+            // Get milestone times directly from the monitor
+            var milestoneTimes = GetMilestoneTimes(monitor);
+            if (milestoneTimes.Count > 0)
             {
-                if (lines[i].StartsWith("Total Time:"))
+                // Find the line with "Total Time:"
+                for (int i = 0; i < reportLines.Count; i++)
                 {
-                    // Insert statistics after total time
-                    var totalTime = long.Parse(lines[i].Split(':')[1].Trim().Replace("ms", "").Trim(), CultureInfo.InvariantCulture);
-
-                    // Calculate statistics from milestones
-                    var milestoneTimes = monitor.GetMilestoneTimes();
-                    if (milestoneTimes.Count > 0)
+                    if (reportLines[i].StartsWith("Total Time:"))
                     {
+                        // Insert statistics after total time
+                        var totalTime = long.Parse(reportLines[i].Split(':')[1].Trim().Replace("ms", "").Trim(), CultureInfo.InvariantCulture);
+
                         var avg = milestoneTimes.Average();
                         var min = milestoneTimes.Min();
                         var max = milestoneTimes.Max();
 
-                        lines.Insert(i + 1, string.Empty);
-                        lines.Insert(i + 2, "Statistics:");
-                        lines.Insert(i + 3, $" Average: {avg:F2}ms");
-                        lines.Insert(i + 4, $" Min: {min}ms, Max: {max}ms");
+                        reportLines.Insert(i + 1, string.Empty);
+                        reportLines.Insert(i + 2, "Statistics:");
+                        reportLines.Insert(i + 3, $" Average: {avg:F2}ms");
+                        reportLines.Insert(i + 4, $" Min: {min}ms, Max: {max}ms");
+                        break;
                     }
-
-                    break;
                 }
             }
 
-            return string.Join(Environment.NewLine, lines);
-        }
-
-        /// <summary>
-        /// Gets the number of milestones recorded in the performance monitor.
-        /// </summary>
-        /// <param name="monitor">The performance monitor instance.</param>
-        /// <returns>The count of milestones.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="monitor"/> is null.</exception>
-        public static int GetMilestoneCount(this PerformanceMonitor monitor)
-        {
-            ArgumentNullException.ThrowIfNull(monitor);
-
-            return monitor switch
-            {
-                var pm when pm is { } => pm.GetType().GetProperty("MilestoneCount")?.GetValue(pm) as int? ?? 0,
-                _ => 0
-            };
+            return string.Join(Environment.NewLine, reportLines);
         }
 
         /// <summary>
@@ -129,15 +110,18 @@ namespace CaddyVpsToolkit.Utilities
         /// <param name="monitor">The performance monitor instance.</param>
         /// <returns>An enumerable of milestone times in milliseconds.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="monitor"/> is null.</exception>
-        public static IReadOnlyList<long> GetMilestoneTimes(this PerformanceMonitor monitor)
+        private static IReadOnlyList<long> GetMilestoneTimes(this PerformanceMonitor monitor)
         {
             ArgumentNullException.ThrowIfNull(monitor);
 
-            return monitor switch
+            // Use reflection to access the private _milestones field since PerformanceMonitor doesn't expose it publicly
+            var field = monitor.GetType().GetField("_milestones", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field?.GetValue(monitor) is List<(string Name, long Time)> milestones)
             {
-                var pm when pm is { } => pm.GetType().GetProperty("MilestoneTimes")?.GetValue(pm) as IReadOnlyList<long> ?? Array.Empty<long>(),
-                _ => Array.Empty<long>()
-            };
+                return milestones.ConvertAll(x => x.Time);
+            }
+
+            return Array.Empty<long>();
         }
 
         /// <summary>
@@ -147,7 +131,7 @@ namespace CaddyVpsToolkit.Utilities
         /// <param name="monitor">The parent performance monitor instance.</param>
         /// <param name="childOperationName">Name for the child operation.</param>
         /// <returns>A new performance monitor with inherited timing context.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="monitor"/> or <paramref name="childOperationName"/> is null or empty.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="monitor"/> is null or <paramref name="childOperationName"/> is null or empty.</exception>
         public static PerformanceMonitor CreateChild(this PerformanceMonitor monitor, string childOperationName)
         {
             ArgumentNullException.ThrowIfNull(monitor);
@@ -155,20 +139,9 @@ namespace CaddyVpsToolkit.Utilities
 
             var childMonitor = new PerformanceMonitor(childOperationName);
 
-            // Use reflection to set the initial elapsed time to match parent
-            var field = monitor.GetType().GetField("_stopwatch", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (field?.GetValue(monitor) is System.Diagnostics.Stopwatch parentStopwatch)
-            {
-                var childField = childMonitor.GetType().GetField("_stopwatch", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (childField != null)
-                {
-                    var childStopwatch = System.Diagnostics.Stopwatch.StartNew();
-                    childStopwatch.Stop();
-                    childStopwatch.Reset();
-                    childStopwatch.Start();
-                    childField.SetValue(childMonitor, childStopwatch);
-                }
-            }
+            // Copy the elapsed time from parent to child by marking a milestone at the current elapsed time
+            var elapsedMs = monitor.GetElapsedMs();
+            childMonitor.MarkMilestone("Child started after " + elapsedMs + "ms");
 
             return childMonitor;
         }
