@@ -135,3 +135,79 @@ class Program
 ```
 
 The example demonstrates the three public extension members (`ToJson`, `FromJson`, `TryFromJson`) together with the repository methods (`GetValueAsync`, `SetValueAsync`, `DeleteAsync`, `GetAllAsync`) that are used internally by the deserialized service.
+
+## UpstreamManagerServiceExtensions
+
+The `UpstreamManagerServiceExtensions` class provides extension methods for `UpstreamManagerService` that add convenience and batch operations for upstream pool management, health monitoring, and configuration generation. These methods simplify common operations like retrieving pools, checking health status, generating Caddy configuration, and recording upstream results.
+
+Example usage:
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Services;
+using CaddyVpsToolkit.Domain.Models;
+
+class Program
+{
+    static async Task Main()
+    {
+        // Create and initialize the upstream manager service
+        var upstreamManager = new UpstreamManagerService();
+        // Assume service is initialized with some pools and upstreams
+        
+        // Try to get a specific pool without throwing exceptions
+        var (success, pool) = await upstreamManager.TryGetPoolAsync("my-pool");
+        if (success && pool != null)
+        {
+            Console.WriteLine($"Found pool: {pool.Name}");
+        }
+        
+        // Get all pools for a specific service
+        var servicePools = await upstreamManager.GetPoolsAsync(p => p.ServiceId == "my-service");
+        Console.WriteLine($"Found {servicePools.Count} pools for service");
+        
+        // Get summary of all pools with health information
+        var poolSummaries = await upstreamManager.GetPoolSummariesAsync();
+        foreach (var summary in poolSummaries)
+        {
+            Console.WriteLine($"Pool {summary.Name}: {summary.HealthyUpstreams}/{summary.TotalUpstreams} healthy upstreams");
+        }
+        
+        // Get total active connections across all pools
+        var totalConnections = await upstreamManager.GetTotalActiveConnectionsAsync();
+        Console.WriteLine($"Total active connections: {totalConnections}");
+        
+        // Get total healthy upstreams across all pools
+        var totalHealthy = await upstreamManager.GetTotalHealthyUpstreamsAsync();
+        Console.WriteLine($"Total healthy upstreams: {totalHealthy}");
+        
+        // Get list of unhealthy upstream IDs
+        var unhealthyUpstreams = await upstreamManager.GetUnhealthyUpstreamIdsAsync();
+        Console.WriteLine($"Unhealthy upstreams: {string.Join(", ", unhealthyUpstreams)}");
+        
+        // Generate Caddy configuration for all enabled pools of a service
+        var caddyConfig = await upstreamManager.GenerateCaddyConfigForAllEnabledPoolsAsync("my-service");
+        Console.WriteLine($"Generated Caddy config:\n{caddyConfig}");
+        
+        // Select an upstream server from a pool
+        var selectedUpstream = await upstreamManager.SelectUpstreamAsync("my-pool");
+        if (selectedUpstream != null)
+        {
+            Console.WriteLine($"Selected upstream: {selectedUpstream.UpstreamId}");
+        }
+        
+        // Record results for multiple upstreams in a batch
+        var results = new List<(string poolId, string upstreamId, bool succeeded, int responseTimeMs)>
+        {
+            ("my-pool", "upstream-1", true, 45),
+            ("my-pool", "upstream-2", false, 0)
+        };
+        await upstreamManager.RecordUpstreamResultsAsync(results);
+        
+        // Remove a pool if needed
+        var removed = await upstreamManager.TryRemovePoolAsync("old-pool");
+        Console.WriteLine($"Pool removed: {removed}");
+    }
+}
+```
