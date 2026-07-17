@@ -935,6 +935,125 @@ public class CaddyConfigurationService
 }
 ```
 
+The `CaddyConfigurationService` provides functionality for generating, validating, and managing Caddy reverse proxy configurations. It handles the creation of Caddyfile configurations from service definitions, writes configurations to disk, reads existing configurations, and validates Caddyfile syntax. The service supports both traditional Caddyfile format and JSON-based configuration generation.
+
+
+
+
+
+**Key Features:**
+- Generate complete Caddyfile configurations from service definitions
+- Write configurations to disk with optional dry-run mode for safety
+- Read and validate existing Caddyfile configurations
+- Generate route blocks for individual services
+- Validate Caddyfile syntax for structural correctness
+- Support both Caddyfile and JSON configuration formats
+
+
+
+
+### Example Usage
+
+```csharp
+// Create service manager and Caddy configuration service
+var serviceManager = new ServiceManagementService(databaseService);
+var caddyConfigService = new CaddyConfigurationService(serviceManager);
+
+// Create global Caddy configuration
+var globalConfig = new CaddyConfig
+{
+    AdminEmail = "admin@example.com",
+    AdminPort = 2019,
+    AdminHost = "127.0.0.1",
+    HttpPort = 80,
+    HttpsPort = 443,
+    LogLevel = "info",
+    EnableMetrics = true
+};
+
+// Create routes for services
+var routes = new List<CaddyRoute>
+{
+    new CaddyRoute
+    {
+        Id = Guid.NewGuid().ToString(),
+        ServiceId = "web-app-01",
+        Domain = "app.example.com",
+        UpstreamUrl = "http://localhost:3000",
+        Path = "/api/*",
+        StripPath = true,
+        PreserveHostHeader = true,
+        TimeoutSeconds = 30,
+        EnableHttps = true,
+        AutoRedirectHttp = true,
+        CustomHeaders = new Dictionary<string, string>
+        {
+            ["X-Content-Type-Options"] = "nosniff",
+            ["X-Frame-Options"] = "DENY"
+        },
+        RateLimitRule = "100/10s",
+        IsActive = true,
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow
+    },
+    new CaddyRoute
+    {
+        Id = Guid.NewGuid().ToString(),
+        ServiceId = "api-service-01",
+        Domain = "api.example.com",
+        UpstreamUrl = "http://localhost:8080",
+        Path = "/",
+        PreserveHostHeader = true,
+        TimeoutSeconds = 30,
+        EnableHttps = true,
+        AutoRedirectHttp = true,
+        IsActive = true,
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow
+    }
+};
+
+// Generate Caddyfile content
+string caddyfileContent = await caddyConfigService.GenerateCaddyfileAsync(globalConfig, routes);
+Console.WriteLine("Generated Caddyfile:");
+Console.WriteLine(caddyfileContent);
+
+// Validate the generated Caddyfile
+bool isValid = await caddyConfigService.ValidateCaddyfileAsync(caddyfileContent);
+Console.WriteLine($"Validation result: {isValid}");
+
+// Write to disk (dry-run mode first for safety)
+await caddyConfigService.WriteCaddyfileAsync(caddyfileContent, dryRun: true);
+
+// Write actual file
+await caddyConfigService.WriteCaddyfileAsync(caddyfileContent, filePath: "/etc/caddy/Caddyfile");
+
+// Read existing Caddyfile
+string existingContent = await caddyConfigService.ReadCaddyfileAsync("/etc/caddy/Caddyfile");
+Console.WriteLine($"Read {existingContent.Length} characters from Caddyfile");
+
+// Generate route block for a specific service
+var serviceRoute = caddyConfigService.GenerateRouteForService(
+    new ManagedService
+    {
+        Id = "web-app-01",
+        Name = "web-app",
+        HostBinding = "localhost",
+        Port = 3000
+    },
+    "web.example.com"
+);
+
+string routeBlock = caddyConfigService.GenerateRouteBlock(serviceRoute);
+Console.WriteLine("Generated route block:");
+Console.WriteLine(routeBlock);
+
+// Generate JSON configuration (alternative format)
+string jsonConfig = caddyConfigService.GenerateCaddyJsonAsync(globalConfig, routes);
+Console.WriteLine("Generated JSON configuration:");
+Console.WriteLine(jsonConfig);
+```
+
 #### HealthMonitoringService
 
 ```csharp
