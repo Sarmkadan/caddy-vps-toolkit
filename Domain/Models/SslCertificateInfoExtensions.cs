@@ -28,7 +28,6 @@ namespace CaddyVpsToolkit.Domain.Models
             ArgumentNullException.ThrowIfNull(certificate);
 
             var daysUntilExpiry = certificate.DaysUntilExpiry;
-            var now = DateTime.UtcNow;
 
             if (daysUntilExpiry < 0)
             {
@@ -61,7 +60,6 @@ namespace CaddyVpsToolkit.Domain.Models
         public static string FormatValidityPeriod(this SslCertificateInfo certificate)
         {
             ArgumentNullException.ThrowIfNull(certificate);
-
             return $"{certificate.IssuedAt:yyyy-MM-dd} to {certificate.ExpiresAt:yyyy-MM-dd}";
         }
 
@@ -74,9 +72,7 @@ namespace CaddyVpsToolkit.Domain.Models
         public static string FormatDaysUntilExpiry(this SslCertificateInfo certificate)
         {
             ArgumentNullException.ThrowIfNull(certificate);
-
-            var days = certificate.DaysUntilExpiry;
-            return days <= 0 ? "Expired" : $"{days} day(s)";
+            return certificate.DaysUntilExpiry <= 0 ? "Expired" : $"{certificate.DaysUntilExpiry} day(s)";
         }
 
         /// <summary>
@@ -86,6 +82,7 @@ namespace CaddyVpsToolkit.Domain.Models
         /// <param name="issuerName">The issuer name to match (case-insensitive).</param>
         /// <returns><see langword="true"/> if the issuer matches; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="certificate"/> or <paramref name="issuerName"/> is <see langword="null"/></exception>
+        /// <exception cref="ArgumentException"><paramref name="issuerName"/> is <see langword="null"/> or empty.</exception>
         public static bool IsIssuedBy(
             this SslCertificateInfo certificate,
             string issuerName)
@@ -123,15 +120,14 @@ namespace CaddyVpsToolkit.Domain.Models
         {
             ArgumentNullException.ThrowIfNull(certificates);
 
-            var thresholdDate = DateTime.UtcNow.AddDays(thresholdDays);
-            return certificates.Where(c => c.DaysUntilExpiry > 0 && c.ExpiresAt <= thresholdDate);
+            return certificates.Where(c => c.DaysUntilExpiry > 0 && c.ExpiresAt <= DateTime.UtcNow.AddDays(thresholdDays));
         }
 
         /// <summary>
         /// Gets the issuer organization name from the certificate subject.
         /// </summary>
         /// <param name="certificate">The certificate to parse.</param>
-        /// <returns>The issuer organization name, or an empty string if not found.</returns>
+        /// <returns>The issuer organization name, or an empty string if not found or the issuer is empty.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <see langword="null"/></exception>
         public static string GetIssuerOrganization(this SslCertificateInfo certificate)
         {
