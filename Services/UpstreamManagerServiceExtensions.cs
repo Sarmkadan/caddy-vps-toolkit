@@ -10,6 +10,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,8 +31,9 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         /// <param name="service">The upstream manager service instance.</param>
         /// <param name="poolId">The unique pool identifier.</param>
-        /// <param name="pool">When this method returns, contains the located pool, or null.</param>
-        /// <returns>True if the pool was found; otherwise, false.</returns>
+        /// <returns>A tuple containing a boolean indicating success and the located pool, or null if not found.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="poolId"/> is null or empty.</exception>
         public static async Task<(bool Success, UpstreamPool? Pool)> TryGetPoolAsync(
             this UpstreamManagerService service,
             string poolId)
@@ -50,7 +52,8 @@ namespace CaddyVpsToolkit.Services
         /// <param name="service">The upstream manager service instance.</param>
         /// <param name="poolId">The pool identifier to remove.</param>
         /// <returns>True if the pool was found and removed; otherwise, false.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when poolId is null or empty.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="poolId"/> is null or empty.</exception>
         public static async Task<bool> TryRemovePoolAsync(
             this UpstreamManagerService service,
             string poolId)
@@ -68,7 +71,7 @@ namespace CaddyVpsToolkit.Services
         /// <param name="service">The upstream manager service instance.</param>
         /// <param name="predicate">The filter predicate to apply.</param>
         /// <returns>A list of pools matching the predicate.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when predicate is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> or <paramref name="predicate"/> is null.</exception>
         public static async Task<IReadOnlyList<UpstreamPool>> GetPoolsAsync(
             this UpstreamManagerService service,
             Func<UpstreamPool, bool> predicate)
@@ -88,7 +91,7 @@ namespace CaddyVpsToolkit.Services
         /// <param name="serviceId">The service identifier to generate configuration for.</param>
         /// <param name="matchPath">The Caddyfile path matcher. Defaults to "/*".</param>
         /// <returns>A string containing all generated Caddy configuration blocks.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when serviceId is null or empty.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null, or when <paramref name="serviceId"/> or <paramref name="matchPath"/> is null or empty.</exception>
         /// <exception cref="ServiceConfigurationException">Thrown when the service does not exist.</exception>
         public static async Task<string> GenerateCaddyConfigForAllEnabledPoolsAsync(
             this UpstreamManagerService service,
@@ -107,7 +110,7 @@ namespace CaddyVpsToolkit.Services
                 return string.Empty;
             }
 
-            var configs = new List<string>();
+            var configs = new List<string>(enabledPools.Count);
             foreach (var pool in enabledPools)
             {
                 var config = await service.GenerateCaddyConfigForPoolAsync(pool.Id, matchPath);
@@ -123,6 +126,7 @@ namespace CaddyVpsToolkit.Services
         /// <param name="service">The upstream manager service instance.</param>
         /// <param name="cancellationToken">Token to cancel the operation.</param>
         /// <returns>The total count of active connections.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null.</exception>
         public static async Task<int> GetTotalActiveConnectionsAsync(
             this UpstreamManagerService service,
             CancellationToken cancellationToken = default)
@@ -147,6 +151,7 @@ namespace CaddyVpsToolkit.Services
         /// <param name="service">The upstream manager service instance.</param>
         /// <param name="cancellationToken">Token to cancel the operation.</param>
         /// <returns>The count of healthy upstreams.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null.</exception>
         public static async Task<int> GetTotalHealthyUpstreamsAsync(
             this UpstreamManagerService service,
             CancellationToken cancellationToken = default)
@@ -172,6 +177,7 @@ namespace CaddyVpsToolkit.Services
         /// <param name="service">The upstream manager service instance.</param>
         /// <param name="cancellationToken">Token to cancel the operation.</param>
         /// <returns>A list of pool summaries.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null.</exception>
         public static async Task<IReadOnlyList<PoolSummary>> GetPoolSummariesAsync(
             this UpstreamManagerService service,
             CancellationToken cancellationToken = default)
@@ -179,7 +185,7 @@ namespace CaddyVpsToolkit.Services
             ArgumentNullException.ThrowIfNull(service);
 
             var pools = await service.GetAllPoolsAsync();
-            var summaries = new List<PoolSummary>();
+            var summaries = new List<PoolSummary>(pools.Count);
 
             foreach (var pool in pools)
             {
@@ -208,7 +214,7 @@ namespace CaddyVpsToolkit.Services
         /// <param name="filter">Optional filter to select specific upstreams.</param>
         /// <param name="clientIp">Optional client IP address for IP-hash selection.</param>
         /// <returns>The selected upstream server, or null if none available.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when service or poolId is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null, or when <paramref name="poolId"/> is null or empty.</exception>
         /// <exception cref="ServiceConfigurationException">Thrown when the pool is not registered.</exception>
         public static async Task<UpstreamServer?> SelectUpstreamAsync(
             this UpstreamManagerService service,
@@ -229,16 +235,9 @@ namespace CaddyVpsToolkit.Services
 
             // If a filter is provided and the selected server doesn't match, try to find one that does
             var pool = await service.GetPoolAsync(poolId);
-            if (pool is not null)
-            {
-                var candidates = pool.GetAvailableServers().Where(filter).ToList();
-                if (candidates.Count > 0)
-                {
-                    return candidates.First();
-                }
-            }
-
-            return null;
+            return pool is null
+                ? null
+                : pool.GetAvailableServers().FirstOrDefault(filter);
         }
 
         /// <summary>
@@ -247,10 +246,10 @@ namespace CaddyVpsToolkit.Services
         /// <param name="service">The upstream manager service instance.</param>
         /// <param name="results">Collection of results to record.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when results is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> or <paramref name="results"/> is null.</exception>
         public static async Task RecordUpstreamResultsAsync(
             this UpstreamManagerService service,
-            IEnumerable<(string PoolId, string UpstreamId, bool Succeeded, int ResponseTimeMs)> results)
+            IEnumerable<(string poolId, string UpstreamId, bool Succeeded, int ResponseTimeMs)> results)
         {
             ArgumentNullException.ThrowIfNull(service);
             ArgumentNullException.ThrowIfNull(results);
@@ -267,6 +266,7 @@ namespace CaddyVpsToolkit.Services
         /// <param name="service">The upstream manager service instance.</param>
         /// <param name="cancellationToken">Token to cancel the operation.</param>
         /// <returns>A list of unhealthy upstream identifiers.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null.</exception>
         public static async Task<IReadOnlyList<string>> GetUnhealthyUpstreamIdsAsync(
             this UpstreamManagerService service,
             CancellationToken cancellationToken = default)
@@ -281,13 +281,9 @@ namespace CaddyVpsToolkit.Services
                 cancellationToken.ThrowIfCancellationRequested();
                 var report = await service.GetHealthReportAsync(pool.Id, cancellationToken);
 
-                foreach (var upstream in report.Upstreams)
-                {
-                    if (!upstream.IsHealthy)
-                    {
-                        unhealthyIds.Add(upstream.UpstreamId);
-                    }
-                }
+                unhealthyIds.AddRange(report.Upstreams
+                    .Where(upstream => !upstream.IsHealthy)
+                    .Select(upstream => upstream.UpstreamId));
             }
 
             return unhealthyIds.AsReadOnly();
@@ -297,21 +293,21 @@ namespace CaddyVpsToolkit.Services
     /// <summary>
     /// Represents a summary view of an upstream pool for monitoring and reporting purposes.
     /// </summary>
-    /// <param name="PoolId">The unique identifier of the pool.</param>
-    /// <param name="Name">The human-readable name of the pool.</param>
-    /// <param name="ServiceId">The service this pool belongs to.</param>
-    /// <param name="TotalUpstreams">Total number of upstreams in the pool.</param>
-    /// <param name="HealthyUpstreams">Number of healthy upstreams.</param>
-    /// <param name="AvailableUpstreams">Number of available upstreams for routing.</param>
-    /// <param name="TotalActiveConnections">Total active connections across all upstreams.</param>
-    /// <param name="IsEnabled">Whether the pool is enabled.</param>
+    /// <param name="poolId">The unique identifier of the pool.</param>
+    /// <param name="name">The human-readable name of the pool.</param>
+    /// <param name="serviceId">The service this pool belongs to.</param>
+    /// <param name="totalUpstreams">Total number of upstreams in the pool.</param>
+    /// <param name="healthyUpstreams">Number of healthy upstreams.</param>
+    /// <param name="availableUpstreams">Number of available upstreams for routing.</param>
+    /// <param name="totalActiveConnections">Total active connections across all upstreams.</param>
+    /// <param name="isEnabled">Whether the pool is enabled.</param>
     public sealed record PoolSummary(
-        string PoolId,
-        string Name,
-        string ServiceId,
-        int TotalUpstreams,
-        int HealthyUpstreams,
-        int AvailableUpstreams,
-        int TotalActiveConnections,
-        bool IsEnabled);
+        string poolId,
+        string name,
+        string serviceId,
+        int totalUpstreams,
+        int healthyUpstreams,
+        int availableUpstreams,
+        int totalActiveConnections,
+        bool isEnabled);
 }
