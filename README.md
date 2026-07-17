@@ -1287,6 +1287,54 @@ builder.Services.AddUpstreamManagement(upstreamManagementConfig);
 builder.Services.AddUpstreamManagement();
 ```
 
+## LoadBalancingOptionsExtensions
+
+The `LoadBalancingOptionsExtensions` class provides extension methods for the `LoadBalancingOptions` type that simplify common configuration patterns and enable fluent-style configuration of load balancing behavior. These extensions allow you to configure round-robin and least-connections strategies with health checks, set up circuit breakers, enable sticky sessions, and retrieve configuration values for monitoring and reporting purposes.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.LoadBalancing;
+
+// Create load balancing options with round-robin strategy and health checks
+var options = new LoadBalancingOptions()
+    .UseRoundRobinWithHealthChecks(
+        healthCheckIntervalSeconds: 30,
+        healthProbeTimeoutMs: 5000,
+        unhealthyThreshold: 3,
+        healthyThreshold: 2
+    )
+    .ConfigureCircuitBreaker(
+        healthThreshold: 0.5,  // Circuit opens when less than 50% of upstreams are healthy
+        recoverySeconds: 60
+    )
+    .EnableStickySessions(
+        cookieName: "X-Session-Id",
+        drainTimeoutSeconds: 30
+    );
+
+// Get configuration values for monitoring
+int healthCheckIntervalMs = options.GetHealthCheckIntervalMs();
+double healthProbeTimeoutSeconds = options.GetHealthProbeTimeoutSeconds();
+bool isStrictCircuitBreaker = options.IsStrictCircuitBreaker();
+
+// Retrieve retry configuration
+var retryConfig = options.GetRetryConfiguration();
+foreach (var kvp in retryConfig)
+{
+    Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+}
+
+// Alternative: Use least-connections strategy
+var leastConnectionsOptions = new LoadBalancingOptions()
+    .UseLeastConnectionsWithHealthChecks(
+        healthCheckIntervalSeconds: 20,
+        healthProbeTimeoutMs: 3000,
+        unhealthyThreshold: 2,
+        healthyThreshold: 1
+    );
+```
+
 ## UpstreamPoolRepository
 
 The `UpstreamPoolRepository` provides an interface to manage `UpstreamPool` configurations in the SQLite database. It handles the persistence of upstream pool definitions, including health check settings, load balancing strategies, and server lists.
