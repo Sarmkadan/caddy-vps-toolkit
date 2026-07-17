@@ -46,8 +46,9 @@ namespace CaddyVpsToolkit.Domain.Models
         /// Deserializes a JSON string into a <see cref="CaddyConfig"/> instance.
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns>The deserialized configuration, or null if the JSON is invalid.</returns>
+        /// <returns>The deserialized configuration, or null if the JSON is invalid or deserialization fails.</returns>
         /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+        /// <exception cref="JsonException">Thrown when the JSON is invalid and cannot be deserialized.</exception>
         public static CaddyConfig? FromJson(string json)
         {
             ArgumentException.ThrowIfNullOrEmpty(json);
