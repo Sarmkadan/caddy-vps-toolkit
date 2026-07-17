@@ -1830,6 +1830,80 @@ foreach (var kvp in allConfig)
 var databaseConfig = config.GetObject<Dictionary<string, string>>("database:connection");
 ```
 
+## DateTimeExtensions
+
+The `DateTimeExtensions` class provides extension methods for `DateTime` operations, offering human-readable time formatting and common datetime calculations. These utilities are particularly useful for logging, audit trails, health monitoring, and any scenario requiring user-friendly date/time representations or date arithmetic.
+
+### Public Members
+
+- `ToRelativeTime()` - Get human-readable time difference (e.g., "2 hours ago")
+- `ToIso8601()` - Format datetime as ISO 8601 string
+- `ToReadableString()` - Format datetime as readable date string (e.g., "2026-05-03 14:30:45")
+- `StartOfDay()` - Get the start of the current day
+- `EndOfDay()` - Get the end of the current day
+- `StartOfWeek()` - Get the start of the week (Monday)
+- `StartOfMonth()` - Get the start of the month
+- `IsPast()` - Check if datetime is in the past
+- `IsFuture()` - Check if datetime is in the future
+- `IsToday()` - Check if datetime is today
+- `WorkingDaysBetween()` - Get the number of working days between two dates
+- `ToDurationString()` - Get human-readable duration between two times (e.g., "2h 30m")
+
+### Example Usage
+
+```csharp
+// Create a sample datetime for demonstration
+var now = DateTime.UtcNow;
+var pastDate = DateTime.UtcNow.AddDays(-2);
+var futureDate = DateTime.UtcNow.AddDays(5);
+var startOfWeek = DateTime.UtcNow.StartOfWeek();
+
+// Format as human-readable relative time
+string relativeTime = now.ToRelativeTime();
+Console.WriteLine($"Current time: {relativeTime}");
+// Output: "just now" or "X minutes/hours/days ago"
+
+// Format as ISO 8601 string
+string iso8601 = now.ToIso8601();
+Console.WriteLine($"ISO 8601: {iso8601}");
+// Output: "2026-07-18T14:30:45.1234567Z"
+
+// Format as readable date string
+string readable = now.ToReadableString();
+Console.WriteLine($"Readable: {readable}");
+// Output: "2026-07-18 14:30:45"
+
+// Get start/end of day
+DateTime startOfDay = now.StartOfDay();
+DateTime endOfDay = now.EndOfDay();
+Console.WriteLine($"Day starts: {startOfDay:yyyy-MM-dd HH:mm:ss}");
+Console.WriteLine($"Day ends: {endOfDay:yyyy-MM-dd HH:mm:ss}");
+
+// Get start of week (Monday)
+DateTime monday = now.StartOfWeek();
+Console.WriteLine($"Week starts: {monday:yyyy-MM-dd}");
+
+// Get start of month
+DateTime firstOfMonth = now.StartOfMonth();
+Console.WriteLine($"Month starts: {firstOfMonth:yyyy-MM-dd}");
+
+// Check if date is in past/future/today
+bool isPast = pastDate.IsPast();
+bool isFuture = futureDate.IsFuture();
+bool isToday = now.IsToday();
+Console.WriteLine($"Past: {isPast}, Future: {isFuture}, Today: {isToday}");
+
+// Calculate working days between two dates
+int workingDays = pastDate.WorkingDaysBetween(now);
+Console.WriteLine($"Working days between: {workingDays}");
+
+// Format time span as duration string
+TimeSpan duration = TimeSpan.FromHours(2.5);
+string durationString = duration.ToDurationString();
+Console.WriteLine($"Duration: {durationString}");
+// Output: "2h 30m"
+```
+
 ## CollectionExtensions
 
 The `CollectionExtensions` class provides extension methods for working with collections (List, IEnumerable, Dictionary, etc.). It offers utility functions for safe collection access, batching, partitioning, and other common operations that simplify collection manipulation throughout the codebase.
