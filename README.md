@@ -1872,6 +1872,45 @@ var databaseConfig = config.GetObject<Dictionary<string, string>>("database:conn
 
 The `DateTimeExtensions` class provides extension methods for `DateTime` operations, offering human-readable time formatting and common datetime calculations. These utilities are particularly useful for logging, audit trails, health monitoring, and any scenario requiring user-friendly date/time representations or date arithmetic.
 
+## ValidationHelper
+
+The `ValidationHelper` class provides centralized validation for common inputs, ensuring data integrity across the system. It offers static methods to validate ports, domains, file paths, service names, and ranges, returning detailed `ValidationResult` objects.
+
+### Example Usage
+
+```csharp
+using CaddyVpsToolkit.Utilities;
+
+// Validate a port
+var portResult = ValidationHelper.ValidatePort(8080);
+if (!portResult.IsValid)
+{
+    Console.WriteLine($"Invalid port: {portResult.GetErrorMessage()}");
+}
+
+// Validate a domain and service name
+var domainResult = ValidationHelper.ValidateDomain("example.com");
+var nameResult = ValidationHelper.ValidateServiceName("my-app");
+
+// Combine validation results
+var combinedResult = ValidationHelper.Combine(domainResult, nameResult);
+if (combinedResult.IsValid)
+{
+    Console.WriteLine("All inputs are valid.");
+}
+else
+{
+    Console.WriteLine($"Validation failed: {combinedResult.GetErrorMessage()}");
+}
+
+// Using manual ValidationResult
+var result = ValidationResult.Success();
+if (someCondition)
+{
+    result = ValidationResult.Failure("Something went wrong");
+}
+```
+
 ## PathUtilities
 
 The `PathUtilities` class provides utility methods for file system path operations, including path manipulation, size calculations, and file system safety checks. It handles cross-platform path handling with security considerations for path traversal prevention and provides human-readable formatting for file sizes.
