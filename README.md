@@ -1764,6 +1764,92 @@ foreach (var kvp in allConfig)
 var databaseConfig = config.GetObject<Dictionary<string, string>>("database:connection");
 ```
 
+## CollectionExtensions
+
+The `CollectionExtensions` class provides extension methods for working with collections (List, IEnumerable, Dictionary, etc.). It offers utility functions for safe collection access, batching, partitioning, and other common operations that simplify collection manipulation throughout the codebase.
+
+### Example Usage
+
+```csharp
+// Create a list of services
+var services = new List<ManagedService>
+{
+    new ManagedService { Name = "api-service", Port = 8080, Domain = "api.example.com" },
+    new ManagedService { Name = "web-app", Port = 3000, Domain = "web.example.com" },
+    new ManagedService { Name = "cache", Port = 6379, Domain = "cache.example.com" },
+    new ManagedService { Name = "database", Port = 5432, Domain = "db.example.com" }
+};
+
+// SafeGet - safely access list elements with default value
+var firstService = services.SafeGet(0, new ManagedService { Name = "default" });
+Console.WriteLine($"First service: {firstService.Name}"); // Outputs: First service: api-service
+
+var outOfRangeService = services.SafeGet(10, new ManagedService { Name = "default" });
+Console.WriteLine($"Out of range: {outOfRangeService.Name}"); // Outputs: Out of range: default
+
+// IsNullOrEmpty - check if collection is null or empty
+bool isEmpty = services.IsNullOrEmpty();
+Console.WriteLine($"Is empty: {isEmpty}"); // Outputs: Is empty: False
+
+bool isNullEmpty = ((List<ManagedService>)null).IsNullOrEmpty();
+Console.WriteLine($"Is null or empty: {isNullEmpty}"); // Outputs: Is null or empty: True
+
+// FirstOrDefault - get first element with null safety
+var firstOrDefault = services.FirstOrDefault();
+Console.WriteLine($"First or default: {firstOrDefault?.Name}"); // Outputs: First or default: api-service
+
+// Batch - split collection into batches of specified size
+var batches = services.Batch(2);
+Console.WriteLine($"Number of batches: {batches.Count}"); // Outputs: Number of batches: 2
+foreach (var batch in batches)
+{
+    Console.WriteLine($"Batch has {batch.Count} items");
+}
+
+// Partition - split collection based on predicate
+var (matching, notMatching) = services.Partition(s => s.Port > 5000);
+Console.WriteLine($"Matching (>5000): {matching.Count} items"); // Outputs: Matching (>5000): 2 items
+Console.WriteLine($"Not matching: {notMatching.Count} items"); // Outputs: Not matching: 2 items
+
+// ToTupleList - convert dictionary to list of tuples
+var serviceDict = new Dictionary<string, int>
+{
+    ["api"] = 8080,
+    ["web"] = 3000,
+    ["cache"] = 6379
+};
+var tupleList = serviceDict.ToTupleList();
+foreach (var (key, value) in tupleList)
+{
+    Console.WriteLine($"{key}: {value}");
+}
+
+// IntersectAll - get intersection of multiple collections
+var list1 = new List<int> { 1, 2, 3, 4, 5 };
+var list2 = new List<int> { 2, 4, 6, 8 };
+var list3 = new List<int> { 4, 5, 6, 7 };
+var commonElements = new[] { list1, list2, list3 }.IntersectAll();
+Console.WriteLine($"Common elements: {string.Join(", ", commonElements)}"); // Outputs: Common elements: 4
+
+// RemoveWhere - remove items matching predicate
+services.RemoveWhere(s => s.Name.StartsWith("a"));
+Console.WriteLine($"After remove where: {services.Count} items"); // Outputs: After remove where: 3 items
+
+// AddRangeIfNotExists - add items if they don't exist
+var newServices = new List<ManagedService>
+{
+    new ManagedService { Name = "api-service", Port = 8080 },
+    new ManagedService { Name = "metrics", Port = 9090 }
+};
+services.AddRangeIfNotExists(newServices);
+Console.WriteLine($"After add range if not exists: {services.Count} items"); // Outputs: After add range if not exists: 4 items
+
+// Shuffle - randomize collection order
+var shuffled = services.Shuffle();
+Console.WriteLine($"Original first: {services[0].Name}");
+Console.WriteLine($"Shuffled first: {shuffled[0].Name}");
+```
+
 ## ConfigurationService
 
 The `ConfigurationService` provides centralized configuration management for the caddy-vps-toolkit application. It handles reading, writing, and persisting configuration values with support for typed values, caching, and file-based persistence. The service manages both application-level settings and Caddy-specific configurations like admin port, logging levels, and health check settings.
