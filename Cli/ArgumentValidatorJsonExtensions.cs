@@ -12,7 +12,7 @@ using System.Text.Json.Serialization;
 namespace CaddyVpsToolkit.Cli
 {
     /// <summary>
-    /// Provides JSON serialization and deserialization extensions for <see cref="ArgumentValidator"/>.
+    /// Provides JSON serialization and deserialization extensions for <see cref="ArgumentValidator"/> instances.
     /// </summary>
     public static class ArgumentValidatorJsonExtensions
     {

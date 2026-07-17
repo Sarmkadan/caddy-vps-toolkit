@@ -17,10 +17,10 @@ namespace CaddyVpsToolkit.Cli
     {
         public ValidationResult Validate(ArgumentParser parser, CommandDescriptor descriptor)
         {
-            var errors = new List<string>();
+            ArgumentNullException.ThrowIfNull(parser);
+            ArgumentNullException.ThrowIfNull(descriptor);
 
-            if (descriptor is null)
-                return new ValidationResult { IsValid = false, Errors = new List<string> { "Command not found" } };
+            var errors = new List<string>();
 
             // Check required arguments
             for (int i = 0; i < descriptor.RequiredArguments.Count; i++)
@@ -65,7 +65,9 @@ namespace CaddyVpsToolkit.Cli
 
         public string GetErrorMessage()
         {
-            return string.Join(Environment.NewLine, Errors);
+            return Errors?.Count > 0
+                ? string.Join(Environment.NewLine, Errors)
+                : string.Empty;
         }
     }
 }
