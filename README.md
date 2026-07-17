@@ -962,6 +962,122 @@ var caddyConfigService = new CaddyConfigurationService(serviceManager);
 // Create global Caddy configuration
 var globalConfig = new CaddyConfig
 {
+AdminEmail = "admin@example.com",
+AdminPort = 2019,
+AdminHost = "127.0.0.1",
+HttpPort = 80,
+HttpsPort = 443,
+LogLevel = "info",
+EnableMetrics = true
+};
+
+// Create routes for services
+var routes = new List<CaddyRoute>
+{
+new CaddyRoute
+{
+Id = Guid.NewGuid().ToString(),
+ServiceId = "web-app-01",
+Domain = "app.example.com",
+UpstreamUrl = "http://localhost:3000",
+Path = "/api/*",
+StripPath = true,
+PreserveHostHeader = true,
+TimeoutSeconds = 30,
+EnableHttps = true,
+AutoRedirectHttp = true,
+CustomHeaders = new Dictionary<string, string>
+{
+["X-Content-Type-Options"] = "nosniff",
+["X-Frame-Options"] = "DENY"
+},
+RateLimitRule = "100/10s",
+IsActive = true,
+CreatedAt = DateTime.UtcNow,
+UpdatedAt = DateTime.UtcNow
+},
+new CaddyRoute
+{
+Id = Guid.NewGuid().ToString(),
+ServiceId = "api-service-01",
+Domain = "api.example.com",
+UpstreamUrl = "http://localhost:8080",
+Path = "/",
+PreserveHostHeader = true,
+TimeoutSeconds = 30,
+EnableHttps = true,
+AutoRedirectHttp = true,
+IsActive = true,
+CreatedAt = DateTime.UtcNow,
+UpdatedAt = DateTime.UtcNow
+}
+};
+
+// Generate Caddyfile content
+string caddyfileContent = await caddyConfigService.GenerateCaddyfileAsync(globalConfig, routes);
+Console.WriteLine("Generated Caddyfile:");
+Console.WriteLine(caddyfileContent);
+
+// Validate the generated Caddyfile
+bool isValid = await caddyConfigService.ValidateCaddyfileAsync(caddyfileContent);
+Console.WriteLine($"Validation result: {isValid}");
+
+// Write to disk (dry-run mode first for safety)
+await caddyConfigService.WriteCaddyfileAsync(caddyfileContent, dryRun: true);
+
+// Write actual file
+await caddyConfigService.WriteCaddyfileAsync(caddyfileContent, filePath: "/etc/caddy/Caddyfile");
+
+// Read existing Caddyfile
+string existingContent = await caddyConfigService.ReadCaddyfileAsync("/etc/caddy/Caddyfile");
+Console.WriteLine($"Read {existingContent.Length} characters from Caddyfile");
+```
+
+## UpstreamManagerService
+
+The `UpstreamManagerService` is the central engine for v2 dynamic upstream management. It coordinates upstream pool registration, health-aware request routing, active health probing, graceful connection draining, and Caddy reverse-proxy configuration generation. The service integrates with the existing `HealthMonitoringService` and `CaddyConfigurationService` to slot into the v1.x infrastructure without requiring changes to those services.
+
+
+
+
+
+
+**Key Features:**
+- Register and manage upstream pools with health monitoring and load balancing
+- Perform active health probes against all upstream servers
+- Implement health-aware request routing with multiple load balancing strategies (Round Robin, Least Connections, Random, Weighted Random, IP Hash)
+- Support connection draining for graceful service shutdowns
+- Generate Caddy reverse proxy configurations for upstream pools
+- Provide comprehensive health reporting and monitoring
+- Apply global defaults and thresholds for consistent behavior
+- Support circuit breaking when no upstreams are available
+
+
+
+
+
+### Example Usage
+
+```csharp
+// Create required services (typically injected via DI)
+var serviceManager = new ServiceManagementService(databaseService);
+var healthMonitor = new HealthMonitoringService(healthCheckRepository, serviceManager);
+var caddyConfig = new CaddyConfigurationService(serviceManager);
+var options = new LoadBalancingOptions
+{
+HealthCheckIntervalSeconds = 30,
+UnhealthyThreshold = 3,
+HealthyThreshold = 2,
+MaxRetries = 2,
+RetryDurationSeconds = 30,
+CircuitBreakerEnabled = true,
+ConnectionDrainTimeoutSeconds = 30,
+HealthProbeTimeoutMs = 2000
+};
+
+// Create global Caddy configuration
+var globalConfig = new CaddyConfig
+{
     AdminEmail = "admin@example.com",
     AdminPort = 2019,
     AdminHost = "127.0.0.1",
