@@ -11,6 +11,8 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using CaddyVpsToolkit.Data;
+using CaddyVpsToolkit.Results;
 
 namespace CaddyVpsToolkit.Auditing
 {
@@ -21,10 +23,10 @@ namespace CaddyVpsToolkit.Auditing
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-        public string Action { get; set; }
-        public string Actor { get; set; }
-        public string Target { get; set; }
-        public string Result { get; set; }
+        public string Action { get; set; } = string.Empty;
+        public string Actor { get; set; } = string.Empty;
+        public string Target { get; set; } = string.Empty;
+        public string Result { get; set; } = string.Empty;
         public Dictionary<string, object> Details { get; set; } = new();
     }
 
@@ -35,6 +37,34 @@ namespace CaddyVpsToolkit.Auditing
     {
         Task LogAsync(string action, string actor, string target, string result, Dictionary<string, object> details = null);
         Task<List<AuditLogEntry>> GetEntriesAsync(DateTime? from = null, DateTime? to = null);
+
+        /// <summary>
+        /// Query audit log entries with filtering by time range, actor, and action
+        /// </summary>
+        /// <param name="fromUtc">Start of time range (inclusive)</param>
+        /// <param name="toUtc">End of time range (inclusive)</param>
+        /// <param name="actor">Filter by actor name (optional)</param>
+        /// <param name="action">Filter by action name (optional)</param>
+        /// <returns>List of matching audit log entries</returns>
+        Task<List<AuditLogEntry>> QueryAsync(DateTime? fromUtc = null, DateTime? toUtc = null, string actor = null, string action = null);
+
+        /// <summary>
+        /// Query audit log entries with filtering and pagination support
+        /// </summary>
+        /// <param name="fromUtc">Start of time range (inclusive)</param>
+        /// <param name="toUtc">End of time range (inclusive)</param>
+        /// <param name="actor">Filter by actor name (optional)</param>
+        /// <param name="action">Filter by action name (optional)</param>
+        /// <param name="page">Page number (1-based)</param>
+        /// <param name="pageSize">Number of items per page</param>
+        /// <returns>Paginated result with matching audit log entries</returns>
+        Task<PaginatedResult<AuditLogEntry>> QueryAsync(
+            DateTime? fromUtc = null,
+            DateTime? toUtc = null,
+            string actor = null,
+            string action = null,
+            int page = 1,
+            int pageSize = 10);
     }
 
     /// <summary>
@@ -85,6 +115,74 @@ namespace CaddyVpsToolkit.Auditing
                     query = query.Where(e => e.Timestamp <= to.Value);
 
                 return query.ToList();
+            }
+        }
+
+        /// <summary>
+        /// Query audit log entries with filtering by time range, actor, and action
+        /// </summary>
+        /// <param name="fromUtc">Start of time range (inclusive)</param>
+        /// <param name="toUtc">End of time range (inclusive)</param>
+        /// <param name="actor">Filter by actor name (optional)</param>
+        /// <param name="action">Filter by action name (optional)</param>
+        /// <returns>List of matching audit log entries</returns>
+        public async Task<List<AuditLogEntry>> QueryAsync(DateTime? fromUtc = null, DateTime? toUtc = null, string actor = null, string action = null)
+        {
+            lock (_lockObject)
+            {
+                var query = _entries.AsEnumerable();
+
+                if (fromUtc.HasValue)
+                    query = query.Where(e => e.Timestamp >= fromUtc.Value);
+
+                if (toUtc.HasValue)
+                    query = query.Where(e => e.Timestamp <= toUtc.Value);
+
+                if (!string.IsNullOrEmpty(actor))
+                    query = query.Where(e => e.Actor == actor);
+
+                if (!string.IsNullOrEmpty(action))
+                    query = query.Where(e => e.Action == action);
+
+                return query.ToList();
+            }
+        }
+
+        /// <summary>
+        /// Query audit log entries with filtering and pagination support
+        /// </summary>
+        /// <param name="fromUtc">Start of time range (inclusive)</param>
+        /// <param name="toUtc">End of time range (inclusive)</param>
+        /// <param name="actor">Filter by actor name (optional)</param>
+        /// <param name="action">Filter by action name (optional)</param>
+        /// <param name="page">Page number (1-based)</param>
+        /// <param name="pageSize">Number of items per page</param>
+        /// <returns>Paginated result with matching audit log entries</returns>
+        public async Task<PaginatedResult<AuditLogEntry>> QueryAsync(
+            DateTime? fromUtc = null,
+            DateTime? toUtc = null,
+            string actor = null,
+            string action = null,
+            int page = 1,
+            int pageSize = 10)
+        {
+            lock (_lockObject)
+            {
+                var query = _entries.AsEnumerable();
+
+                if (fromUtc.HasValue)
+                    query = query.Where(e => e.Timestamp >= fromUtc.Value);
+
+                if (toUtc.HasValue)
+                    query = query.Where(e => e.Timestamp <= toUtc.Value);
+
+                if (!string.IsNullOrEmpty(actor))
+                    query = query.Where(e => e.Actor == actor);
+
+                if (!string.IsNullOrEmpty(action))
+                    query = query.Where(e => e.Action == action);
+
+                return PaginationHelper.Paginate(query, page, pageSize);
             }
         }
 
