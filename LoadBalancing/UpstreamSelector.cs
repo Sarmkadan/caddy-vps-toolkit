@@ -30,17 +30,20 @@ namespace CaddyVpsToolkit.LoadBalancing
             if (servers.Count == 1)
                 return servers[0];
 
-            // If we have an IP address and we assume IP Hash might be requested, we can use it.
-            // But without knowing the explicit strategy from context, we default to Round Robin,
-            // or we could use the context's ClientIp as a hint. We will default to Round Robin 
-            // per poolId as it's the most common default.
-            
-            if (!string.IsNullOrEmpty(context.ClientIp))
-            {
-                return SelectByIpHash(servers, context.ClientIp);
-            }
+            // Determine strategy from context or use default
+            var strategy = context.Strategy ?? LoadBalancingStrategy.RoundRobin;
 
-            return SelectRoundRobin(servers, context.PoolId);
+            return strategy switch
+            {
+                LoadBalancingStrategy.RoundRobin => SelectRoundRobin(servers, context.PoolId),
+                LoadBalancingStrategy.LeastConnections => SelectLeastConnections(servers),
+                LoadBalancingStrategy.Random => SelectRandom(servers),
+                LoadBalancingStrategy.WeightedRandom => SelectWeightedRandom(servers),
+                LoadBalancingStrategy.IpHash => !string.IsNullOrEmpty(context.ClientIp)
+                    ? SelectByIpHash(servers, context.ClientIp)
+                    : SelectRoundRobin(servers, context.PoolId),
+                _ => SelectRoundRobin(servers, context.PoolId)
+            };
         }
 
         private UpstreamServer SelectRoundRobin(IReadOnlyList<UpstreamServer> servers, string poolId)
@@ -49,7 +52,7 @@ namespace CaddyVpsToolkit.LoadBalancing
                 poolId,
                 addValue: 0,
                 updateValueFactory: (_, current) => (current + 1) % servers.Count);
-            
+
             return servers[idx % servers.Count];
         }
 
@@ -57,6 +60,52 @@ namespace CaddyVpsToolkit.LoadBalancing
         {
             var hash = Math.Abs(clientIp.GetHashCode(StringComparison.Ordinal));
             return servers[hash % servers.Count];
+        }
+
+        private UpstreamServer SelectLeastConnections(IReadOnlyList<UpstreamServer> servers)
+        {
+            // Find the server with the fewest active connections
+            // If multiple servers have the same minimum, return the first one
+            var minConnections = servers.Min(s => s.ActiveConnections);
+            return servers.First(s => s.ActiveConnections == minConnections);
+        }
+
+        private UpstreamServer SelectRandom(IReadOnlyList<UpstreamServer> servers)
+        {
+            // Select a server uniformly at random
+            var random = new Random();
+            var index = random.Next(servers.Count);
+            return servers[index];
+        }
+
+        private UpstreamServer SelectWeightedRandom(IReadOnlyList<UpstreamServer> servers)
+        {
+            // Weighted random selection based on UpstreamServer.Weight
+            // Higher weights increase the probability of selection
+            var totalWeight = servers.Sum(s => s.Weight);
+
+            if (totalWeight <= 0)
+            {
+                // Fallback to uniform random if weights are invalid
+                var random = new Random();
+                var index = random.Next(servers.Count);
+                return servers[index];
+            }
+
+            var randomValue = new Random().Next(0, totalWeight);
+            var cumulativeWeight = 0;
+
+            foreach (var server in servers)
+            {
+                cumulativeWeight += server.Weight;
+                if (randomValue < cumulativeWeight)
+                {
+                    return server;
+                }
+            }
+
+            // Fallback: return the last server if something went wrong
+            return servers[^1];
         }
     }
 }

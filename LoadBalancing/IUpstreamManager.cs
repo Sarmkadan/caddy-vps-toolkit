@@ -27,10 +27,14 @@ namespace CaddyVpsToolkit.LoadBalancing
     /// Optional opaque session token. Used by sticky-session logic to re-pin a known session
     /// to its previously assigned upstream.
     /// </param>
+    /// <param name="Strategy">
+    /// The load-balancing strategy to use for this selection. When null, defaults to RoundRobin.
+    /// </param>
     public record UpstreamSelectionContext(
         string PoolId,
         string? ClientIp = null,
-        string? SessionToken = null
+        string? SessionToken = null,
+        LoadBalancingStrategy? Strategy = null
     );
 
     /// <summary>
