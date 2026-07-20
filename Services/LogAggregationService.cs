@@ -99,6 +99,46 @@ namespace CaddyVpsToolkit.Services
             return sorted.AsReadOnly();
         }
 
+        /// <summary>
+        /// Returns the last <paramref name="lines"/> log entries for the specified <paramref name="serviceName"/>
+        /// (or all services when <paramref name="serviceName"/> is <c>null</c>), optionally filtered by a specific
+        /// <paramref name="levelFilter"/> (e.g., "Error"). The result is ordered newest‑first.
+        /// </summary>
+        /// <param name="serviceName">The service identifier to filter by, or <c>null</c> for all services.</param>
+        /// <param name="lines">Maximum number of entries to return.</param>
+        /// <param name="levelFilter">Optional exact level string to include (case‑insensitive). If <c>null</c> or empty, all levels are included.</param>
+        /// <returns>A read‑only list of matching <see cref="LogEntry"/> objects.</returns>
+        public async Task<IReadOnlyList<LogEntry>> TailAsync(string? serviceName, int lines, string? levelFilter = null)
+        {
+            if (lines <= 0)
+                throw new ArgumentOutOfRangeException(nameof(lines), "Lines must be greater than zero.");
+
+            // Retrieve all entries for the requested service (no line limit)
+            var options = new LogQueryOptions
+            {
+                Lines = int.MaxValue,
+                ServiceId = serviceName
+            };
+
+            var all = await GetLogsAsync(options);
+
+            IEnumerable<LogEntry> filtered = all;
+
+            if (!string.IsNullOrWhiteSpace(levelFilter))
+            {
+                filtered = filtered.Where(e =>
+                    string.Equals(e.Level, levelFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var result = filtered
+                .OrderByDescending(e => e.Timestamp) // ensure ordering after possible level filter
+                .Take(lines)
+                .ToList()
+                .AsReadOnly();
+
+            return result;
+        }
+
         // Reads a single log file and returns entries matching the filter options.
         private static async Task<List<LogEntry>> ReadLogFileAsync(string filePath, LogQueryOptions options)
         {
