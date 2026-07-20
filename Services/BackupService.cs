@@ -7,6 +7,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Core;
@@ -25,6 +27,9 @@ namespace CaddyVpsToolkit.Services
 
         /// <summary>Restores services and configuration from a previously created backup file.</summary>
         Task<BackupManifest> RestoreBackupAsync(string backupFilePath);
+
+        /// <summary>Verifies the integrity of a backup file by comparing its SHA-256 checksum.</summary>
+        Task<BackupManifest.BackupIntegrityResult> VerifyBackupAsync(string backupFilePath);
 
         /// <summary>Lists all backup files found in the given directory (defaults to the config directory).</summary>
         Task<IReadOnlyList<string>> ListBackupsAsync(string? backupDirectory = null);
@@ -68,6 +73,9 @@ namespace CaddyVpsToolkit.Services
                 CaddyfileContent = caddyfileContent,
                 Description = description
             };
+
+            // Compute and store SHA-256 checksum for integrity verification
+            manifest.Sha256Checksum = manifest.ComputeSha256Checksum();
 
             var directory = outputPath is not null
                 ? Path.GetDirectoryName(outputPath) ?? AppConstants.ConfigDirectory
@@ -155,6 +163,47 @@ namespace CaddyVpsToolkit.Services
             Array.Sort(files, StringComparer.OrdinalIgnoreCase);
 
             return Task.FromResult<IReadOnlyList<string>>(files);
+        }
+
+        /// <inheritdoc/>
+        public async Task<BackupManifest.BackupIntegrityResult> VerifyBackupAsync(string backupFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(backupFilePath))
+                throw new ArgumentException("Backup file path must not be empty.", nameof(backupFilePath));
+
+            if (!File.Exists(backupFilePath))
+                throw new CaddyVpsException($"Backup file not found: {backupFilePath}", "BACKUP_NOT_FOUND");
+
+            string json;
+            try
+            {
+                json = await File.ReadAllTextAsync(backupFilePath);
+            }
+            catch (Exception ex)
+            {
+                throw new CaddyVpsException($"Failed to read backup file: {ex.Message}", "BACKUP_READ_ERROR", null, ex);
+            }
+
+            BackupManifest manifest;
+            try
+            {
+                manifest = JsonSerializer.Deserialize<BackupManifest>(json)
+                    ?? throw new CaddyVpsException("Backup file is empty or malformed.", "BACKUP_PARSE_ERROR");
+            }
+            catch (JsonException ex)
+            {
+                throw new CaddyVpsException($"Backup file contains invalid JSON: {ex.Message}", "BACKUP_PARSE_ERROR", null, ex);
+            }
+
+            // Verify that the stored checksum matches the computed checksum
+            var computedChecksum = manifest.ComputeSha256Checksum();
+
+            if (manifest.Sha256Checksum == computedChecksum)
+            {
+                return new BackupManifest.BackupIntegrityResult(manifest, computedChecksum);
+            }
+
+            return new BackupManifest.BackupIntegrityResult(manifest.Sha256Checksum, computedChecksum, manifest);
         }
     }
 }
