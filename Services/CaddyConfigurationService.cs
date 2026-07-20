@@ -321,6 +321,93 @@ namespace CaddyVpsToolkit.Services
             }
         }
 
+    /// <summary>
+    /// Validates the Caddy configuration for common problems.
+    /// </summary>
+    /// <param name="globalConfig">The global Caddy configuration.</param>
+    /// <param name="routes">The list of Caddy routes to validate.</param>
+    /// <returns>A list of validation findings (severity + message).</returns>
+    public List<ConfigurationFinding> ValidateConfiguration(CaddyConfig globalConfig, List<CaddyRoute> routes)
+    {
+        var findings = new List<ConfigurationFinding>();
+
+        if (globalConfig is null)
+            throw new ArgumentNullException(nameof(globalConfig));
+
+        if (routes is null)
+            routes = new List<CaddyRoute>();
+
+        // Check 1: Duplicate site addresses
+        var siteAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var route in routes.Where(r => r.IsActive))
+        {
+            var siteAddress = route.GenerateRoutePath();
+            if (siteAddresses.Contains(siteAddress))
+            {
+                findings.Add(new ConfigurationFinding
+                {
+                    Severity = "error",
+                    Message = $"Duplicate site address detected: {siteAddress}"
+                });
+            }
+            else
+            {
+                siteAddresses.Add(siteAddress);
+            }
+        }
+
+        // Check 2: Empty upstreams
+        foreach (var route in routes.Where(r => r.IsActive))
+        {
+            if (string.IsNullOrWhiteSpace(route.UpstreamUrl))
+            {
+                findings.Add(new ConfigurationFinding
+                {
+                    Severity = "error",
+                    Message = $"Route '{route.GenerateRoutePath()}' has an empty upstream URL"
+                });
+            }
+            else if (route.UpstreamUrl.Trim() == "")
+            {
+                findings.Add(new ConfigurationFinding
+                {
+                    Severity = "error",
+                    Message = $"Route '{route.GenerateRoutePath()}' has a whitespace-only upstream URL"
+                });
+            }
+        }
+
+        // Check 3: Missing TLS settings for non-localhost sites
+        foreach (var route in routes.Where(r => r.IsActive && r.EnableHttps))
+        {
+            if (route.EnableHttps && !IsLocalhost(route.Domain) && string.IsNullOrWhiteSpace(route.TlsDnsProvider))
+            {
+                findings.Add(new ConfigurationFinding
+                {
+                    Severity = "warning",
+                    Message = $"Non-localhost domain '{route.Domain}' may not have proper TLS configuration. Consider setting TlsDnsProvider or verifying auto-HTTPS is enabled."
+                });
+            }
+        }
+
+        return findings;
+    }
+
+    /// <summary>
+    /// Helper method to check if a domain is localhost or localhost equivalent.
+    /// </summary>
+    /// <param name="domain">The domain to check.</param>
+    /// <returns>True if the domain is localhost.</returns>
+    private static bool IsLocalhost(string domain)
+    {
+        if (string.IsNullOrWhiteSpace(domain))
+            return true;
+
+        var normalized = domain.Trim().ToLowerInvariant();
+        return normalized == "localhost" || normalized == "127.0.0.1" || normalized == "::1" || normalized.StartsWith("localhost.");
+    }
+
+
         /// <summary>
         /// Generate configuration for a service as a Caddy route.
         /// </summary>
