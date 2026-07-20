@@ -2,13 +2,15 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Linq;
 using System.Threading.Tasks;
+using CaddyVpsToolkit.Configuration;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Data;
 using CaddyVpsToolkit.Domain.Models;
@@ -24,17 +26,29 @@ namespace CaddyVpsToolkit.Services
         private readonly IHealthCheckRepository _repository;
         private readonly ServiceManagementService _serviceManager;
         private readonly HttpClient _httpClient;
+        private readonly UpstreamManagementOptions _upstreamOptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HealthMonitoringService"/> class.
         /// </summary>
         /// <param name="repository">The health check repository.</param>
         /// <param name="serviceManager">The service management service.</param>
-        public HealthMonitoringService(IHealthCheckRepository repository, ServiceManagementService serviceManager)
+        /// <param name="upstreamOptions">The upstream management options containing maintenance window configuration.</param>
+        public HealthMonitoringService(IHealthCheckRepository repository, ServiceManagementService serviceManager, UpstreamManagementOptions upstreamOptions)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _serviceManager = serviceManager ?? throw new ArgumentNullException(nameof(serviceManager));
+            _upstreamOptions = upstreamOptions ?? throw new ArgumentNullException(nameof(upstreamOptions));
             _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(AppConstants.HealthCheckSocketTimeoutMs / 1000) };
+        }
+
+        /// <summary>
+        /// Determines if the system is currently in a maintenance window.
+        /// </summary>
+        /// <returns>True if in maintenance window, otherwise false.</returns>
+        private bool IsInMaintenanceWindow()
+        {
+            return _upstreamOptions.IsMaintenanceWindowActive();
         }
 
         /// <summary>
@@ -72,11 +86,22 @@ namespace CaddyVpsToolkit.Services
             }
             catch (Exception ex)
             {
+                // During maintenance windows, log failures but do not throw exceptions to prevent alerts/state transitions
+                if (IsInMaintenanceWindow())
+                {
+                    var maintenanceResult = HealthCheckResult.CreateFailure(serviceId, ex.Message);
+                    maintenanceResult.Status = HealthCheckStatus.Degraded;
+                    maintenanceResult.ErrorMessage = $"Maintenance window active - failure logged but not acted upon: {ex.Message}";
+                    await _repository.AddAsync(maintenanceResult);
+                    return maintenanceResult;
+                }
+
                 var failureResult = HealthCheckResult.CreateFailure(serviceId, ex.Message);
                 await _repository.AddAsync(failureResult);
                 throw new HealthCheckException(serviceId, ex.Message);
             }
         }
+
 
         /// <summary>
         /// Get latest health status for a service.

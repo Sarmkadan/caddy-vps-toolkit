@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Caching;
+using CaddyVpsToolkit.Configuration;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Data;
 using CaddyVpsToolkit.Domain.Models;
@@ -40,7 +41,7 @@ namespace CaddyVpsToolkit.Tests.Integration
             _serviceRepo = Substitute.For<IServiceRepository>();
             _healthRepo = Substitute.For<IHealthCheckRepository>();
             _serviceManager = new ServiceManagementService(_serviceRepo);
-            _healthMonitor = new HealthMonitoringService(_healthRepo, _serviceManager);
+_healthMonitor = new HealthMonitoringService(_healthRepo, _serviceManager, new UpstreamManagementOptions());
             _caddyService = new CaddyConfigurationService(_serviceManager);
         }
 

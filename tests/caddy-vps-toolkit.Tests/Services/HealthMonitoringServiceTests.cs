@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CaddyVpsToolkit.Configuration;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Data;
 using CaddyVpsToolkit.Domain.Models;
@@ -35,7 +36,8 @@ namespace CaddyVpsToolkit.Tests.Services
             _repositoryMock = Substitute.For<IHealthCheckRepository>();
             _serviceRepositoryMock = Substitute.For<IServiceRepository>();
             _serviceManager = new ServiceManagementService(_serviceRepositoryMock);
-            _sut = new HealthMonitoringService(_repositoryMock, _serviceManager);
+            var upstreamOptions = new UpstreamManagementOptions();
+        _sut = new HealthMonitoringService(_repositoryMock, _serviceManager, upstreamOptions);
         }
 
         /// <summary>

@@ -116,5 +116,27 @@ namespace CaddyVpsToolkit.Configuration
         /// steady-state load. Defaults to <c>300</c> seconds (5 minutes).
         /// </summary>
         public int RecalibrationIntervalSeconds { get; set; } = 300;
+
+// ─── Maintenance Windows ────────────────────────────────────────────────
+
+/// <summary>
+/// Gets or sets the maintenance windows during which failing health checks should log but not trigger alerts or state transitions.
+/// Multiple maintenance windows can be configured for different time periods and days.
+/// </summary>
+public List<Domain.Models.MaintenanceWindow> MaintenanceWindows { get; set; } = new();
+
+    /// <summary>
+    /// Determines if any maintenance window is currently active.
+    /// </summary>
+    /// <returns>True if any maintenance window is active, otherwise false.</returns>
+    public bool IsMaintenanceWindowActive()
+    {
+        if (MaintenanceWindows == null || MaintenanceWindows.Count == 0)
+        {
+            return false;
+        }
+
+        return MaintenanceWindows.Any(window => window.IsInWindow());
     }
+}
 }

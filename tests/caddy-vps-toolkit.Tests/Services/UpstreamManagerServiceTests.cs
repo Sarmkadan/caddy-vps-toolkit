@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CaddyVpsToolkit.Configuration;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Data;
 using CaddyVpsToolkit.Domain.Models;
@@ -30,7 +31,8 @@ namespace CaddyVpsToolkit.Tests.Services
             var healthRepo = Substitute.For<IHealthCheckRepository>();
 
             var serviceManager = new ServiceManagementService(_serviceRepo);
-            var healthMonitor = new HealthMonitoringService(healthRepo, serviceManager);
+            var upstreamOptions = new UpstreamManagementOptions();
+        var healthMonitor = new HealthMonitoringService(healthRepo, serviceManager, upstreamOptions);
             var caddyConfig = new CaddyConfigurationService(serviceManager);
 
             var options = new LoadBalancingOptions();
