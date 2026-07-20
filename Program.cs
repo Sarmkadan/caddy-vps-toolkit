@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Collections.Generic;
@@ -62,7 +62,12 @@ namespace CaddyVpsToolkit
 
             // Logging (for SSL monitoring and notifications)
             services.AddSingleton<ILogger>(new MemoryLogger(LogLevel.Debug));
-            services.AddSingleton<NotificationService>();
+            services.AddNotificationService(options =>
+            {
+                options.Enabled = true;
+                options.SuppressionWindowSeconds = 300; // 5 minutes
+                options.MaxTrackedNotifications = 1000;
+            });
 
             // New feature services
             services.AddSingleton<IBackupService, BackupService>();
