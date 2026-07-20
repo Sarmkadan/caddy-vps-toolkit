@@ -41,25 +41,32 @@ namespace CaddyVpsToolkit.Services
     public sealed class SslCertificateMonitoringService : ISslCertificateMonitoringService
     {
         private const int DefaultHttpsPort = 443;
-
-        /// <summary>Alert when fewer than this many days remain before expiry.</summary>
-        private const int WarnDays = 30;
-
-        /// <summary>Escalate to critical when fewer than this many days remain.</summary>
-        private const int CriticalDays = 7;
-
         private const int TcpTimeoutMs = 10_000;
 
         private readonly ILogger _logger;
         private readonly NotificationService _notifications;
 
+        // Configurable thresholds (days before expiry)
+        private readonly int _warnDays;
+        private readonly int _criticalDays;
+
         /// <summary>
         /// Initializes a new instance of <see cref="SslCertificateMonitoringService"/>.
         /// </summary>
-        public SslCertificateMonitoringService(ILogger logger, NotificationService notifications)
+        /// <param name="logger">Logger used for diagnostic output.</param>
+        /// <param name="notifications">Notification service used to send alerts.</param>
+        /// <param name="options">Optional configuration for warning/critical thresholds.</param>
+        public SslCertificateMonitoringService(
+            ILogger logger,
+            NotificationService notifications,
+            SslCertificateMonitoringOptions? options = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _notifications = notifications ?? throw new ArgumentNullException(nameof(notifications));
+
+            var opts = options ?? new SslCertificateMonitoringOptions();
+            _warnDays = opts.WarnDays;
+            _criticalDays = opts.CriticalDays;
         }
 
         /// <inheritdoc/>
@@ -185,15 +192,16 @@ namespace CaddyVpsToolkit.Services
             };
         }
 
-        private static SslCertificateCheckResult ClassifyCertificate(string domain, SslCertificateInfo cert)
+        // Classification now uses the configurable thresholds.
+        private SslCertificateCheckResult ClassifyCertificate(string domain, SslCertificateInfo cert)
         {
             if (cert.ExpiresAt < DateTime.UtcNow)
                 return SslCertificateCheckResult.CreateExpired(domain, cert);
 
-            if (cert.DaysUntilExpiry <= CriticalDays)
+            if (cert.DaysUntilExpiry <= _criticalDays)
                 return SslCertificateCheckResult.CreateExpiringSoon(domain, cert, isCritical: true);
 
-            if (cert.DaysUntilExpiry <= WarnDays)
+            if (cert.DaysUntilExpiry <= _warnDays)
                 return SslCertificateCheckResult.CreateExpiringSoon(domain, cert, isCritical: false);
 
             return SslCertificateCheckResult.CreateValid(domain, cert);
