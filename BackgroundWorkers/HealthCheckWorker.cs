@@ -23,6 +23,8 @@ namespace CaddyVpsToolkit.BackgroundWorkers
         private readonly ServiceManagementService _serviceManager;
         private readonly ILogger _logger;
         private readonly int _intervalSeconds;
+        private readonly double _jitterPercent;
+        private readonly Random _random;
         private CancellationTokenSource _cancellationTokenSource;
         private Task _workerTask;
 
@@ -30,12 +32,22 @@ namespace CaddyVpsToolkit.BackgroundWorkers
             HealthMonitoringService healthMonitor,
             ServiceManagementService serviceManager,
             ILogger logger,
-            int intervalSeconds = 300)
+            int intervalSeconds = 300,
+            double jitterPercent = 0.1)
         {
             _healthMonitor = healthMonitor ?? throw new ArgumentNullException(nameof(healthMonitor));
             _serviceManager = serviceManager ?? throw new ArgumentNullException(nameof(serviceManager));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            
+            if (intervalSeconds <= 0)
+                throw new ArgumentOutOfRangeException(nameof(intervalSeconds), "Interval must be positive.");
+            
+            if (jitterPercent < 0 || jitterPercent > 1.0)
+                throw new ArgumentOutOfRangeException(nameof(jitterPercent), "Jitter percent must be between 0 and 1.");
+
             _intervalSeconds = intervalSeconds;
+            _jitterPercent = jitterPercent;
+            _random = new Random();
         }
 
         public async Task StartAsync()
@@ -46,7 +58,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
             _cancellationTokenSource = new CancellationTokenSource();
             _workerTask = RunWorkerAsync(_cancellationTokenSource.Token);
 
-            await _logger.LogInfoAsync($"Health check worker started (interval: {_intervalSeconds}s)");
+            await _logger.LogInfoAsync($"Health check worker started (interval: {_intervalSeconds}s, jitter: {_jitterPercent:P0})");
         }
 
         public async Task StopAsync()
@@ -99,8 +111,17 @@ namespace CaddyVpsToolkit.BackgroundWorkers
                         }
                     }
 
+                    // Calculate delay with jitter to avoid thundering herd
+                    int baseDelayMs = _intervalSeconds * 1000;
+                    double jitterRangeMs = baseDelayMs * _jitterPercent;
+                    
+                    // Generate a random offset between -jitterRangeMs and +jitterRangeMs
+                    double offsetMs = (_random.NextDouble() * 2 - 1) * jitterRangeMs;
+                    
+                    int totalDelayMs = (int)(baseDelayMs + offsetMs);
+
                     // Wait for next interval or until cancellation
-                    await Task.Delay(TimeSpan.FromSeconds(_intervalSeconds), cancellationToken);
+                    await Task.Delay(TimeSpan.FromMilliseconds(totalDelayMs), cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
