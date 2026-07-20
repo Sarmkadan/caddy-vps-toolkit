@@ -201,6 +201,17 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
+        /// Generate unit file content preview without writing to disk
+        /// </summary>
+        /// <param name="config">The systemd unit configuration</param>
+        /// <returns>The generated unit file content</returns>
+        public string GenerateUnitPreview(SystemdUnitConfig config)
+        {
+        var systemdUnitService = new Services.SystemdUnitService();
+        return systemdUnitService.GenerateUnitPreview(config);
+        }
+
+        /// <summary>
         /// Check if service exists.
         /// </summary>
         /// <param name="serviceId">The ID of the service.</param>

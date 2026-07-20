@@ -180,6 +180,21 @@ namespace CaddyVpsToolkit.Services
         }
 
         /// <summary>
+        /// Generate unit file content preview without writing to disk
+        /// </summary>
+        /// <param name="config">The systemd unit configuration</param>
+        /// <returns>The generated unit file content</returns>
+        public string GenerateUnitPreview(SystemdUnitConfig config)
+        {
+        if (config is null)
+        throw new ArgumentNullException(nameof(config));
+
+        config.Validate();
+
+        return config.GenerateSystemdContent();
+        }
+
+        /// <summary>
         /// Get unit file content
         /// </summary>
         public async Task<string> GetUnitFileContentAsync(string unitName)
