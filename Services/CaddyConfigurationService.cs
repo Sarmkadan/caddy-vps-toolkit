@@ -49,6 +49,9 @@ namespace CaddyVpsToolkit.Services
             globalConfig.Validate();
             globalConfig.SetDefaultValues();
 
+        // Detect route conflicts before generating configuration
+        DetectRouteConflicts(routes);
+
             var sb = new StringBuilder();
 
             // Global configuration
@@ -71,6 +74,53 @@ namespace CaddyVpsToolkit.Services
             return sb.ToString();
         }
 
+    /// <summary>
+    /// Detects and reports route conflicts where two or more CaddyRoute entries have identical
+    /// host+path matchers. A conflict occurs when two routes have the same Domain and Path combination.
+    /// Throws a descriptive exception listing all conflicting routes.
+    /// </summary>
+    /// <param name="routes">The list of Caddy routes to check for conflicts.</param>
+    /// <exception cref="CaddyOperationException">Thrown when route conflicts are detected.</exception>
+    private void DetectRouteConflicts(List<CaddyRoute> routes)
+    {
+        if (routes == null || routes.Count == 0)
+            return;
+
+        var activeRoutes = routes.Where(r => r.IsActive).ToList();
+
+        // Group routes by their matcher key (Domain + Path)
+        var routeGroups = activeRoutes
+            .GroupBy(r => new { r.Domain, Path = r.Path ?? "/" })
+            .Where(g => g.Count() > 1)
+            .ToList();
+
+        if (routeGroups.Count == 0)
+            return;
+
+        // Build conflict report
+        var conflictReport = new StringBuilder();
+        conflictReport.AppendLine("Route conflict detected: Multiple routes share the same host+path matcher.");
+        conflictReport.AppendLine("Conflicts must be resolved before applying configuration.");
+        conflictReport.AppendLine();
+
+        foreach (var group in routeGroups)
+        {
+            conflictReport.AppendLine($"Conflict for: {group.Key.Domain}{group.Key.Path}");
+            conflictReport.AppendLine("  Routes:");
+
+            foreach (var route in group)
+            {
+                var routeInfo = $"    - Route ID: {route.Id ?? "(none)"}";
+                if (!string.IsNullOrWhiteSpace(route.ServiceId))
+                    routeInfo += $", Service ID: {route.ServiceId}";
+                routeInfo += $", Upstream: {route.UpstreamUrl ?? "(none)"}";
+                conflictReport.AppendLine(routeInfo);
+            }
+            conflictReport.AppendLine();
+        }
+
+        throw new CaddyOperationException(conflictReport.ToString().Trim());
+    }
         /// <summary>
         /// Write Caddyfile to disk.
         /// When <paramref name="dryRun"/> is <c>true</c>, the content that would be written is
@@ -450,6 +500,9 @@ namespace CaddyVpsToolkit.Services
         {
             ArgumentNullException.ThrowIfNull(globalConfig);
             routes ??= new List<CaddyRoute>();
+
+        // Detect route conflicts before generating configuration
+        DetectRouteConflicts(routes);
 
             using var stream = new MemoryStream();
             using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
