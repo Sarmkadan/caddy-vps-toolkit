@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace CaddyVpsToolkit.Processing
@@ -29,26 +30,54 @@ namespace CaddyVpsToolkit.Processing
         }
 
         /// <summary>
-        /// Process items in batches
+        /// Process items in batches using bounded channel for efficient producer-consumer pattern
         /// </summary>
         public async Task ProcessAsync(IEnumerable<T> items)
         {
-            var batch = new List<T>(_batchSize);
-
-            foreach (var item in items)
+            // Create a bounded channel to coordinate batch processing
+            // Capacity is set to batchSize to prevent unbounded memory growth
+            var channel = Channel.CreateBounded<List<T>>(new BoundedChannelOptions(_batchSize)
             {
-                batch.Add(item);
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = true,
+                SingleWriter = true
+            });
 
-                if (batch.Count >= _batchSize)
+            // Producer: Enumerate items and create batches
+            _ = Task.Run(async () =>
+            {
+                try
                 {
-                    await _processFunction(batch);
-                    batch.Clear();
-                }
-            }
+                    var batch = new List<T>(_batchSize);
+                    foreach (var item in items)
+                    {
+                        batch.Add(item);
 
-            // Process remaining items
-            if (batch.Count > 0)
+                        if (batch.Count >= _batchSize)
+                        {
+                            await channel.Writer.WriteAsync(batch);
+                            batch = new List<T>(_batchSize);
+                        }
+                    }
+
+                    // Write remaining items
+                    if (batch.Count > 0)
+                        await channel.Writer.WriteAsync(batch);
+
+                    // Signal completion
+                    channel.Writer.Complete();
+                }
+                catch (Exception ex)
+                {
+                    channel.Writer.Complete(ex);
+                }
+            });
+
+            // Consumer: Process batches from channel
+            await foreach (var batch in channel.Reader.ReadAllAsync())
+            {
                 await _processFunction(batch);
+            }
         }
     }
 
@@ -91,27 +120,55 @@ namespace CaddyVpsToolkit.Processing
         }
 
         /// <summary>
-        /// Process items with error handling
+        /// Process items with error handling using bounded channel for efficient producer-consumer pattern
         /// </summary>
         public async Task<BatchResult<T>> ProcessAsync(IEnumerable<T> items)
         {
             var result = new BatchResult<T>();
-            var batch = new List<T>(_batchSize);
 
-            foreach (var item in items)
+            // Create a bounded channel to coordinate batch processing
+            var channel = Channel.CreateBounded<List<T>>(new BoundedChannelOptions(_batchSize)
             {
-                batch.Add(item);
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = true,
+                SingleWriter = true
+            });
 
-                if (batch.Count >= _batchSize)
+            // Producer: Enumerate items and create batches
+            _ = Task.Run(async () =>
+            {
+                try
                 {
-                    await ProcessBatchAsync(batch, result);
-                    batch.Clear();
-                }
-            }
+                    var batch = new List<T>(_batchSize);
+                    foreach (var item in items)
+                    {
+                        batch.Add(item);
 
-            // Process remaining
-            if (batch.Count > 0)
+                        if (batch.Count >= _batchSize)
+                        {
+                            await channel.Writer.WriteAsync(batch);
+                            batch = new List<T>(_batchSize);
+                        }
+                    }
+
+                    // Write remaining items
+                    if (batch.Count > 0)
+                        await channel.Writer.WriteAsync(batch);
+
+                    // Signal completion
+                    channel.Writer.Complete();
+                }
+                catch (Exception ex)
+                {
+                    channel.Writer.Complete(ex);
+                }
+            });
+
+            // Consumer: Process batches from channel with error handling
+            await foreach (var batch in channel.Reader.ReadAllAsync())
+            {
                 await ProcessBatchAsync(batch, result);
+            }
 
             return result;
         }
