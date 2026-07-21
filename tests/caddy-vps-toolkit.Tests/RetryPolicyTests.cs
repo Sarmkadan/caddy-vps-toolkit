@@ -69,7 +69,7 @@ namespace CaddyVpsToolkit.Tests
                 await policy.ExecuteAsync(operation));
 
             // The exception message should be from the last attempt
-            Assert.Equal($"Fail {policy._maxRetries + 1}", ex.Message);
+            Assert.Equal("Fail 3", ex.Message);
             Assert.Equal(3, callCount); // attempts = maxRetries + 1
         }
 
