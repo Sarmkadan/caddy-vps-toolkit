@@ -17,8 +17,10 @@ namespace CaddyVpsToolkit.Utilities
     {
         private TState _currentState;
         private readonly Dictionary<(TState, TTrigger), TState> _transitions = new();
+        private readonly Dictionary<(TState, TTrigger), Func<bool>> _guardClauses = new();
         private readonly Dictionary<TState, Action> _onEnterCallbacks = new();
         private readonly Dictionary<TState, Action> _onExitCallbacks = new();
+        private Action<TState, TState, TTrigger>? _onTransitionCallback;
 
         public StateMachine(TState initialState)
         {
@@ -28,6 +30,13 @@ namespace CaddyVpsToolkit.Utilities
         public void Configure(TState from, TTrigger trigger, TState to)
         {
             _transitions[(from, trigger)] = to;
+            _guardClauses.Remove((from, trigger));
+        }
+
+        public void Configure(TState from, TTrigger trigger, TState to, Func<bool> guardClause)
+        {
+            _transitions[(from, trigger)] = to;
+            _guardClauses[(from, trigger)] = guardClause;
         }
 
         public void OnEnter(TState state, Action callback)
@@ -40,9 +49,20 @@ namespace CaddyVpsToolkit.Utilities
             _onExitCallbacks[state] = callback;
         }
 
+        public void OnTransition(Action<TState, TState, TTrigger> callback)
+        {
+            _onTransitionCallback = callback;
+        }
+
         public bool CanFire(TTrigger trigger)
         {
-            return _transitions.ContainsKey((_currentState, trigger));
+            if (!_transitions.ContainsKey((_currentState, trigger)))
+                return false;
+
+            if (_guardClauses.TryGetValue((_currentState, trigger), out var guardClause) && guardClause != null)
+                return guardClause();
+
+            return true;
         }
 
         public bool Fire(TTrigger trigger)
@@ -56,7 +76,11 @@ namespace CaddyVpsToolkit.Utilities
             if (_onExitCallbacks.TryGetValue(_currentState, out var exitCallback))
                 exitCallback?.Invoke();
 
+            var previousState = _currentState;
             _currentState = nextState;
+
+            // Call transition callback
+            _onTransitionCallback?.Invoke(previousState, _currentState, trigger);
 
             // Call enter callback
             if (_onEnterCallbacks.TryGetValue(_currentState, out var enterCallback))
@@ -81,7 +105,10 @@ namespace CaddyVpsToolkit.Utilities
             foreach (var key in _transitions.Keys)
             {
                 if (key.Item1.Equals(_currentState))
-                    available.Add(key.Item2);
+                {
+                    if (!_guardClauses.TryGetValue(key, out var guardClause) || guardClause())
+                        available.Add(key.Item2);
+                }
             }
             return available;
         }
