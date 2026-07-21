@@ -49,7 +49,7 @@ namespace CaddyVpsToolkit.Utilities
         public static T? FirstOrDefault<T>(this IEnumerable<T> collection)
         {
             ArgumentNullException.ThrowIfNull(collection);
-            return collection.FirstOrDefault();
+            return System.Linq.Enumerable.FirstOrDefault(collection);
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace CaddyVpsToolkit.Utilities
         {
             ArgumentNullException.ThrowIfNull(collection);
 
-            var list = collection.ToList();
+            var list = System.Linq.Enumerable.ToList(collection);
             var random = new Random();
 
             for (int i = list.Count - 1; i > 0; i--)
