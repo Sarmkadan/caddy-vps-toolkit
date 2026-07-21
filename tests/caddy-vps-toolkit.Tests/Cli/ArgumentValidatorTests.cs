@@ -27,20 +27,16 @@ namespace CaddyVpsToolkit.Tests.Cli
         }
 
         /// <summary>
-        /// Validates that a null descriptor results in an invalid result with the error "Command not found".
+        /// Validates that a null descriptor throws ArgumentNullException.
         /// </summary>
         [Fact]
-        public void Validate_WithNullDescriptor_ShouldReturnInvalid()
+        public void Validate_WithNullDescriptor_ShouldThrowArgumentNullException()
         {
             // Arrange
             var parser = new ArgumentParser(new string[0]);
 
-            // Act
-            var result = _sut.Validate(parser, null!);
-
-            // Assert
-            result.IsValid.Should().BeFalse();
-            result.Errors.Should().Contain("Command not found");
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => _sut.Validate(parser, null!));
         }
 
         /// <summary>
@@ -126,6 +122,91 @@ namespace CaddyVpsToolkit.Tests.Cli
 
             // Assert
             message.Should().Be($"Error 1{System.Environment.NewLine}Error 2");
+        }
+
+        /// <summary>
+        /// Validates that a null parser throws ArgumentNullException.
+        /// </summary>
+        [Fact]
+        public void Validate_WithNullParser_ShouldThrowArgumentNullException()
+        {
+            // Arrange
+            var descriptor = new CommandDescriptor("cmd", "description");
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => _sut.Validate(null!, descriptor));
+        }
+
+        /// <summary>
+        /// Validates that multiple unknown flags result in multiple error messages.
+        /// </summary>
+        [Fact]
+        public void Validate_WithMultipleUnknownFlags_ShouldReturnMultipleErrors()
+        {
+            // Arrange
+            var parser = new ArgumentParser(new[] { "cmd", "--unknown1", "--unknown2" });
+            var descriptor = new CommandDescriptor("cmd", "description")
+            {
+                Name = "cmd",
+                RequiredArguments = new List<string>(),
+                OptionalFlags = new List<string> { "verbose" }
+            };
+
+            // Act
+            var result = _sut.Validate(parser, descriptor);
+
+            // Assert
+            result.IsValid.Should().BeFalse();
+            result.Errors.Should().Contain("Unknown flag: --unknown1");
+            result.Errors.Should().Contain("Unknown flag: --unknown2");
+        }
+
+        /// <summary>
+        /// Validates that multiple missing required arguments result in multiple error messages.
+        /// </summary>
+        [Fact]
+        public void Validate_WithMultipleMissingRequiredArgs_ShouldReturnMultipleErrors()
+        {
+            // Arrange
+            var parser = new ArgumentParser(new[] { "cmd", "arg1" });
+            var descriptor = new CommandDescriptor("cmd", "description")
+            {
+                Name = "cmd",
+                RequiredArguments = new List<string> { "arg1", "arg2", "arg3" },
+                OptionalFlags = new List<string>()
+            };
+
+            // Act
+            var result = _sut.Validate(parser, descriptor);
+
+            // Assert
+            result.IsValid.Should().BeFalse();
+            result.Errors.Should().Contain(e => e.Contains("Missing required argument: arg2"));
+            result.Errors.Should().Contain(e => e.Contains("Missing required argument: arg3"));
+        }
+
+        /// <summary>
+        /// Validates that both missing required arguments and unknown flags result in combined errors.
+        /// </summary>
+        [Fact]
+        public void Validate_WithMissingArgsAndUnknownFlags_ShouldReturnCombinedErrors()
+        {
+            // Arrange
+            var parser = new ArgumentParser(new[] { "cmd", "arg1", "--unknown" });
+            var descriptor = new CommandDescriptor("cmd", "description")
+            {
+                Name = "cmd",
+                RequiredArguments = new List<string> { "arg1", "arg2" },
+                OptionalFlags = new List<string> { "verbose" }
+            };
+
+            // Act
+            var result = _sut.Validate(parser, descriptor);
+
+            // Assert
+            result.IsValid.Should().BeFalse();
+            result.Errors.Should().Contain(e => e.Contains("Missing required argument"));
+            result.Errors.Should().Contain("Unknown flag: --unknown");
         }
     }
 }
