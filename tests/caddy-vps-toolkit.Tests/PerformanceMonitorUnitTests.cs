@@ -47,14 +47,23 @@ namespace CaddyVpsToolkit.Tests
 
             // Ensure total times are increasing
             var lines = report.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-            var milestoneLines = lines.Where(l => l.TrimStart().StartsWith("first") || l.TrimStart().StartsWith("second")).ToList();
+            var milestoneLines = lines
+                .Where(l => l.TrimStart().StartsWith("first") || l.TrimStart().StartsWith("second"))
+                .ToList();
+
             Assert.Equal(2, milestoneLines.Count);
 
             // Extract total times from the lines (format: "... total: {total}ms")
             long GetTotal(string line)
             {
-                var part = line.Split("total:", StringSplitOptions.TrimEntries)[1];
-                return long.Parse(part.TrimEnd('m', 's'));
+                // Split on "total:" and take the part after it
+                var parts = line.Split(new[] { "total:" }, StringSplitOptions.None);
+                if (parts.Length < 2) return 0;
+                var numberPart = parts[1].Trim();
+                // Remove trailing "ms" if present
+                if (numberPart.EndsWith("ms", StringComparison.OrdinalIgnoreCase))
+                    numberPart = numberPart.Substring(0, numberPart.Length - 2);
+                return long.Parse(numberPart);
             }
 
             var firstTotal = GetTotal(milestoneLines[0]);
@@ -116,13 +125,12 @@ namespace CaddyVpsToolkit.Tests
 
             var report = monitor.GetReport();
 
-            // Null name results in an empty placeholder; empty string also appears as empty
-            // The report should still contain the milestone lines (two of them)
+            // Null or empty names result in a line that starts with ":" after trimming leading spaces
             var milestoneLines = report.Split(Environment.NewLine)
                                        .Where(l => l.TrimStart().StartsWith(":"))
                                        .ToList();
 
-            // Because null/empty produce a line that starts with ":"
+            // Expect at least two such lines (one for each call)
             Assert.True(milestoneLines.Count >= 2);
         }
 
