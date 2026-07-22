@@ -15,15 +15,16 @@ namespace CaddyVpsToolkit.LoadBalancing
     public sealed class UpstreamHealthTracker : IUpstreamHealthTracker
     {
         private readonly IUpstreamPoolRepository _poolRepository;
+        private readonly object _healthLock = new object();
 
-    /// <summary>
-    /// Gets the pool repository used by this tracker.
-    /// </summary>
-    /// <returns>Read-only list of all upstream pools.</returns>
-    internal async Task<IReadOnlyList<UpstreamPool>> GetAllPoolsAsync()
-    {
-        return (await _poolRepository.GetAllAsync()).AsReadOnly();
-    }
+        /// <summary>
+        /// Gets the pool repository used by this tracker.
+        /// </summary>
+        /// <returns>Read-only list of all upstream pools.</returns>
+        internal async Task<IReadOnlyList<UpstreamPool>> GetAllPoolsAsync()
+        {
+            return (await _poolRepository.GetAllAsync()).AsReadOnly();
+        }
 
         public UpstreamHealthTracker(IUpstreamPoolRepository poolRepository)
         {
@@ -38,12 +39,19 @@ namespace CaddyVpsToolkit.LoadBalancing
             var server = pool.Servers.Find(s => s.Id == upstreamId);
             if (server is null) return;
 
-            server.RecordHealthProbeResult(probeSucceeded, responseTimeMs);
+            lock (_healthLock)
+            {
+                server.RecordHealthProbeResult(probeSucceeded, responseTimeMs);
 
-            if (!probeSucceeded && server.ConsecutiveFailures >= pool.UnhealthyThreshold)
-                server.Status = UpstreamServerStatus.Unhealthy;
-            else if (probeSucceeded && server.ConsecutiveSuccesses >= pool.HealthyThreshold && server.Status == UpstreamServerStatus.Unhealthy)
-                server.Status = UpstreamServerStatus.Active;
+                if (!probeSucceeded && server.ConsecutiveFailures >= pool.UnhealthyThreshold)
+                {
+                    server.Status = UpstreamServerStatus.Unhealthy;
+                }
+                else if (probeSucceeded && server.ConsecutiveSuccesses >= pool.HealthyThreshold && server.Status == UpstreamServerStatus.Unhealthy)
+                {
+                    server.Status = UpstreamServerStatus.Active;
+                }
+            }
 
             await _poolRepository.UpdateAsync(pool);
         }
@@ -80,14 +88,17 @@ namespace CaddyVpsToolkit.LoadBalancing
                 var server = pool.Servers.Find(s => s.Id == upstreamId);
                 if (server is not null)
                 {
-                    server.Status = UpstreamServerStatus.Draining;
+                    lock (_healthLock)
+                    {
+                        server.Status = UpstreamServerStatus.Draining;
+                    }
                     await _poolRepository.UpdateAsync(pool);
 
                     var deadline = DateTime.UtcNow.Add(drainTimeout);
                     while (server.ActiveConnections > 0 && DateTime.UtcNow < deadline)
                     {
                         await Task.Delay(250, cancellationToken);
-                        
+
                         // Re-fetch to get updated connections if they were updated externally
                         var updatedPool = await _poolRepository.GetByIdAsync(pool.Id);
                         server = updatedPool?.Servers.Find(s => s.Id == upstreamId);
@@ -96,7 +107,10 @@ namespace CaddyVpsToolkit.LoadBalancing
 
                     if (server is not null)
                     {
-                        server.Status = UpstreamServerStatus.Disabled;
+                        lock (_healthLock)
+                        {
+                            server.Status = UpstreamServerStatus.Disabled;
+                        }
                         await _poolRepository.UpdateAsync(pool);
                     }
                     break;
