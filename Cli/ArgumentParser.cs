@@ -63,6 +63,7 @@ namespace CaddyVpsToolkit.Cli
                 return HasFlag(flagName) ? string.Empty : null;
 
             var fnSpan = flagName.AsSpan();
+            string result = null;
             for (int i = 1; i < _args.Length; i++)
             {
                 var argSpan = _args[i].AsSpan();
@@ -72,20 +73,23 @@ namespace CaddyVpsToolkit.Cli
                 // --flag=value format: no extra string allocation for prefix construction.
                 if (rest.Length > fnSpan.Length + 1
                     && rest[fnSpan.Length] == '='
-                    && rest.StartsWith(fnSpan, StringComparison.Ordinal))
+                    && rest.StartsWith(fnSpan, StringComparison.OrdinalIgnoreCase))
                 {
-                    return rest[(fnSpan.Length + 1)..].ToString();
+                    result = rest[(fnSpan.Length + 1)..].ToString();
+                    continue;
                 }
 
                 // --flag value format
-                if (rest.SequenceEqual(fnSpan))
+                if (rest.Equals(fnSpan, StringComparison.OrdinalIgnoreCase))
                 {
                     if (i + 1 < _args.Length && !_args[i + 1].StartsWith("--"))
-                        return _args[i + 1];
-                    return string.Empty;
+                        result = _args[i + 1];
+                    else
+                        result = string.Empty;
+                    continue;
                 }
             }
-            return null;
+            return result;
         }
 
         /// <summary>
