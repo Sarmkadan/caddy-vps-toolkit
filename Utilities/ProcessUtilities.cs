@@ -38,14 +38,25 @@ namespace CaddyVpsToolkit.Utilities
                 {
                     process.Start();
 
-                    var outputTask = process.StandardOutput.ReadToEndAsync();
-                    var errorTask = process.StandardError.ReadToEndAsync();
-
                     using (var cts = new CancellationTokenSource(timeoutMs))
                     {
                         try
                         {
+                            var outputTask = process.StandardOutput.ReadToEndAsync();
+                            var errorTask = process.StandardError.ReadToEndAsync();
+
                             await process.WaitForExitAsync(cts.Token);
+
+                            var output = await outputTask;
+                            var error = await errorTask;
+
+                            return new ProcessResult
+                            {
+                                ExitCode = process.ExitCode,
+                                Output = output,
+                                Error = error,
+                                IsSuccess = process.ExitCode == 0
+                            };
                         }
                         catch (OperationCanceledException)
                         {
@@ -67,17 +78,6 @@ namespace CaddyVpsToolkit.Utilities
                             };
                         }
                     }
-
-                    var output = await outputTask;
-                    var error = await errorTask;
-
-                    return new ProcessResult
-                    {
-                        ExitCode = process.ExitCode,
-                        Output = output,
-                        Error = error,
-                        IsSuccess = process.ExitCode == 0
-                    };
                 }
                 catch (Exception ex)
                 {
@@ -165,8 +165,8 @@ namespace CaddyVpsToolkit.Utilities
     public sealed class ProcessResult
     {
         public int ExitCode { get; set; }
-        public string Output { get; set; }
-        public string Error { get; set; }
+        public string Output { get; set; } = string.Empty;
+        public string Error { get; set; } = string.Empty;
         public bool IsSuccess { get; set; }
 
         public string GetOutput()
