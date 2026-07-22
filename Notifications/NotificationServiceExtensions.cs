@@ -14,17 +14,15 @@ namespace CaddyVpsToolkit.Notifications
         /// <summary>
         /// Adds NotificationService and related services to the service collection.
         /// </summary>
-        /// <param name="services">The service collection to configure</param>
-        /// <param name="configureOptions">Optional action to configure suppression options</param>
-        /// <returns>The configured service collection</returns>
+        /// <param name="services">The <see cref="IServiceCollection"/> to configure.</param>
+        /// <param name="configureOptions">Optional action to configure suppression options.</param>
+        /// <returns>The configured <see cref="IServiceCollection"/>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
         public static IServiceCollection AddNotificationService(
             this IServiceCollection services,
             Action<NotificationSuppressionOptions>? configureOptions = null)
         {
-            if (services is null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
+            ArgumentNullException.ThrowIfNull(services);
 
             // Configure suppression options
             var options = new NotificationSuppressionOptions();
@@ -39,11 +37,10 @@ namespace CaddyVpsToolkit.Notifications
         /// <summary>
         /// Adds NotificationService with default options to the service collection.
         /// </summary>
-        /// <param name="services">The service collection to configure</param>
-        /// <returns>The configured service collection</returns>
+        /// <param name="services">The <see cref="IServiceCollection"/> to configure.</param>
+        /// <returns>The configured <see cref="IServiceCollection"/>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is <see langword="null"/>.</exception>
         public static IServiceCollection AddNotificationService(this IServiceCollection services)
-        {
-            return services.AddNotificationService(configureOptions: null);
-        }
+            => services.AddNotificationService(configureOptions: null);
     }
 }
