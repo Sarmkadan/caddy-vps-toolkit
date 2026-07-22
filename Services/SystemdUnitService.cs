@@ -11,6 +11,7 @@ using System.IO;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Utilities;
 
 namespace CaddyVpsToolkit.Services
 {
@@ -43,7 +44,7 @@ namespace CaddyVpsToolkit.Services
             try
             {
                 var content = config.GenerateSystemdContent();
-                var filePath = Path.Combine(AppConstants.SystemdUnitsDirectory, config.UnitName);
+                var filePath = PathUtilities.SafeCombine(AppConstants.SystemdUnitsDirectory, config.UnitName);
 
                 if (dryRun)
                 {
@@ -81,7 +82,7 @@ namespace CaddyVpsToolkit.Services
 
             try
             {
-                var filePath = Path.Combine(AppConstants.SystemdUnitsDirectory, unitName);
+                var filePath = PathUtilities.SafeCombine(AppConstants.SystemdUnitsDirectory, unitName);
 
                 if (File.Exists(filePath))
                 {
@@ -175,7 +176,7 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public bool UnitFileExists(string unitName)
         {
-            var filePath = Path.Combine(AppConstants.SystemdUnitsDirectory, unitName);
+            var filePath = PathUtilities.SafeCombine(AppConstants.SystemdUnitsDirectory, unitName);
             return File.Exists(filePath);
         }
 
@@ -199,7 +200,7 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task<string> GetUnitFileContentAsync(string unitName)
         {
-            var filePath = Path.Combine(AppConstants.SystemdUnitsDirectory, unitName);
+            var filePath = PathUtilities.SafeCombine(AppConstants.SystemdUnitsDirectory, unitName);
 
             if (!File.Exists(filePath))
                 throw new SystemdOperationException($"Unit file not found: {unitName}");

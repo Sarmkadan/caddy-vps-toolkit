@@ -13,6 +13,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Data;
+using CaddyVpsToolkit.Utilities;
 
 namespace CaddyVpsToolkit.Services
 {
@@ -126,7 +127,7 @@ namespace CaddyVpsToolkit.Services
         public async Task LoadFromFileAsync(string filePath)
         {
             if (string.IsNullOrWhiteSpace(filePath))
-                filePath = Path.Combine(AppConstants.ConfigDirectory, AppConstants.AppSettingsFileName);
+                filePath = PathUtilities.SafeCombine(AppConstants.ConfigDirectory, AppConstants.AppSettingsFileName);
 
             if (!File.Exists(filePath))
                 return;
@@ -155,7 +156,7 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task SaveToFileAsync(string filePath = null)
         {
-            filePath = filePath ?? Path.Combine(AppConstants.ConfigDirectory, AppConstants.AppSettingsFileName);
+            filePath = filePath ?? PathUtilities.SafeCombine(AppConstants.ConfigDirectory, AppConstants.AppSettingsFileName);
 
             try
             {

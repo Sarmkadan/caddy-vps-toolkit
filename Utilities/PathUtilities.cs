@@ -33,20 +33,68 @@ namespace CaddyVpsToolkit.Utilities
         }
 
         /// <summary>
-        /// Safely combine path parts, preventing path traversal attacks
+        /// Safely combine path parts, preventing path traversal attacks and rooted paths
         /// </summary>
+        /// <param name="basePath">The base directory path (must be a relative or safe absolute path)</param>
+        /// <param name="parts">Path parts to combine</param>
+        /// <returns>Combined path that stays within basePath</returns>
+        /// <exception cref="ArgumentException">Thrown if basePath is null or empty</exception>
+        /// <exception cref="ArgumentException">Thrown if any part is rooted (starts with / or drive letter)</exception>
+        /// <exception cref="InvalidOperationException">Thrown if path traversal is detected</exception>
         public static string SafeCombine(string basePath, params string[] parts)
         {
             if (string.IsNullOrEmpty(basePath))
                 throw new ArgumentException("Base path required", nameof(basePath));
 
+            // Normalize base path
+            basePath = Path.GetFullPath(basePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+
+            // Ensure base path is not rooted (should be relative to a known safe root)
+            if (Path.IsPathRooted(basePath))
+            {
+                // For Windows-style rooted paths (e.g., "C:\\"), ensure they're within a safe root
+                // This prevents absolute paths like "C:\\Windows\\System32" when basePath is "C:\\safe"
+                throw new ArgumentException("Base path must be a relative path, absolute paths are not allowed", nameof(basePath));
+            }
+
             string combined = basePath;
             foreach (var part in parts)
             {
+                if (string.IsNullOrEmpty(part))
+                    continue;
+
+                // Reject any part that is rooted (starts with / or drive letter)
+                if (Path.IsPathRooted(part))
+                {
+                    throw new ArgumentException(
+                        $"Path part '{part}' is rooted and cannot be safely combined. Use relative paths only.",
+                        nameof(parts)
+                    );
+                }
+
+                // Reject parts that contain path traversal sequences
+                // Normalize the path part first to handle different encodings and variations
+        string normalizedPart = part.Replace('\\', Path.DirectorySeparatorChar);
+        if (normalizedPart.Contains("..") ||
+            normalizedPart.Contains("~" + Path.DirectorySeparatorChar) ||
+            normalizedPart.Contains("~" + Path.AltDirectorySeparatorChar))
+                {
+                    throw new ArgumentException(
+                        $"Path part '{part}' contains path traversal sequences and cannot be safely combined.",
+                        nameof(parts)
+                    );
+                }
+
                 combined = Path.Combine(combined, part);
-                // Ensure the combined path doesn't escape basePath (security check)
-                if (!Path.GetFullPath(combined).StartsWith(Path.GetFullPath(basePath)))
-                    throw new InvalidOperationException("Path traversal attempt detected");
+
+                // Final security check: ensure the combined path doesn't escape basePath
+                string combinedFullPath = Path.GetFullPath(combined);
+                string baseFullPath = Path.GetFullPath(basePath);
+
+                if (!combinedFullPath.StartsWith(baseFullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("Path traversal attempt detected: combined path escapes base directory");
+                }
             }
 
             return combined;

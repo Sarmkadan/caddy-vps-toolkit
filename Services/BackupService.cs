@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Data;
 using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Utilities;
 
 namespace CaddyVpsToolkit.Services
 {
@@ -84,7 +85,7 @@ namespace CaddyVpsToolkit.Services
             if (!Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            var filePath = outputPath ?? Path.Combine(
+            var filePath = outputPath ?? PathUtilities.SafeCombine(
                 directory,
                 $"backup-{manifest.CreatedAt:yyyyMMdd_HHmmss}{BackupFileExtension}");
 

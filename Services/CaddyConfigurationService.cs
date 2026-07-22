@@ -13,6 +13,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Utilities;
 
 namespace CaddyVpsToolkit.Services
 {
@@ -136,7 +137,7 @@ namespace CaddyVpsToolkit.Services
             if (string.IsNullOrWhiteSpace(content))
                 throw new ArgumentException("Content cannot be empty", nameof(content));
 
-            filePath = filePath ?? Path.Combine(AppConstants.CaddyConfigDirectory, AppConstants.CaddyfileName);
+            filePath = filePath ?? PathUtilities.SafeCombine(AppConstants.CaddyConfigDirectory, AppConstants.CaddyfileName);
 
             if (dryRun)
             {
@@ -205,7 +206,7 @@ namespace CaddyVpsToolkit.Services
         /// <returns>The Caddyfile content.</returns>
         public async Task<string> ReadCaddyfileAsync(string filePath = null)
         {
-            filePath = filePath ?? Path.Combine(AppConstants.CaddyConfigDirectory, AppConstants.CaddyfileName);
+            filePath = filePath ?? PathUtilities.SafeCombine(AppConstants.CaddyConfigDirectory, AppConstants.CaddyfileName);
 
             try
             {
