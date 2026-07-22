@@ -273,7 +273,7 @@ namespace CaddyVpsToolkit.Tests.Notifications
         }
 
         [Fact]
-        public async Task SendAsync_WithMultipleProviders_SuppressesAcrossAllProviders()
+        public async Task SendAsync_WithMultipleProviders_DispatchesToAllChannels()
         {
             // Arrange
             var options = new NotificationSuppressionOptions
@@ -286,32 +286,265 @@ namespace CaddyVpsToolkit.Tests.Notifications
             var service = new NotificationService(_logger, options);
             var provider1 = new TestNotificationProvider();
             var provider2 = new TestNotificationProvider();
+            var provider3 = new TestNotificationProvider();
 
             service.Register(provider1);
             service.Register(provider2);
+            service.Register(provider3);
 
             var notification = new Notification
             {
-                Title = "Test Alert",
-                Message = "Test message",
+                Title = "Multi-Channel Alert",
+                Message = "This should be sent to all providers",
                 Priority = NotificationPriority.High
             };
 
-            // Act - Send first notification
-            var firstResult = await service.SendAsync(notification);
-
-            // Reset provider call counts after first send
-            provider1.Reset();
-            provider2.Reset();
-
-            // Act - Send duplicate notification
-            var secondResult = await service.SendAsync(notification);
+            // Act
+            var result = await service.SendAsync(notification);
 
             // Assert
-            firstResult.Should().BeTrue();
-            secondResult.Should().BeTrue();
-            provider1.SendCount.Should().Be(0); // Should be suppressed for all providers
-            provider2.SendCount.Should().Be(0);
+            result.Should().BeTrue();
+            provider1.SendCount.Should().Be(1, "Provider1 SendAsync should have been called");
+            provider2.SendCount.Should().Be(1, "Provider2 SendAsync should have been called");
+            provider3.SendCount.Should().Be(1, "Provider3 SendAsync should have been called");
+
+            // Verify all providers were called
+            var logs = _logger.GetLogs();
+            logs.Should().Contain(log => log.Contains("Notification sent via TestProvider"));
+            logs.Count(log => log.Contains("Notification sent via TestProvider")).Should().Be(3);
+        }
+
+        [Fact]
+        public async Task SendAsync_WithFailingProvider_IsolatesFailure()
+        {
+            // Arrange
+            var options = new NotificationSuppressionOptions
+            {
+                Enabled = true,
+                SuppressionWindowSeconds = 300,
+                MaxTrackedNotifications = 1000
+            };
+
+            var service = new NotificationService(_logger, options);
+            var failingProvider = new FailingNotificationProvider();
+            var successProvider = new TestNotificationProvider();
+
+            service.Register(failingProvider);
+            service.Register(successProvider);
+
+            var notification = new Notification
+            {
+                Title = "Critical Alert",
+                Message = "This should be sent despite one provider failing",
+                Priority = NotificationPriority.Critical
+            };
+
+            // Act
+            var result = await service.SendAsync(notification);
+
+            // Assert
+            result.Should().BeFalse(); // Returns false because not all providers succeeded
+            failingProvider.SendCount.Should().Be(1);
+            successProvider.SendCount.Should().Be(1);
+
+            // Verify failure was logged
+            var logs = _logger.GetLogs();
+            logs.Should().Contain(log => log.Contains("Error sending notification via FailingProvider"));
+            logs.Should().Contain(log => log.Contains("succeeded"));
+        }
+
+        [Fact]
+        public async Task SendAsync_WithAllProvidersFailing_ReturnsFalse()
+        {
+            // Arrange
+            var options = new NotificationSuppressionOptions
+            {
+                Enabled = true,
+                SuppressionWindowSeconds = 300,
+                MaxTrackedNotifications = 1000
+            };
+
+            var service = new NotificationService(_logger, options);
+            var failingProvider1 = new FailingNotificationProvider();
+            var failingProvider2 = new FailingNotificationProvider();
+
+            service.Register(failingProvider1);
+            service.Register(failingProvider2);
+
+            var notification = new Notification
+            {
+                Title = "Critical Alert",
+                Message = "This should fail if all providers fail",
+                Priority = NotificationPriority.Critical
+            };
+
+            // Act
+            var result = await service.SendAsync(notification);
+
+            // Assert
+            result.Should().BeFalse(); // Should return false when all providers fail
+            failingProvider1.SendCount.Should().Be(1);
+            failingProvider2.SendCount.Should().Be(1);
+
+            // Verify all failure logs are present
+            var logs = _logger.GetLogs();
+            logs.Should().Contain(log => log.Contains("Error sending notification via FailingProvider"));
+            logs.Count(log => log.Contains("Error sending notification via FailingProvider")).Should().Be(2);
+        }
+
+        [Fact]
+        public void NotificationExtensions_AddMetadata_FluentApiWorks()
+        {
+            // Arrange
+            var notification = new Notification
+            {
+                Title = "Test Notification",
+                Message = "Test message"
+            };
+
+            // Act
+            var result = notification.AddMetadata("key1", "value1")
+                .AddMetadata("key2", "value2");
+
+            // Assert
+            result.Should().BeSameAs(notification); // Should return same instance for fluent chaining
+            notification.Metadata.Should().NotBeNull();
+            notification.Metadata.Should().HaveCount(2);
+            notification.Metadata["key1"].Should().Be("value1");
+            notification.Metadata["key2"].Should().Be("value2");
+        }
+
+        [Fact]
+        public void NotificationExtensions_AddMetadata_NullNotificationThrows()
+        {
+            // Arrange
+            Notification? notification = null;
+
+            // Act
+            Action act = () => notification.AddMetadata("key", "value");
+
+            // Assert
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Fact]
+        public void NotificationExtensions_AddMetadata_NullKeyThrows()
+        {
+            // Arrange
+            var notification = new Notification();
+
+            // Act & Assert
+            notification.Invoking(n => n.AddMetadata(null!, "value"))
+                .Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void NotificationExtensions_RemoveMetadata_RemovesExistingKey()
+        {
+            // Arrange
+            var notification = new Notification();
+            notification.AddMetadata("key1", "value1");
+            notification.AddMetadata("key2", "value2");
+
+            // Act
+            var result = notification.RemoveMetadata("key1");
+
+            // Assert
+            result.Should().BeSameAs(notification); // Should return same instance for fluent chaining
+            notification.Metadata.Should().HaveCount(1);
+            notification.Metadata.Should().NotContainKey("key1");
+            notification.Metadata.Should().ContainKey("key2");
+        }
+
+        [Fact]
+        public void NotificationExtensions_RemoveMetadata_NonExistingKey_DoesNotThrow()
+        {
+            // Arrange
+            var notification = new Notification();
+            notification.AddMetadata("key1", "value1");
+
+            // Act - Should not throw when removing non-existing key
+            var result = notification.RemoveMetadata("nonexistent");
+
+            // Assert
+            result.Should().BeSameAs(notification);
+            notification.Metadata.Should().HaveCount(1);
+        }
+
+        [Fact]
+        public void NotificationExtensions_GetMetadataValue_RetrievesValue()
+        {
+            // Arrange
+            var notification = new Notification();
+            notification.AddMetadata("environment", "production");
+            notification.AddMetadata("service", "api");
+
+            // Act
+            var envValue = notification.GetMetadataValue("environment");
+            var serviceValue = notification.GetMetadataValue("service");
+            var missingValue = notification.GetMetadataValue("nonexistent");
+
+            // Assert
+            envValue.Should().Be("production");
+            serviceValue.Should().Be("api");
+            missingValue.Should().BeNull();
+        }
+
+        [Fact]
+        public void NotificationExtensions_GetMetadataValue_NullNotificationThrows()
+        {
+            // Arrange
+            Notification? notification = null;
+
+            // Act
+            Action act = () => notification.GetMetadataValue("key");
+
+            // Assert
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Fact]
+        public void NotificationExtensions_GetMetadataValue_NullKeyThrows()
+        {
+            // Arrange
+            var notification = new Notification();
+
+            // Act & Assert
+            notification.Invoking(n => n.GetMetadataValue(null!))
+                .Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void NotificationExtensions_ToSummaryString_FormatsCorrectly()
+        {
+            // Arrange
+            var notification = new Notification
+            {
+                Id = "test-id-123",
+                Title = "System Alert",
+                Message = "Something went wrong",
+                Priority = NotificationPriority.High,
+                CreatedAt = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc)
+            };
+
+            // Act
+            var summary = notification.ToSummaryString();
+
+            // Assert
+            summary.Should().Be("[Id:test-id-123] \"System Alert\" (Priority:High, Created:2024-01-01 12:00:00Z)");
+        }
+
+        [Fact]
+        public void NotificationExtensions_ToSummaryString_NullNotificationThrows()
+        {
+            // Arrange
+            Notification? notification = null;
+
+            // Act
+            Action act = () => notification.ToSummaryString();
+
+            // Assert
+            act.Should().Throw<ArgumentNullException>();
         }
 
         [Fact]
@@ -413,7 +646,7 @@ namespace CaddyVpsToolkit.Tests.Notifications
             // Verify dictionary size is reasonable (might be slightly over due to timing)
             // The cleanup happens in batches, so we check it's not growing uncontrollably
             var suppressionDictSize = service.GetType().GetField("_recentNotifications",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(service);
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(service);
             suppressionDictSize.Should().NotBeNull();
         }
 
@@ -435,6 +668,22 @@ namespace CaddyVpsToolkit.Tests.Notifications
             public void Reset()
             {
                 SendCount = 0;
+            }
+        }
+
+        /// <summary>
+        /// Test notification provider that always fails
+        /// </summary>
+        private class FailingNotificationProvider : INotificationProvider
+        {
+            public int SendCount { get; private set; }
+            public string ProviderName => "FailingProvider";
+
+            public async Task<bool> SendAsync(Notification notification)
+            {
+                SendCount++;
+                await Task.CompletedTask;
+                throw new InvalidOperationException("Provider intentionally failed");
             }
         }
     }
