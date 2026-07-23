@@ -68,6 +68,123 @@ namespace CaddyVpsToolkit.Tests
                 PathUtilities.SafeCombine(basePath, traversalPart));
         }
 
+        [Fact]
+        public void SafeCombine_ReservedWindowsDeviceName_Throws()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return; // Skip on non-Windows
+
+            var basePath = Path.Combine(_tempRoot, "base");
+            var reservedName = "CON";
+
+            Assert.Throws<ArgumentException>(() =>
+                PathUtilities.SafeCombine(basePath, reservedName));
+        }
+
+        [Fact]
+        public void SafeCombine_ReservedWindowsPortName_Throws()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return; // Skip on non-Windows
+
+            var basePath = Path.Combine(_tempRoot, "base");
+            var portName = "COM1";
+
+            Assert.Throws<ArgumentException>(() =>
+                PathUtilities.SafeCombine(basePath, portName));
+        }
+
+        [Fact]
+        public void SafeCombine_TrailingDot_Throws()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return; // Skip on non-Windows
+
+            var basePath = Path.Combine(_tempRoot, "base");
+            var trailingDot = "file.";
+
+            Assert.Throws<ArgumentException>(() =>
+                PathUtilities.SafeCombine(basePath, trailingDot));
+        }
+
+        [Fact]
+        public void SafeCombine_TrailingSpace_Throws()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return; // Skip on non-Windows
+
+            var basePath = Path.Combine(_tempRoot, "base");
+            var trailingSpace = "file ";
+
+            Assert.Throws<ArgumentException>(() =>
+                PathUtilities.SafeCombine(basePath, trailingSpace));
+        }
+
+        [Fact]
+        public void SafeCombine_SymlinkEscape_Throws()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
+                !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
+                !RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+                return; // Skip on non-Unix systems
+
+            var basePath = Path.Combine(_tempRoot, "base");
+            Directory.CreateDirectory(basePath);
+
+            // Create a symlink outside the base directory
+            var outsidePath = Path.Combine(Path.GetTempPath(), "outside_symlink_target_" + Guid.NewGuid());
+            Directory.CreateDirectory(outsidePath);
+
+            var symlinkPath = Path.Combine(basePath, "outside_link");
+            try
+            {
+                // Create symlink pointing outside
+                File.CreateSymbolicLink(symlinkPath, outsidePath);
+
+                // Try to combine through the symlink - should detect escape
+                Assert.Throws<InvalidOperationException>(() =>
+                    PathUtilities.SafeCombine(basePath, "outside_link", "file.txt"));
+            }
+            finally
+            {
+                // Cleanup
+                try { File.Delete(symlinkPath); } catch { }
+                try { Directory.Delete(outsidePath, true); } catch { }
+            }
+        }
+
+        [Fact]
+        public void SafeCombine_NullBasePath_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                PathUtilities.SafeCombine(null!, "part"));
+        }
+
+        [Fact]
+        public void SafeCombine_EmptyBasePath_Throws()
+        {
+            Assert.Throws<ArgumentException>(() =>
+                PathUtilities.SafeCombine(string.Empty, "part"));
+        }
+
+        [Fact]
+        public void SafeCombine_NullPart_Throws()
+        {
+            var basePath = Path.Combine(_tempRoot, "base");
+            Assert.Throws<ArgumentException>(() =>
+                PathUtilities.SafeCombine(basePath, null!));
+        }
+
+        [Fact]
+        public void SafeCombine_RootedPart_Throws()
+        {
+            var basePath = Path.Combine(_tempRoot, "base");
+            var rootedPart = "/etc/passwd";
+
+            Assert.Throws<ArgumentException>(() =>
+                PathUtilities.SafeCombine(basePath, rootedPart));
+        }
+
         #endregion
 
         #region NormalizePath
