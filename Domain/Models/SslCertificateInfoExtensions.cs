@@ -18,9 +18,9 @@ namespace CaddyVpsToolkit.Domain.Models
         /// <param name="certificate">The certificate to check.</param>
         /// <param name="expiryWarningThresholdDays">Number of days before expiry to consider the certificate as "expiring soon". Default is 30 days.</param>
         /// <param name="criticalThresholdDays">Number of days before expiry to consider the certificate as "critical". Default is 7 days.</param>
-        /// <returns>A tuple containing the status and a human-readable message.</returns>
+        /// <returns>A structured result containing the certificate health status, days remaining, and a human-readable message.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <see langword="null"/></exception>
-        public static (SslCertificateStatus Status, string Message) GetStatus(
+        public static CertificateStatusResult GetStatus(
             this SslCertificateInfo certificate,
             int expiryWarningThresholdDays = 30,
             int criticalThresholdDays = 7)
@@ -40,10 +40,10 @@ namespace CaddyVpsToolkit.Domain.Models
         /// </summary>
         /// <param name="certificate">The certificate to check.</param>
         /// <param name="options">Configuration options for expiry thresholds. Uses defaults if null.</param>
-        /// <returns>A tuple containing the status and a human-readable message.</returns>
+        /// <returns>A structured result containing the certificate health status, days remaining, and a human-readable message.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <see langword="null"/></exception>
         /// <exception cref="ArgumentException"><paramref name="options"/> contains invalid values.</exception>
-        public static (SslCertificateStatus Status, string Message) GetStatus(
+        public static CertificateStatusResult GetStatus(
             this SslCertificateInfo certificate,
             CertificateStatusOptions? options = null)
         {
@@ -61,26 +61,38 @@ namespace CaddyVpsToolkit.Domain.Models
                     ? certificate.ExpiresAt
                     : certificate.ExpiresAt.ToUniversalTime();
                 var daysAgo = Math.Abs(daysUntilExpiry);
-                return (SslCertificateStatus.Expired,
+                return new CertificateStatusResult(
+                    SslCertificateStatus.Expired,
+                    daysUntilExpiry,
                     daysAgo == 0
                         ? $"Certificate expires today on {expiryDate:yyyy-MM-dd}."
-                        : $"Certificate expired on {expiryDate:yyyy-MM-dd} ({daysAgo} days ago).");
+                        : $"Certificate expired on {expiryDate:yyyy-MM-dd} ({daysAgo} days ago)."
+                );
             }
 
             if (daysUntilExpiry <= opts.CriticalDays)
             {
-                return (SslCertificateStatus.Critical,
-                    $"Certificate expires in {daysUntilExpiry} day(s) on {certificate.ExpiresAt:yyyy-MM-dd} (CRITICAL).");
+                return new CertificateStatusResult(
+                    SslCertificateStatus.Critical,
+                    daysUntilExpiry,
+                    $"Certificate expires in {daysUntilExpiry} day(s) on {certificate.ExpiresAt:yyyy-MM-dd} (CRITICAL)."
+                );
             }
 
             if (daysUntilExpiry <= opts.WarningDays)
             {
-                return (SslCertificateStatus.ExpiringSoon,
-                    $"Certificate expires in {daysUntilExpiry} day(s) on {certificate.ExpiresAt:yyyy-MM-dd}.");
+                return new CertificateStatusResult(
+                    SslCertificateStatus.ExpiringSoon,
+                    daysUntilExpiry,
+                    $"Certificate expires in {daysUntilExpiry} day(s) on {certificate.ExpiresAt:yyyy-MM-dd}."
+                );
             }
 
-            return (SslCertificateStatus.Valid,
-                $"Certificate valid for {daysUntilExpiry} day(s).");
+            return new CertificateStatusResult(
+                SslCertificateStatus.Valid,
+                daysUntilExpiry,
+                $"Certificate valid for {daysUntilExpiry} day(s)."
+            );
         }
 
         /// <summary>
