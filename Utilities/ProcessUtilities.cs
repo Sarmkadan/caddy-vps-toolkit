@@ -6,6 +6,8 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,6 +19,16 @@ namespace CaddyVpsToolkit.Utilities
     /// </summary>
     public static class ProcessUtilities
     {
+        /// <summary>
+        /// Maximum size for captured output (default: 10 MB)
+        /// </summary>
+        public const int DefaultMaxOutputSize = 10 * 1024 * 1024; // 10 MB
+
+        /// <summary>
+        /// Maximum size for captured error output (default: 10 MB)
+        /// </summary>
+        public const int DefaultMaxErrorSize = 10 * 1024 * 1024; // 10 MB
+
         /// <summary>
         /// Execute command and capture output with timeout
         /// </summary>
@@ -47,8 +59,58 @@ namespace CaddyVpsToolkit.Utilities
         /// <exception cref="OperationCanceledException">Thrown when the operation is canceled via the cancellation token</exception>
         public static async Task<ProcessResult> ExecuteAsync(string command, string arguments, CancellationToken cancellationToken)
         {
+            return await ExecuteAsync(command, arguments, DefaultMaxOutputSize, DefaultMaxErrorSize, timeoutMs: 30000, cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Execute command and capture output with timeout and cancellation support
+        /// </summary>
+        /// <param name="command">The command to execute</param>
+        /// <param name="arguments">The command arguments</param>
+        /// <param name="timeoutMs">Timeout in milliseconds</param>
+        /// <param name="cancellationToken">Cancellation token for cooperative cancellation</param>
+        /// <returns>Process execution result</returns>
+        /// <exception cref="ArgumentException">Thrown when command or arguments are null or empty</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when timeoutMs is less than or equal to 0</exception>
+        /// <exception cref="OperationCanceledException">Thrown when the operation is canceled via the cancellation token</exception>
+        public static async Task<ProcessResult> ExecuteAsync(string command, string arguments, int timeoutMs, CancellationToken cancellationToken)
+        {
             ArgumentException.ThrowIfNullOrEmpty(command);
             ArgumentException.ThrowIfNullOrEmpty(arguments);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeoutMs, 0);
+
+            return await ExecuteAsync(command, arguments, DefaultMaxOutputSize, DefaultMaxErrorSize, outputCallback: null, errorCallback: null, timeoutMs: timeoutMs, cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Execute command and capture output with size limits and optional streaming callback
+        /// </summary>
+        /// <param name="command">The command to execute</param>
+        /// <param name="arguments">The command arguments</param>
+        /// <param name="maxOutputSize">Maximum size in bytes for standard output (0 = unlimited)</param>
+        /// <param name="maxErrorSize">Maximum size in bytes for error output (0 = unlimited)</param>
+        /// <param name="outputCallback">Optional callback for streaming output line by line</param>
+        /// <param name="errorCallback">Optional callback for streaming error output line by line</param>
+        /// <param name="timeoutMs">Timeout in milliseconds</param>
+        /// <param name="cancellationToken">Cancellation token for cooperative cancellation</param>
+        /// <returns>Process execution result</returns>
+        /// <exception cref="ArgumentException">Thrown when command or arguments are null or empty</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when timeoutMs is less than or equal to 0 and maxOutputSize/maxErrorSize are negative</exception>
+        public static async Task<ProcessResult> ExecuteAsync(
+            string command,
+            string arguments,
+            int maxOutputSize,
+            int maxErrorSize,
+            Action<string>? outputCallback = null,
+            Action<string>? errorCallback = null,
+            int timeoutMs = 30000,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(command);
+            ArgumentException.ThrowIfNullOrEmpty(arguments);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeoutMs, 0);
+            if (maxOutputSize < 0) throw new ArgumentOutOfRangeException(nameof(maxOutputSize), "Max output size cannot be negative");
+            if (maxErrorSize < 0) throw new ArgumentOutOfRangeException(nameof(maxErrorSize), "Max error size cannot be negative");
 
             var startInfo = new ProcessStartInfo
             {
@@ -67,26 +129,47 @@ namespace CaddyVpsToolkit.Utilities
                 process.Start();
 
                 // Create a linked token source that combines timeout and cancellation
-                // Default timeout of 30 seconds when only cancellation token is provided
-                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(30000));
+                using var timeoutCts = new CancellationTokenSource(timeoutMs);
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
                 var linkedToken = linkedCts.Token;
 
                 try
                 {
-                    var outputTask = process.StandardOutput.ReadToEndAsync();
-                    var errorTask = process.StandardError.ReadToEndAsync();
+                    // Use StringBuilder to efficiently capture output with size limits
+                    var outputBuilder = new StringBuilder();
+                    var errorBuilder = new StringBuilder();
+                    var outputLines = new StringBuilder();
+                    var errorLines = new StringBuilder();
+
+                    // Create tasks for reading output streams
+                    var outputReadTask = ReadStreamWithLimitAsync(
+                        process.StandardOutput,
+                        outputBuilder,
+                        maxOutputSize,
+                        outputLines,
+                        outputCallback,
+                        linkedToken);
+
+                    var errorReadTask = ReadStreamWithLimitAsync(
+                        process.StandardError,
+                        errorBuilder,
+                        maxErrorSize,
+                        errorLines,
+                        errorCallback,
+                        linkedToken);
 
                     await process.WaitForExitAsync(linkedToken);
 
-                    var output = await outputTask;
-                    var error = await errorTask;
+                    // Wait for both read operations to complete
+                    await Task.WhenAll(outputReadTask, errorReadTask);
 
                     return new ProcessResult
                     {
                         ExitCode = process.ExitCode,
-                        Output = output,
-                        Error = error,
+                        Output = outputBuilder.ToString(),
+                        Error = errorBuilder.ToString(),
+                        OutputTruncated = outputBuilder.Length > maxOutputSize && maxOutputSize > 0,
+                        ErrorTruncated = errorBuilder.Length > maxErrorSize && maxErrorSize > 0,
                         IsSuccess = process.ExitCode == 0
                     };
                 }
@@ -121,88 +204,77 @@ namespace CaddyVpsToolkit.Utilities
         }
 
         /// <summary>
-        /// Execute command and capture output with timeout and cancellation support
+        /// Read a stream with size limit and optional line-by-line callback
         /// </summary>
-        /// <param name="command">The command to execute</param>
-        /// <param name="arguments">The command arguments</param>
-        /// <param name="timeoutMs">Timeout in milliseconds</param>
-        /// <param name="cancellationToken">Cancellation token for cooperative cancellation</param>
-        /// <returns>Process execution result</returns>
-        /// <exception cref="ArgumentException">Thrown when command or arguments are null or empty</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when timeoutMs is less than or equal to 0</exception>
-        /// <exception cref="OperationCanceledException">Thrown when the operation is canceled via the cancellation token</exception>
-        public static async Task<ProcessResult> ExecuteAsync(string command, string arguments, int timeoutMs, CancellationToken cancellationToken)
+        private static async Task ReadStreamWithLimitAsync(
+            StreamReader reader,
+            StringBuilder outputBuilder,
+            int maxSize,
+            StringBuilder? lineBuffer,
+            Action<string>? lineCallback,
+            CancellationToken cancellationToken)
         {
-            ArgumentException.ThrowIfNullOrEmpty(command);
-            ArgumentException.ThrowIfNullOrEmpty(arguments);
-            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeoutMs, 0);
+            const int bufferSize = 4096;
+            var buffer = new char[bufferSize];
+            var bytesRead = 0;
+            var pendingLine = new StringBuilder();
 
-            var startInfo = new ProcessStartInfo
+            while (!cancellationToken.IsCancellationRequested)
             {
-                FileName = command,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                var readCount = await reader.ReadAsync(buffer, cancellationToken);
 
-            using var process = new Process { StartInfo = startInfo };
-
-            try
-            {
-                process.Start();
-
-                // Create a linked token source that combines timeout and cancellation
-                using var timeoutCts = new CancellationTokenSource(timeoutMs);
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-                var linkedToken = linkedCts.Token;
-
-                try
+                if (readCount == 0)
                 {
-                    var outputTask = process.StandardOutput.ReadToEndAsync();
-                    var errorTask = process.StandardError.ReadToEndAsync();
-
-                    await process.WaitForExitAsync(linkedToken);
-
-                    var output = await outputTask;
-                    var error = await errorTask;
-
-                    return new ProcessResult
+                    // End of stream
+                    if (pendingLine.Length > 0 && lineCallback != null)
                     {
-                        ExitCode = process.ExitCode,
-                        Output = output,
-                        Error = error,
-                        IsSuccess = process.ExitCode == 0
-                    };
+                        lineCallback(pendingLine.ToString());
+                    }
+                    break;
                 }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+
+                // Process character by character to detect line endings
+                for (var i = 0; i < readCount; i++)
                 {
-                    await TerminateProcessTreeAsync(process);
-                    throw new OperationCanceledException("Process execution was canceled via CancellationToken", cancellationToken);
-                }
-                catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
-                {
-                    await TerminateProcessTreeAsync(process);
-                    return new ProcessResult
+                    var c = buffer[i];
+                    pendingLine.Append(c);
+
+                    if (c == '\n')
                     {
-                        ExitCode = -1,
-                        Output = "",
-                        Error = "Process timeout",
-                        IsSuccess = false,
-                        TimedOut = true
-                    };
+                        // Complete line ready
+                        var line = pendingLine.ToString();
+                        if (lineCallback != null)
+                        {
+                            lineCallback(line);
+                        }
+                        pendingLine.Clear();
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                return new ProcessResult
+
+                // Check if we've exceeded the size limit
+                if (maxSize > 0)
                 {
-                    ExitCode = -1,
-                    Output = "",
-                    Error = ex.Message,
-                    IsSuccess = false
-                };
+                    var charsToAdd = readCount;
+                    if (outputBuilder.Length + charsToAdd > maxSize)
+                    {
+                        // Calculate how many characters we can actually add
+                        var remaining = maxSize - outputBuilder.Length;
+                        if (remaining > 0)
+                        {
+                            outputBuilder.Append(buffer, 0, remaining);
+                        }
+                        // Skip the rest to enforce the limit
+                        break;
+                    }
+                    else
+                    {
+                        outputBuilder.Append(buffer, 0, readCount);
+                    }
+                }
+                else
+                {
+                    outputBuilder.Append(buffer, 0, readCount);
+                }
             }
         }
 
@@ -339,45 +411,55 @@ namespace CaddyVpsToolkit.Utilities
                 return false;
             }
         }
-    }
-
-    /// <summary>
-    /// Result of process execution
-    /// </summary>
-    public sealed class ProcessResult
-    {
-        /// <summary>
-        /// Gets or sets the exit code of the process.
-        /// </summary>
-        public int ExitCode { get; set; }
 
         /// <summary>
-        /// Gets or sets the standard output from the process.
+        /// Result of process execution
         /// </summary>
-        public string Output { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Gets or sets the error output from the process.
-        /// </summary>
-        public string Error { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the process completed successfully.
-        /// </summary>
-        public bool IsSuccess { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the process timed out.
-        /// </summary>
-        public bool TimedOut { get; set; }
-
-        /// <summary>
-        /// Gets the process output or error, depending on which is available.
-        /// </summary>
-        /// <returns>The process output or error message.</returns>
-        public string GetOutput()
+        public sealed class ProcessResult
         {
-            return !string.IsNullOrEmpty(Error) ? Error : Output;
+            /// <summary>
+            /// Gets or sets the exit code of the process.
+            /// </summary>
+            public int ExitCode { get; set; }
+
+            /// <summary>
+            /// Gets or sets the standard output from the process.
+            /// </summary>
+            public string Output { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Gets or sets the error output from the process.
+            /// </summary>
+            public string Error { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Gets or sets a value indicating whether the process completed successfully.
+            /// </summary>
+            public bool IsSuccess { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether the process timed out.
+            /// </summary>
+            public bool TimedOut { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether the output was truncated due to exceeding size limits.
+            /// </summary>
+            public bool OutputTruncated { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether the error output was truncated due to exceeding size limits.
+            /// </summary>
+            public bool ErrorTruncated { get; set; }
+
+            /// <summary>
+            /// Gets the process output or error, depending on which is available.
+            /// </summary>
+            /// <returns>The process output or error message.</returns>
+            public string GetOutput()
+            {
+                return !string.IsNullOrEmpty(Error) ? Error : Output;
+            }
         }
     }
 }

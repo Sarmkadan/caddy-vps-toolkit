@@ -76,7 +76,7 @@ namespace CaddyVpsToolkit.Tests
         [Fact]
         public void ProcessResult_GetOutput_ReturnsErrorWhenErrorIsPresent()
         {
-            var procResult = new ProcessResult
+            var procResult = new ProcessUtilities.ProcessResult
             {
                 ExitCode = 1,
                 Output = "standard output",
@@ -90,7 +90,7 @@ namespace CaddyVpsToolkit.Tests
         [Fact]
         public void ProcessResult_GetOutput_ReturnsOutputWhenNoError()
         {
-            var procResult = new ProcessResult
+            var procResult = new ProcessUtilities.ProcessResult
             {
                 ExitCode = 0,
                 Output = "standard output",
