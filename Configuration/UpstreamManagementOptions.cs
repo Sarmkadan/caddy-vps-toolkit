@@ -5,6 +5,25 @@
 
 #nullable enable
 
+/// <summary>
+/// Defines the policy to apply when all upstreams in a pool are unhealthy.
+/// </summary>
+public enum AllUpstreamsUnhealthyPolicy
+{
+/// <summary>
+/// Throws a <see cref="NoHealthyUpstreamException"/> immediately when no healthy upstreams are available.
+/// This is the safest option for critical systems where routing to an unhealthy upstream would be dangerous.
+/// </summary>
+FailFast = 0,
+
+/// <summary>
+/// Selects the upstream with the best historical performance among unhealthy servers.
+/// This allows graceful degradation by continuing to route traffic to the least-failed server, enabling
+/// gradual recovery and observability into which upstream recovers first.
+/// </summary>
+FailOpen = 1
+}
+
 namespace CaddyVpsToolkit.Configuration
 {
     /// <summary>
@@ -127,6 +146,22 @@ namespace CaddyVpsToolkit.Configuration
         /// Valid range: (0.0, 1.0). Defaults to <c>0.2</c>.
         /// </summary>
         public double HalfOpenPenaltyMultiplier { get; set; } = 0.2;
+
+// ─── All Upstreams Unhealthy Policy ────────────────────────────────────────
+
+/// <summary>
+/// Defines the policy to apply when all upstreams in a pool are marked unhealthy.
+/// <para>
+/// - <see cref="AllUpstreamsUnhealthyPolicy.FailFast"/>: Throws a <see cref="NoHealthyUpstreamException"/> immediately when no healthy upstreams are available.
+/// This is the safest option for critical systems where routing to an unhealthy upstream would be dangerous.
+/// </para>
+/// <para>
+/// - <see cref="AllUpstreamsUnhealthyPolicy.FailOpen"/>: Selects the upstream with the best historical performance among unhealthy servers.
+/// This allows graceful degradation by continuing to route traffic to the least-failed server, enabling
+/// gradual recovery and observability into which upstream recovers first. This is the default.
+/// </para>
+/// </summary>
+public AllUpstreamsUnhealthyPolicy AllUpstreamsUnhealthyPolicy { get; set; } = AllUpstreamsUnhealthyPolicy.FailOpen;
 
 // ─── Maintenance Windows ────────────────────────────────────────────────
 
