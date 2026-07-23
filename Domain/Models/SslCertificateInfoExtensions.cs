@@ -27,6 +27,31 @@ namespace CaddyVpsToolkit.Domain.Models
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
+            var options = new CertificateStatusOptions
+            {
+                WarningDays = expiryWarningThresholdDays,
+                CriticalDays = criticalThresholdDays
+            };
+            return certificate.GetStatus(options);
+        }
+
+        /// <summary>
+        /// Determines if the certificate is currently valid and not approaching expiry using configurable options.
+        /// </summary>
+        /// <param name="certificate">The certificate to check.</param>
+        /// <param name="options">Configuration options for expiry thresholds. Uses defaults if null.</param>
+        /// <returns>A tuple containing the status and a human-readable message.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="certificate"/> is <see langword="null"/></exception>
+        /// <exception cref="ArgumentException"><paramref name="options"/> contains invalid values.</exception>
+        public static (SslCertificateStatus Status, string Message) GetStatus(
+            this SslCertificateInfo certificate,
+            CertificateStatusOptions? options = null)
+        {
+            ArgumentNullException.ThrowIfNull(certificate);
+
+            var opts = options ?? new CertificateStatusOptions();
+            opts.Validate();
+
             var daysUntilExpiry = certificate.DaysUntilExpiry;
 
             if (daysUntilExpiry <= 0)
@@ -42,13 +67,13 @@ namespace CaddyVpsToolkit.Domain.Models
                         : $"Certificate expired on {expiryDate:yyyy-MM-dd} ({daysAgo} days ago).");
             }
 
-            if (daysUntilExpiry <= criticalThresholdDays)
+            if (daysUntilExpiry <= opts.CriticalDays)
             {
                 return (SslCertificateStatus.Critical,
                     $"Certificate expires in {daysUntilExpiry} day(s) on {certificate.ExpiresAt:yyyy-MM-dd} (CRITICAL).");
             }
 
-            if (daysUntilExpiry <= expiryWarningThresholdDays)
+            if (daysUntilExpiry <= opts.WarningDays)
             {
                 return (SslCertificateStatus.ExpiringSoon,
                     $"Certificate expires in {daysUntilExpiry} day(s) on {certificate.ExpiresAt:yyyy-MM-dd}.");
