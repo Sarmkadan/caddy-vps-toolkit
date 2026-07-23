@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ===================================================================
 
 using System;
 using System.Diagnostics;
@@ -32,6 +32,24 @@ namespace CaddyVpsToolkit.Utilities
             ArgumentException.ThrowIfNullOrEmpty(arguments);
             ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeoutMs, 0);
 
+            using var timeoutCts = new CancellationTokenSource(timeoutMs);
+            return await ExecuteAsync(command, arguments, timeoutCts.Token);
+        }
+
+        /// <summary>
+        /// Execute command and capture output with cancellation support
+        /// </summary>
+        /// <param name="command">The command to execute</param>
+        /// <param name="arguments">The command arguments</param>
+        /// <param name="cancellationToken">Cancellation token for cooperative cancellation</param>
+        /// <returns>Process execution result</returns>
+        /// <exception cref="ArgumentException">Thrown when command or arguments are null or empty</exception>
+        /// <exception cref="OperationCanceledException">Thrown when the operation is canceled via the cancellation token</exception>
+        public static async Task<ProcessResult> ExecuteAsync(string command, string arguments, CancellationToken cancellationToken)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(command);
+            ArgumentException.ThrowIfNullOrEmpty(arguments);
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = command,
@@ -42,68 +60,191 @@ namespace CaddyVpsToolkit.Utilities
                 CreateNoWindow = true
             };
 
-            using (var process = new Process { StartInfo = startInfo })
+            using var process = new Process { StartInfo = startInfo };
+
+            try
             {
+                process.Start();
+
+                // Create a linked token source that combines timeout and cancellation
+                // Default timeout of 30 seconds when only cancellation token is provided
+                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(30000));
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+                var linkedToken = linkedCts.Token;
+
                 try
                 {
-                    process.Start();
+                    var outputTask = process.StandardOutput.ReadToEndAsync();
+                    var errorTask = process.StandardError.ReadToEndAsync();
 
-                    using (var cts = new CancellationTokenSource(timeoutMs))
+                    await process.WaitForExitAsync(linkedToken);
+
+                    var output = await outputTask;
+                    var error = await errorTask;
+
+                    return new ProcessResult
                     {
-                        try
-                        {
-                            var outputTask = process.StandardOutput.ReadToEndAsync();
-                            var errorTask = process.StandardError.ReadToEndAsync();
-
-                            await process.WaitForExitAsync(cts.Token);
-
-                            var output = await outputTask;
-                            var error = await errorTask;
-
-                            return new ProcessResult
-                            {
-                                ExitCode = process.ExitCode,
-                                Output = output,
-                                Error = error,
-                                IsSuccess = process.ExitCode == 0
-                            };
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            try
-                            {
-                                // Kill the entire process tree to ensure all child processes are terminated
-                                process.Kill(entireProcessTree: true);
-
-                                // Wait for the process to fully terminate and allow pipes to drain
-                                process.WaitForExit();
-                            }
-                            catch (InvalidOperationException)
-                            {
-                                // Process exited between the timeout and the kill attempt.
-                            }
-
-                            return new ProcessResult
-                            {
-                                ExitCode = -1,
-                                Output = "",
-                                Error = "Process timeout",
-                                IsSuccess = false,
-                                TimedOut = true
-                            };
-                        }
-                    }
+                        ExitCode = process.ExitCode,
+                        Output = output,
+                        Error = error,
+                        IsSuccess = process.ExitCode == 0
+                    };
                 }
-                catch (Exception ex)
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
+                    await TerminateProcessTreeAsync(process);
+                    throw new OperationCanceledException("Process execution was canceled via CancellationToken", cancellationToken);
+                }
+                catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+                {
+                    await TerminateProcessTreeAsync(process);
                     return new ProcessResult
                     {
                         ExitCode = -1,
                         Output = "",
-                        Error = ex.Message,
-                        IsSuccess = false
+                        Error = "Process timeout",
+                        IsSuccess = false,
+                        TimedOut = true
                     };
                 }
+            }
+            catch (Exception ex)
+            {
+                return new ProcessResult
+                {
+                    ExitCode = -1,
+                    Output = "",
+                    Error = ex.Message,
+                    IsSuccess = false
+                };
+            }
+        }
+
+        /// <summary>
+        /// Execute command and capture output with timeout and cancellation support
+        /// </summary>
+        /// <param name="command">The command to execute</param>
+        /// <param name="arguments">The command arguments</param>
+        /// <param name="timeoutMs">Timeout in milliseconds</param>
+        /// <param name="cancellationToken">Cancellation token for cooperative cancellation</param>
+        /// <returns>Process execution result</returns>
+        /// <exception cref="ArgumentException">Thrown when command or arguments are null or empty</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when timeoutMs is less than or equal to 0</exception>
+        /// <exception cref="OperationCanceledException">Thrown when the operation is canceled via the cancellation token</exception>
+        public static async Task<ProcessResult> ExecuteAsync(string command, string arguments, int timeoutMs, CancellationToken cancellationToken)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(command);
+            ArgumentException.ThrowIfNullOrEmpty(arguments);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeoutMs, 0);
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = startInfo };
+
+            try
+            {
+                process.Start();
+
+                // Create a linked token source that combines timeout and cancellation
+                using var timeoutCts = new CancellationTokenSource(timeoutMs);
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+                var linkedToken = linkedCts.Token;
+
+                try
+                {
+                    var outputTask = process.StandardOutput.ReadToEndAsync();
+                    var errorTask = process.StandardError.ReadToEndAsync();
+
+                    await process.WaitForExitAsync(linkedToken);
+
+                    var output = await outputTask;
+                    var error = await errorTask;
+
+                    return new ProcessResult
+                    {
+                        ExitCode = process.ExitCode,
+                        Output = output,
+                        Error = error,
+                        IsSuccess = process.ExitCode == 0
+                    };
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    await TerminateProcessTreeAsync(process);
+                    throw new OperationCanceledException("Process execution was canceled via CancellationToken", cancellationToken);
+                }
+                catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+                {
+                    await TerminateProcessTreeAsync(process);
+                    return new ProcessResult
+                    {
+                        ExitCode = -1,
+                        Output = "",
+                        Error = "Process timeout",
+                        IsSuccess = false,
+                        TimedOut = true
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ProcessResult
+                {
+                    ExitCode = -1,
+                    Output = "",
+                    Error = ex.Message,
+                    IsSuccess = false
+                };
+            }
+        }
+
+        /// <summary>
+        /// Terminate a process and its entire process tree to ensure all child processes are terminated
+        /// </summary>
+        /// <param name="process">The process to terminate</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation</returns>
+        private static async Task TerminateProcessTreeAsync(Process process)
+        {
+            try
+            {
+                // Try to kill the entire process tree first (supported in .NET 5+)
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // Fallback for older .NET versions - kill the process directly
+                    process.Kill();
+                }
+
+                // Wait for the process to fully terminate and allow pipes to drain
+                // Use a small timeout to avoid hanging indefinitely
+                var terminationTask = Task.Run(() => process.WaitForExit());
+                if (await Task.WhenAny(terminationTask, Task.Delay(2000)) == terminationTask)
+                {
+                    await terminationTask;
+                }
+                else
+                {
+                    // Process didn't terminate within 2 seconds, continue anyway
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Process exited between the cancellation and the kill attempt.
+            }
+            catch (Exception)
+            {
+                // Ignore other exceptions during termination
             }
         }
 
@@ -173,18 +314,25 @@ namespace CaddyVpsToolkit.Utilities
                     foreach (var process in processes)
                     {
                         // Kill the entire process tree to ensure all child processes are terminated
-                        process.Kill(entireProcessTree: true);
+                        try
+                        {
+                            process.Kill(entireProcessTree: true);
+                        }
+                        catch (PlatformNotSupportedException)
+                        {
+                            process.Kill();
+                        }
 
                         // Wait for the process to fully terminate
                         process.WaitForExit();
                     }
+                    return true;
                 }
                 finally
                 {
                     foreach (var process in processes)
                         process.Dispose();
                 }
-                return true;
             }
             catch
             {
