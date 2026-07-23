@@ -96,5 +96,12 @@ namespace CaddyVpsToolkit.Notifications
         /// Defaults to 100.
         /// </summary>
         public int MaxDeadLetterEntries { get; set; } = 100;
+
+        /// <summary>
+        /// Gets or sets whether escalation detection is enabled.
+        /// When true, notifications with increased severity will always be sent even if within suppression window.
+        /// Defaults to true.
+        /// </summary>
+        public bool EscalationDetectionEnabled { get; set; } = true;
     }
 }
