@@ -26,7 +26,14 @@ namespace CaddyVpsToolkit.Domain.Models
         Disabled = 2,
 
         /// <summary>The server has been automatically marked unhealthy by the health-checking subsystem.</summary>
-        Unhealthy = 3
+        Unhealthy = 3,
+
+        /// <summary>
+        /// The server is in a half-open recovery state. It has passed some health probes but not enough
+        /// to be considered fully healthy. Traffic is limited to prevent overwhelming a potentially
+        /// still-fragile upstream.
+        /// </summary>
+        HalfOpen = 4
     }
 
     /// <summary>
@@ -72,6 +79,12 @@ namespace CaddyVpsToolkit.Domain.Models
         public int ConsecutiveSuccesses { get; set; }
 
         /// <summary>
+        /// Gets or sets the count of consecutive successful half-open probes during recovery.
+        /// Used to determine when an upstream in HalfOpen state should be promoted to Active.
+        /// </summary>
+        public int HalfOpenSuccesses { get; set; }
+
+        /// <summary>
         /// Gets or sets the rolling average probe round-trip time in milliseconds.
         /// Updated on each successful probe using an exponential moving average.
         /// </summary>
@@ -87,6 +100,10 @@ namespace CaddyVpsToolkit.Domain.Models
 
         /// <summary>Gets or sets operator notes about this upstream server.</summary>
         public string? Notes { get; set; }
+
+        // Thresholds for state transitions (injected or defaults)
+        private int _unhealthyThreshold = 3; // Default unhealthy threshold
+        private int _healthyThreshold = 2; // Default healthy threshold
 
         /// <summary>Gets the UTC timestamp when this upstream was registered. Immutable after construction.</summary>
         public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
@@ -106,7 +123,8 @@ namespace CaddyVpsToolkit.Domain.Models
         /// Determines whether this upstream is currently eligible to receive proxied requests.
         /// An upstream is available when its status is <see cref="UpstreamServerStatus.Active"/> and it is healthy.
         /// </summary>
-        public bool IsAvailable() => Status == UpstreamServerStatus.Active && IsHealthy;
+        public bool IsAvailable() => Status == UpstreamServerStatus.Active && IsHealthy
+            || Status == UpstreamServerStatus.HalfOpen;
 
         // ─── Behaviour ────────────────────────────────────────────────────────
 
@@ -127,6 +145,7 @@ namespace CaddyVpsToolkit.Domain.Models
             {
                 ConsecutiveFailures = 0;
                 ConsecutiveSuccesses++;
+                HalfOpenSuccesses++;
                 AverageResponseTimeMs = AverageResponseTimeMs == 0
                     ? responseTimeMs
                     : (int)((AverageResponseTimeMs * 0.8) + (responseTimeMs * 0.2));
@@ -135,9 +154,64 @@ namespace CaddyVpsToolkit.Domain.Models
             {
                 ConsecutiveSuccesses = 0;
                 ConsecutiveFailures++;
+                HalfOpenSuccesses = 0; // Reset half-open success count on failure
             }
 
             IsHealthy = probeSucceeded;
+
+            // Handle state transitions based on current status and probe results
+            HandleHealthStateTransition(probeSucceeded);
+        }
+
+        /// <summary>
+        /// Handles state transitions for the upstream server based on health probe results.
+        /// Implements half-open probing to gradually restore traffic to recovering upstreams.
+        /// </summary>
+        /// <param name="probeSucceeded">Whether the health probe succeeded.</param>
+        private void HandleHealthStateTransition(bool probeSucceeded)
+        {
+            // State machine for health state transitions with half-open probing
+            switch (Status)
+            {
+                case UpstreamServerStatus.Active:
+                    // Transition to Unhealthy on too many consecutive failures
+                    if (ConsecutiveFailures >= _unhealthyThreshold)
+                    {
+                        Status = UpstreamServerStatus.Unhealthy;
+                    }
+                    break;
+
+                case UpstreamServerStatus.Unhealthy:
+                    // Transition to HalfOpen after enough time has passed (cooldown period)
+                    // This is handled by UpstreamHealthTracker based on LastCheckedAt
+                    break;
+
+                case UpstreamServerStatus.HalfOpen:
+                    // In half-open state, successful probes promote to Active
+                    // Failed probes demote back to Unhealthy
+                    if (probeSucceeded)
+                    {
+                        // Promote to Active after sufficient consecutive successes in half-open
+                        if (HalfOpenSuccesses >= _healthyThreshold)
+                        {
+                            Status = UpstreamServerStatus.Active;
+                            ConsecutiveSuccesses = 0; // Reset for Active state tracking
+                            HalfOpenSuccesses = 0;
+                        }
+                    }
+                    else
+                    {
+                        // Demote back to Unhealthy on any failure in half-open state
+                        Status = UpstreamServerStatus.Unhealthy;
+                        HalfOpenSuccesses = 0;
+                    }
+                    break;
+
+                case UpstreamServerStatus.Draining:
+                case UpstreamServerStatus.Disabled:
+                    // No state transitions from these states via health probes
+                    break;
+            }
         }
 
         /// <summary>

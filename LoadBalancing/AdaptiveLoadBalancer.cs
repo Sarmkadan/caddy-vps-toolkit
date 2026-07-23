@@ -252,7 +252,9 @@ namespace CaddyVpsToolkit.LoadBalancing
                 + _options.ErrorRateWeight * errorRateScore
                 + _options.ConnectionWeight * connectionScore;
 
-            var normalised = Math.Clamp(raw * penaltyFactor, 0.0, 1.0);
+            // Apply half-open penalty if the server is in HalfOpen recovery state
+        var halfOpenPenalty = server.Status == UpstreamServerStatus.HalfOpen ? _options.HalfOpenPenaltyMultiplier : 1.0;
+        var normalised = Math.Clamp(raw * penaltyFactor * halfOpenPenalty, 0.0, 1.0);
 
             // Read is thread-safe via ConcurrentDictionary
             var adaptiveMultiplier = _adaptiveWeights.GetValueOrDefault(server.Id, 1.0);

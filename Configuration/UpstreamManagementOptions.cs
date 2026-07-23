@@ -117,6 +117,17 @@ namespace CaddyVpsToolkit.Configuration
         /// </summary>
         public int RecalibrationIntervalSeconds { get; set; } = 300;
 
+        // ─── Half-Open Recovery ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Gets or sets the score multiplier applied to upstreams in <see cref="UpstreamServerStatus.HalfOpen"/> state.
+        /// This limits traffic to recovering upstreams to prevent overwhelming potentially still-fragile servers.
+        /// A value of <c>0.2</c> reduces the composite score to 20% of its normal value, making the upstream
+        /// much less likely to be selected while still allowing limited traffic for testing.
+        /// Valid range: (0.0, 1.0). Defaults to <c>0.2</c>.
+        /// </summary>
+        public double HalfOpenPenaltyMultiplier { get; set; } = 0.2;
+
 // ─── Maintenance Windows ────────────────────────────────────────────────
 
 /// <summary>
