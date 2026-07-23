@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Diagnostics;
@@ -20,8 +20,18 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Execute command and capture output with timeout
         /// </summary>
+        /// <param name="command">The command to execute</param>
+        /// <param name="arguments">The command arguments</param>
+        /// <param name="timeoutMs">Timeout in milliseconds (default: 30000)</param>
+        /// <returns>Process execution result</returns>
+        /// <exception cref="ArgumentException">Thrown when command or arguments are null or empty</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when timeoutMs is less than or equal to 0</exception>
         public static async Task<ProcessResult> ExecuteAsync(string command, string arguments, int timeoutMs = 30000)
         {
+            ArgumentException.ThrowIfNullOrEmpty(command);
+            ArgumentException.ThrowIfNullOrEmpty(arguments);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeoutMs, 0);
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = command,
@@ -62,7 +72,11 @@ namespace CaddyVpsToolkit.Utilities
                         {
                             try
                             {
+                                // Kill the entire process tree to ensure all child processes are terminated
                                 process.Kill(entireProcessTree: true);
+
+                                // Wait for the process to fully terminate and allow pipes to drain
+                                process.WaitForExit();
                             }
                             catch (InvalidOperationException)
                             {
@@ -74,7 +88,8 @@ namespace CaddyVpsToolkit.Utilities
                                 ExitCode = -1,
                                 Output = "",
                                 Error = "Process timeout",
-                                IsSuccess = false
+                                IsSuccess = false,
+                                TimedOut = true
                             };
                         }
                     }
@@ -95,8 +110,13 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Check if process is running by name
         /// </summary>
+        /// <param name="processName">Name of the process to check</param>
+        /// <returns>True if process is running, false otherwise</returns>
+        /// <exception cref="ArgumentException">Thrown when processName is null or empty</exception>
         public static bool IsProcessRunning(string processName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(processName);
+
             try
             {
                 var processes = Process.GetProcessesByName(processName);
@@ -114,8 +134,13 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Get process count by name
         /// </summary>
+        /// <param name="processName">Name of the process to count</param>
+        /// <returns>Number of processes with the given name</returns>
+        /// <exception cref="ArgumentException">Thrown when processName is null or empty</exception>
         public static int GetProcessCount(string processName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(processName);
+
             try
             {
                 var processes = Process.GetProcessesByName(processName);
@@ -133,8 +158,13 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Kill process by name
         /// </summary>
+        /// <param name="processName">Name of the process to kill</param>
+        /// <returns>True if process was killed successfully, false otherwise</returns>
+        /// <exception cref="ArgumentException">Thrown when processName is null or empty</exception>
         public static bool KillProcess(string processName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(processName);
+
             try
             {
                 var processes = Process.GetProcessesByName(processName);
@@ -142,7 +172,11 @@ namespace CaddyVpsToolkit.Utilities
                 {
                     foreach (var process in processes)
                     {
-                        process.Kill();
+                        // Kill the entire process tree to ensure all child processes are terminated
+                        process.Kill(entireProcessTree: true);
+
+                        // Wait for the process to fully terminate
+                        process.WaitForExit();
                     }
                 }
                 finally
@@ -164,11 +198,35 @@ namespace CaddyVpsToolkit.Utilities
     /// </summary>
     public sealed class ProcessResult
     {
+        /// <summary>
+        /// Gets or sets the exit code of the process.
+        /// </summary>
         public int ExitCode { get; set; }
+
+        /// <summary>
+        /// Gets or sets the standard output from the process.
+        /// </summary>
         public string Output { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the error output from the process.
+        /// </summary>
         public string Error { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the process completed successfully.
+        /// </summary>
         public bool IsSuccess { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the process timed out.
+        /// </summary>
+        public bool TimedOut { get; set; }
+
+        /// <summary>
+        /// Gets the process output or error, depending on which is available.
+        /// </summary>
+        /// <returns>The process output or error message.</returns>
         public string GetOutput()
         {
             return !string.IsNullOrEmpty(Error) ? Error : Output;

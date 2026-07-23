@@ -300,6 +300,9 @@ namespace CaddyVpsToolkit.Services
 
         private async Task<string> ExecuteCommandAsync(string program, string arguments, bool captureOutput = false)
         {
+		ArgumentException.ThrowIfNullOrEmpty(program);
+		ArgumentException.ThrowIfNullOrEmpty(arguments);
+
             var psi = new ProcessStartInfo
             {
                 FileName = program,
@@ -319,7 +322,11 @@ namespace CaddyVpsToolkit.Services
 
                 if (!process.WaitForExit(AppConstants.SystemdCommandTimeoutSeconds * 1000))
                 {
-                    process.Kill();
+                    // Kill the entire process tree to ensure all child processes are terminated
+				process.Kill(entireProcessTree: true);
+
+				// Wait for the process to fully terminate and allow pipes to drain
+				process.WaitForExit();
                     throw new TimeoutException($"Command '{program} {arguments}' timed out");
                 }
 
