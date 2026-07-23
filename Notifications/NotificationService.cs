@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CaddyVpsToolkit.Middleware;
+using CaddyVpsToolkit.Utilities;
 
 namespace CaddyVpsToolkit.Notifications
 {
@@ -45,8 +46,24 @@ namespace CaddyVpsToolkit.Notifications
     }
 
     /// <summary>
+    /// Dead-letter entry for failed notifications
+    /// </summary>
+    public sealed class DeadLetterEntry
+    {
+        public string NotificationId { get; set; } = string.Empty;
+        public string ProviderName { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
+        public DateTime FailedAt { get; set; } = DateTime.UtcNow;
+        public string ErrorMessage { get; set; } = string.Empty;
+        public int AttemptCount { get; set; } = 1;
+    }
+
+    /// <summary>
     /// Service for sending notifications through multiple providers.
-    /// Supports retry, failure handling, and duplicate suppression.
+    /// Supports retry with exponential backoff, circuit breaker protection,
+    /// duplicate suppression, and dead-letter queue for failed deliveries.
     /// </summary>
     public sealed class NotificationService
     {
@@ -54,12 +71,22 @@ namespace CaddyVpsToolkit.Notifications
         private readonly ILogger _logger;
         private readonly NotificationSuppressionOptions _suppressionOptions;
         private readonly Dictionary<string, DateTime> _recentNotifications = new();
-        private readonly object _suppressionLock = new object();
+        private readonly object _suppressionLock = new();
+        private readonly List<DeadLetterEntry> _deadLetterQueue = new();
+        private readonly object _deadLetterLock = new();
+        private readonly IRetryPolicy _retryPolicy;
+        private readonly ICircuitBreakerFactory _circuitBreakerFactory;
 
-        public NotificationService(ILogger logger, NotificationSuppressionOptions? suppressionOptions = null)
+        public NotificationService(
+            ILogger logger,
+            NotificationSuppressionOptions? suppressionOptions = null,
+            IRetryPolicy? retryPolicy = null,
+            ICircuitBreakerFactory? circuitBreakerFactory = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _suppressionOptions = suppressionOptions ?? new NotificationSuppressionOptions();
+            _retryPolicy = retryPolicy ?? new NoRetryPolicy();
+            _circuitBreakerFactory = circuitBreakerFactory ?? new NoOpCircuitBreakerFactory();
         }
 
         /// <summary>
@@ -69,8 +96,7 @@ namespace CaddyVpsToolkit.Notifications
         /// <exception cref="ArgumentNullException">Thrown when provider is null</exception>
         public void Register(INotificationProvider provider)
         {
-            if (provider is null)
-                throw new ArgumentNullException(nameof(provider));
+            ArgumentNullException.ThrowIfNull(provider);
 
             _providers[provider.ProviderName] = provider;
         }
@@ -138,14 +164,107 @@ namespace CaddyVpsToolkit.Notifications
         }
 
         /// <summary>
+        /// Add a failed notification to the dead-letter queue for monitoring.
+        /// </summary>
+        /// <param name="notification">The notification that failed</param>
+        /// <param name="providerName">Name of the provider that failed</param>
+        /// <param name="errorMessage">Error message describing the failure</param>
+        private void AddToDeadLetterQueue(Notification notification, string providerName, string errorMessage)
+        {
+            if (!_suppressionOptions.DeadLetterEnabled)
+            {
+                return;
+            }
+
+            lock (_deadLetterLock)
+            {
+                var entry = new DeadLetterEntry
+                {
+                    NotificationId = notification.Id,
+                    ProviderName = providerName,
+                    Title = notification.Title,
+                    Message = notification.Message,
+                    Priority = notification.Priority,
+                    ErrorMessage = errorMessage,
+                    FailedAt = DateTime.UtcNow
+                };
+
+                _deadLetterQueue.Add(entry);
+
+                // Clean up old entries if we exceed the limit
+                if (_deadLetterQueue.Count > _suppressionOptions.MaxDeadLetterEntries)
+                {
+                    _deadLetterQueue.RemoveAt(0);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Send a notification to a single provider with retry and circuit breaker protection.
+        /// </summary>
+        /// <param name="provider">The notification provider to use</param>
+        /// <param name="notification">The notification to send</param>
+        /// <returns>True if the notification was successfully delivered, false otherwise</returns>
+        private async Task<bool> SendToProviderWithResilienceAsync(INotificationProvider provider, Notification notification)
+        {
+            ICircuitBreaker circuitBreaker = null;
+
+            if (_suppressionOptions.CircuitBreakerEnabled)
+            {
+                circuitBreaker = _circuitBreakerFactory.Create(provider.ProviderName);
+            }
+            else
+            {
+                circuitBreaker = new NoOpCircuitBreaker();
+            }
+
+            try
+            {
+                // Use circuit breaker to execute the send operation
+                var success = await circuitBreaker.ExecuteAsync(async () =>
+                {
+                    // Apply retry policy if enabled
+                    if (_suppressionOptions.RetryEnabled)
+                    {
+                        return await _retryPolicy.ExecuteAsync(async () =>
+                        {
+                            var result = await provider.SendAsync(notification);
+                            return result;
+                        });
+                    }
+                    else
+                    {
+                        return await provider.SendAsync(notification);
+                    }
+                });
+
+                if (success)
+                {
+                    circuitBreaker.RecordSuccess();
+                    return true;
+                }
+                else
+                {
+                    circuitBreaker.RecordFailure();
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                circuitBreaker.RecordFailure();
+                await _logger.LogErrorAsync($"Error sending notification via {provider.ProviderName}: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Send a notification through all registered providers.
         /// </summary>
         /// <param name="notification">The notification to send</param>
         /// <returns>True if at least one provider succeeded, false otherwise</returns>
         public async Task<bool> SendAsync(Notification notification)
         {
-            if (notification is null)
-                throw new ArgumentNullException(nameof(notification));
+            ArgumentNullException.ThrowIfNull(notification);
 
             // Generate suppression key for duplicate detection
             var suppressionKey = GenerateSuppressionKey(notification);
@@ -158,24 +277,47 @@ namespace CaddyVpsToolkit.Notifications
             }
 
             var results = new List<bool>();
+            var successfulProviders = new List<string>();
+            var failedProviders = new List<(string Name, string Error)>();
 
             foreach (var provider in _providers.Values)
             {
                 try
                 {
-                    var success = await provider.SendAsync(notification);
+                    var success = await SendToProviderWithResilienceAsync(provider, notification);
                     results.Add(success);
 
                     var status = success ? "succeeded" : "failed";
                     await _logger.LogInfoAsync($"Notification sent via {provider.ProviderName} ({status})");
+
+                    if (success)
+                    {
+                        successfulProviders.Add(provider.ProviderName);
+                    }
+                    else
+                    {
+                        failedProviders.Add((provider.ProviderName, "Delivery failed"));
+                    }
                 }
                 catch (Exception ex)
                 {
                     await _logger.LogErrorAsync($"Error sending notification via {provider.ProviderName}: {ex.Message}");
                     results.Add(false);
+                    failedProviders.Add((provider.ProviderName, ex.Message));
                 }
             }
 
+            // Log dead-letter entries for failed deliveries
+            if (failedProviders.Count > 0 && _suppressionOptions.DeadLetterEnabled)
+            {
+                foreach (var (providerName, error) in failedProviders)
+                {
+                    AddToDeadLetterQueue(notification, providerName, error);
+                    await _logger.LogWarningAsync($"Failed to deliver notification to {providerName}: {error}");
+                }
+            }
+
+            // Return true if at least one provider succeeded
             return results.Count > 0 && results.TrueForAll(r => r);
         }
 
@@ -194,6 +336,29 @@ namespace CaddyVpsToolkit.Notifications
                 Message = message,
                 Priority = priority
             });
+        }
+
+        /// <summary>
+        /// Get all dead-letter entries for monitoring failed notifications.
+        /// </summary>
+        /// <returns>List of failed notification deliveries</returns>
+        public List<DeadLetterEntry> GetDeadLetterEntries()
+        {
+            lock (_deadLetterLock)
+            {
+                return new List<DeadLetterEntry>(_deadLetterQueue);
+            }
+        }
+
+        /// <summary>
+        /// Clear all dead-letter entries.
+        /// </summary>
+        public void ClearDeadLetterQueue()
+        {
+            lock (_deadLetterLock)
+            {
+                _deadLetterQueue.Clear();
+            }
         }
     }
 

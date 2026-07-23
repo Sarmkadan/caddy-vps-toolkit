@@ -3,6 +3,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using CaddyVpsToolkit.Middleware;
+using CaddyVpsToolkit.Utilities;
 
 namespace CaddyVpsToolkit.Notifications
 {
@@ -30,6 +31,15 @@ namespace CaddyVpsToolkit.Notifications
 
             services.AddSingleton(options);
             services.AddSingleton<NotificationService>();
+            services.AddSingleton<ICircuitBreakerFactory>(provider =>
+            {
+                var logger = provider.GetRequiredService<ILogger>();
+                return new CircuitBreakerFactory(
+                    logger,
+                    options.CircuitBreakerFailureThreshold,
+                    options.CircuitBreakerRecoveryTimeoutSeconds
+                );
+            });
 
             return services;
         }
