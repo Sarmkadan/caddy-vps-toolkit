@@ -29,15 +29,22 @@ namespace CaddyVpsToolkit.Domain.Models
 
             var daysUntilExpiry = certificate.DaysUntilExpiry;
 
-            if (daysUntilExpiry < 0)
+            if (daysUntilExpiry <= 0)
             {
+                // Certificate is expired or expiring today
+                var expiryDate = certificate.ExpiresAt.Kind == DateTimeKind.Utc
+                    ? certificate.ExpiresAt
+                    : certificate.ExpiresAt.ToUniversalTime();
+                var daysAgo = Math.Abs(daysUntilExpiry);
                 return (SslCertificateStatus.Expired,
-                    $"Certificate expired on {certificate.ExpiresAt:yyyy-MM-dd} ({Math.Abs(daysUntilExpiry)} days ago).");
+                    daysAgo == 0
+                        ? $"Certificate expires today on {expiryDate:yyyy-MM-dd}."
+                        : $"Certificate expired on {expiryDate:yyyy-MM-dd} ({daysAgo} days ago).");
             }
 
             if (daysUntilExpiry <= criticalThresholdDays)
             {
-                return (daysUntilExpiry <= 0 ? SslCertificateStatus.Expired : SslCertificateStatus.Critical,
+                return (SslCertificateStatus.Critical,
                     $"Certificate expires in {daysUntilExpiry} day(s) on {certificate.ExpiresAt:yyyy-MM-dd} (CRITICAL).");
             }
 
@@ -60,7 +67,15 @@ namespace CaddyVpsToolkit.Domain.Models
         public static string FormatValidityPeriod(this SslCertificateInfo certificate)
         {
             ArgumentNullException.ThrowIfNull(certificate);
-            return $"{certificate.IssuedAt:yyyy-MM-dd} to {certificate.ExpiresAt:yyyy-MM-dd}";
+
+            var issuedAt = certificate.IssuedAt.Kind == DateTimeKind.Utc
+                ? certificate.IssuedAt
+                : certificate.IssuedAt.ToUniversalTime();
+            var expiresAt = certificate.ExpiresAt.Kind == DateTimeKind.Utc
+                ? certificate.ExpiresAt
+                : certificate.ExpiresAt.ToUniversalTime();
+
+            return $"{issuedAt:yyyy-MM-dd} to {expiresAt:yyyy-MM-dd}";
         }
 
         /// <summary>
@@ -120,7 +135,9 @@ namespace CaddyVpsToolkit.Domain.Models
         {
             ArgumentNullException.ThrowIfNull(certificates);
 
-            return certificates.Where(c => c.DaysUntilExpiry > 0 && c.ExpiresAt <= DateTime.UtcNow.AddDays(thresholdDays));
+            var thresholdDate = DateTime.UtcNow.AddDays(thresholdDays);
+            return certificates.Where(c => c.DaysUntilExpiry > 0 &&
+                (c.ExpiresAt.Kind == DateTimeKind.Utc ? c.ExpiresAt : c.ExpiresAt.ToUniversalTime()) <= thresholdDate);
         }
 
         /// <summary>

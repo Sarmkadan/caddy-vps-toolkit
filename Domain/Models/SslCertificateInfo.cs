@@ -52,10 +52,30 @@ namespace CaddyVpsToolkit.Domain.Models
         public DateTime ExpiresAt { get; set; }
 
         /// <summary>Number of whole days remaining until the certificate expires. Returns zero once expired.</summary>
-        public int DaysUntilExpiry => Math.Max(0, (int)(ExpiresAt - DateTime.UtcNow).TotalDays);
+        public int DaysUntilExpiry
+        {
+            get
+            {
+                // Normalize both dates to UTC to avoid timezone-related issues
+                var expiresAtUtc = ExpiresAt.Kind == DateTimeKind.Utc ? ExpiresAt : ExpiresAt.ToUniversalTime();
+                var nowUtc = DateTime.UtcNow;
+                var days = (int)(expiresAtUtc - nowUtc).TotalDays;
+                return Math.Max(0, days);
+            }
+        }
 
         /// <summary>Whether the certificate is currently within its stated validity window.</summary>
-        public bool IsValid => DateTime.UtcNow >= IssuedAt && DateTime.UtcNow < ExpiresAt;
+        public bool IsValid
+        {
+            get
+            {
+                // Normalize all dates to UTC for comparison
+                var issuedAtUtc = IssuedAt.Kind == DateTimeKind.Utc ? IssuedAt : IssuedAt.ToUniversalTime();
+                var expiresAtUtc = ExpiresAt.Kind == DateTimeKind.Utc ? ExpiresAt : ExpiresAt.ToUniversalTime();
+                var nowUtc = DateTime.UtcNow;
+                return nowUtc >= issuedAtUtc && nowUtc < expiresAtUtc;
+            }
+        }
     }
 
     /// <summary>
