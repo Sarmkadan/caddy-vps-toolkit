@@ -30,14 +30,14 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <param name="WindowStartUtc">UTC timestamp marking the opening of the observation window.</param>
     /// <param name="WindowEndUtc">UTC timestamp marking the closing of the observation window.</param>
     public record UpstreamMetricsSummary(
-        string   UpstreamId,
-        int      SampleCount,
-        double   P50LatencyMs,
-        double   P95LatencyMs,
-        double   P99LatencyMs,
-        double   MeanLatencyMs,
-        double   ErrorRate,
-        double   ThroughputRps,
+        string UpstreamId,
+        int SampleCount,
+        double P50LatencyMs,
+        double P95LatencyMs,
+        double P99LatencyMs,
+        double MeanLatencyMs,
+        double ErrorRate,
+        double ThroughputRps,
         DateTime WindowStartUtc,
         DateTime WindowEndUtc
     )
@@ -73,15 +73,12 @@ namespace CaddyVpsToolkit.Domain.Models
     /// Mutable ring-buffer container that accumulates <see cref="RequestSample"/> observations for
     /// a single upstream server within a bounded sliding window. When the window reaches its capacity,
     /// the oldest observation is evicted to make room for the newest entry.
-    /// <para>
-    /// Thread safety for concurrent <see cref="Add"/> calls must be coordinated externally by the
-    /// owning aggregator implementation.
-    /// </para>
     /// </summary>
     public sealed class UpstreamMetricsWindow
     {
         private readonly int _maxSamples;
         private readonly Queue<RequestSample> _samples;
+        private readonly object _syncLock = new object();
 
         /// <summary>Gets the upstream server identifier this window is tracking.</summary>
         public string UpstreamId { get; }
@@ -108,9 +105,9 @@ namespace CaddyVpsToolkit.Domain.Models
             if (maxSamples < 1)
                 throw new ArgumentOutOfRangeException(nameof(maxSamples), "Window capacity must be at least 1.");
 
-            UpstreamId  = upstreamId;
+            UpstreamId = upstreamId;
             _maxSamples = maxSamples;
-            _samples    = new Queue<RequestSample>(_maxSamples + 1);
+            _samples = new Queue<RequestSample>(_maxSamples + 1);
         }
 
         /// <summary>
@@ -121,14 +118,17 @@ namespace CaddyVpsToolkit.Domain.Models
         /// <param name="succeeded">Whether the request completed without an error.</param>
         public void Add(int responseTimeMs, bool succeeded)
         {
-            if (_samples.Count >= _maxSamples)
-                _samples.Dequeue();
+            lock (_syncLock)
+            {
+                if (_samples.Count >= _maxSamples)
+                    _samples.Dequeue();
 
-            _samples.Enqueue(new RequestSample(
-                Math.Max(0, responseTimeMs),
-                succeeded,
-                DateTime.UtcNow
-            ));
+                _samples.Enqueue(new RequestSample(
+                    Math.Max(0, responseTimeMs),
+                    succeeded,
+                    DateTime.UtcNow
+                ));
+            }
         }
 
         /// <summary>
@@ -137,8 +137,11 @@ namespace CaddyVpsToolkit.Domain.Models
         /// </summary>
         public void Clear()
         {
-            _samples.Clear();
-            WindowStartUtc = DateTime.UtcNow;
+            lock (_syncLock)
+            {
+                _samples.Clear();
+                WindowStartUtc = DateTime.UtcNow;
+            }
         }
 
         /// <summary>
@@ -148,32 +151,39 @@ namespace CaddyVpsToolkit.Domain.Models
         /// </summary>
         public UpstreamMetricsSummary? Summarize()
         {
-            if (_samples.Count == 0)
-                return null;
+            RequestSample[] snapshot;
+            DateTime windowStart;
 
-            var now      = DateTime.UtcNow;
-            var snapshot = _samples.ToArray();
+            lock (_syncLock)
+            {
+                if (_samples.Count == 0)
+                    return null;
 
+                snapshot = _samples.ToArray();
+                windowStart = WindowStartUtc;
+            }
+
+            var now = DateTime.UtcNow;
             var latencies = snapshot
                 .Select(s => (double)s.ResponseTimeMs)
                 .OrderBy(v => v)
                 .ToArray();
 
-            var errorCount  = snapshot.Count(s => !s.Succeeded);
-            var windowSecs  = (now - WindowStartUtc).TotalSeconds;
-            var throughput  = windowSecs > 0 ? snapshot.Length / windowSecs : 0.0;
+            var errorCount = snapshot.Count(s => !s.Succeeded);
+            var windowSecs = (now - windowStart).TotalSeconds;
+            var throughput = windowSecs > 0 ? snapshot.Length / windowSecs : 0.0;
 
             return new UpstreamMetricsSummary(
-                UpstreamId:     UpstreamId,
-                SampleCount:    snapshot.Length,
-                P50LatencyMs:   ComputePercentile(latencies, 0.50),
-                P95LatencyMs:   ComputePercentile(latencies, 0.95),
-                P99LatencyMs:   ComputePercentile(latencies, 0.99),
-                MeanLatencyMs:  latencies.Average(),
-                ErrorRate:      (double)errorCount / snapshot.Length,
-                ThroughputRps:  throughput,
-                WindowStartUtc: WindowStartUtc,
-                WindowEndUtc:   now
+                UpstreamId: UpstreamId,
+                SampleCount: snapshot.Length,
+                P50LatencyMs: ComputePercentile(latencies, 0.50),
+                P95LatencyMs: ComputePercentile(latencies, 0.95),
+                P99LatencyMs: ComputePercentile(latencies, 0.99),
+                MeanLatencyMs: latencies.Average(),
+                ErrorRate: (double)errorCount / snapshot.Length,
+                ThroughputRps: throughput,
+                WindowStartUtc: windowStart,
+                WindowEndUtc: now
             );
         }
 
@@ -184,10 +194,10 @@ namespace CaddyVpsToolkit.Domain.Models
             if (sortedValues.Length == 0) return 0.0;
             if (sortedValues.Length == 1) return sortedValues[0];
 
-            var rank  = percentile * (sortedValues.Length - 1);
+            var rank = percentile * (sortedValues.Length - 1);
             var lower = (int)Math.Floor(rank);
             var upper = Math.Min(lower + 1, sortedValues.Length - 1);
-            var frac  = rank - lower;
+            var frac = rank - lower;
 
             return sortedValues[lower] * (1.0 - frac) + sortedValues[upper] * frac;
         }

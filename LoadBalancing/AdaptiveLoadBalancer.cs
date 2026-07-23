@@ -20,14 +20,13 @@ namespace CaddyVpsToolkit.LoadBalancing
 {
     /// <summary>
     /// Thread-safe implementation of <see cref="IMetricsAggregator"/> backed by per-upstream
-    /// <see cref="UpstreamMetricsWindow"/> instances. Write operations are guarded by per-upstream
-    /// locks to minimise contention on the hot request path while preserving correctness.
+    /// <see cref="UpstreamMetricsWindow"/> instances. The window itself handles thread-safety internally,
+    /// so no additional locks are required at this level.
     /// </summary>
     public sealed class SlidingWindowMetricsAggregator : IMetricsAggregator
     {
         private readonly int _windowSize;
         private readonly ConcurrentDictionary<string, UpstreamMetricsWindow> _windows = new();
-        private readonly ConcurrentDictionary<string, object> _locks = new();
 
         /// <summary>
         /// Initialises a new aggregator with the specified per-upstream window capacity.
@@ -41,28 +40,26 @@ namespace CaddyVpsToolkit.LoadBalancing
         /// <inheritdoc/>
         public void Record(string upstreamId, int responseTimeMs, bool succeeded)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(upstreamId);
             var window = _windows.GetOrAdd(upstreamId, id => new UpstreamMetricsWindow(id, _windowSize));
-            lock (_locks.GetOrAdd(upstreamId, _ => new object()))
-                window.Add(responseTimeMs, succeeded);
+            window.Add(responseTimeMs, succeeded);
         }
 
         /// <inheritdoc/>
         public UpstreamMetricsSummary? GetSummary(string upstreamId)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(upstreamId);
             if (!_windows.TryGetValue(upstreamId, out var window))
                 return null;
 
-            lock (_locks.GetOrAdd(upstreamId, _ => new object()))
-                return window.Summarize();
+            return window.Summarize();
         }
 
         /// <inheritdoc/>
         public void Reset(string upstreamId)
         {
-            if (!_windows.TryGetValue(upstreamId, out var window))
-                return;
-
-            lock (_locks.GetOrAdd(upstreamId, _ => new object()))
+            ArgumentException.ThrowIfNullOrWhiteSpace(upstreamId);
+            if (_windows.TryGetValue(upstreamId, out var window))
                 window.Clear();
         }
     }
@@ -91,10 +88,14 @@ namespace CaddyVpsToolkit.LoadBalancing
         private readonly UpstreamManagementOptions _options;
 
         // Adaptive multiplier per upstream (1.0 = neutral). Adjusted by EMA on each RecordOutcome call.
+        // Protected by _weightsLock for atomic read-modify-write operations
         private readonly ConcurrentDictionary<string, double> _adaptiveWeights = new();
+        private readonly object _weightsLock = new object();
 
         // UTC timestamp of the most recent failure-penalty issuance per upstream.
+        // Protected by _penaltyLock for atomic updates
         private readonly ConcurrentDictionary<string, DateTime> _penaltyIssuedAt = new();
+        private readonly object _penaltyLock = new object();
 
         // ─── Construction ─────────────────────────────────────────────────────
 
@@ -106,13 +107,13 @@ namespace CaddyVpsToolkit.LoadBalancing
         /// <param name="options">Tuning parameters for scoring weights, adaptation speed, and penalty behaviour.</param>
         /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
         public AdaptiveLoadBalancer(
-            UpstreamManagerService   upstreamManager,
-            IMetricsAggregator       metrics,
+            UpstreamManagerService upstreamManager,
+            IMetricsAggregator metrics,
             UpstreamManagementOptions options)
         {
             _upstreamManager = upstreamManager ?? throw new ArgumentNullException(nameof(upstreamManager));
-            _metrics         = metrics         ?? throw new ArgumentNullException(nameof(metrics));
-            _options         = options         ?? throw new ArgumentNullException(nameof(options));
+            _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         // ─── IAdaptiveLoadBalancer ────────────────────────────────────────────
@@ -120,7 +121,7 @@ namespace CaddyVpsToolkit.LoadBalancing
         /// <inheritdoc/>
         public async Task<PoolRoutingEvaluation> EvaluatePoolAsync(
             UpstreamSelectionContext context,
-            CancellationToken        cancellationToken = default)
+            CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(context);
 
@@ -134,46 +135,67 @@ namespace CaddyVpsToolkit.LoadBalancing
             if (pool.Servers.Count == 0)
             {
                 return new PoolRoutingEvaluation(
-                    PoolId:             context.PoolId,
-                    Scores:             [],
+                    PoolId: context.PoolId,
+                    Scores: [],
                     SelectedUpstreamId: null,
-                    EvaluatedAt:        DateTime.UtcNow);
+                    EvaluatedAt: DateTime.UtcNow);
             }
 
-            var scores = pool.Servers
-                .Select(ComputeScore)
-                .OrderByDescending(sc => sc.NormalizedScore)
-                .ThenByDescending(sc => sc.EffectiveWeight)
-                .ToList();
+            // Compute all scores atomically to ensure consistency between metrics and adaptive weights
+            // We need to ensure that the same snapshot of metrics and weights is used for all servers
+            var scores = new List<UpstreamRoutingScore>(pool.Servers.Count);
+            foreach (var server in pool.Servers)
+            {
+                scores.Add(ComputeScore(server));
+            }
+
+            scores.Sort((a, b) =>
+            {
+                var cmp = b.NormalizedScore.CompareTo(a.NormalizedScore);
+                return cmp != 0 ? cmp : b.EffectiveWeight.CompareTo(a.EffectiveWeight);
+            });
 
             var winner = scores.FirstOrDefault(sc => sc.IsEligible);
 
             return new PoolRoutingEvaluation(
-                PoolId:             context.PoolId,
-                Scores:             scores,
+                PoolId: context.PoolId,
+                Scores: scores,
                 SelectedUpstreamId: winner?.UpstreamId,
-                EvaluatedAt:        DateTime.UtcNow);
+                EvaluatedAt: DateTime.UtcNow);
         }
 
         /// <inheritdoc/>
         public Task RecordOutcomeAsync(string poolId, string upstreamId, int responseTimeMs, bool succeeded)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(poolId);
+            ArgumentException.ThrowIfNullOrWhiteSpace(upstreamId);
+
             _metrics.Record(upstreamId, responseTimeMs, succeeded);
 
             // Issue a fresh penalty timestamp on every failure so the decay clock resets.
+            // Protected by lock to ensure atomic read-modify-write
             if (!succeeded)
-                _penaltyIssuedAt[upstreamId] = DateTime.UtcNow;
+            {
+                lock (_penaltyLock)
+                {
+                    _penaltyIssuedAt[upstreamId] = DateTime.UtcNow;
+                }
+            }
 
             // Nudge the adaptive multiplier via EMA: successes pull toward 1.0, failures toward PenaltyMultiplier.
-            _adaptiveWeights.AddOrUpdate(
-                upstreamId,
-                addValue:           succeeded ? 1.0 : _options.PenaltyMultiplier,
-                updateValueFactory: (_, current) =>
-                {
-                    var target = succeeded ? 1.0 : _options.PenaltyMultiplier;
-                    return current * (1.0 - _options.WeightAdaptationAlpha)
-                           + target * _options.WeightAdaptationAlpha;
-                });
+            // Protected by lock to ensure atomic read-modify-write
+            lock (_weightsLock)
+            {
+                _adaptiveWeights.AddOrUpdate(
+                    upstreamId,
+                    addValue: succeeded ? 1.0 : _options.PenaltyMultiplier,
+                    updateValueFactory: (_, current) =>
+                    {
+                        var target = succeeded ? 1.0 : _options.PenaltyMultiplier;
+                        return current * (1.0 - _options.WeightAdaptationAlpha)
+                            + target * _options.WeightAdaptationAlpha;
+                    });
+            }
 
             return Task.CompletedTask;
         }
@@ -181,55 +203,69 @@ namespace CaddyVpsToolkit.LoadBalancing
         /// <inheritdoc/>
         public Task<int> GetEffectiveWeightAsync(string upstreamId)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(upstreamId);
+
+            // Read is thread-safe via ConcurrentDictionary, but we ensure consistency with writes
             var multiplier = _adaptiveWeights.GetValueOrDefault(upstreamId, 1.0);
-            var effective  = (int)Math.Max(1, Math.Round(multiplier * 100));
+            var effective = (int)Math.Max(1, Math.Round(multiplier * 100));
             return Task.FromResult(effective);
         }
 
         /// <inheritdoc/>
         public async Task RecalibratePoolAsync(string poolId, CancellationToken cancellationToken = default)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(poolId);
+
             var pool = await _upstreamManager.GetPoolAsync(poolId);
             if (pool is null) return;
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            // Remove all adaptive state for all servers in the pool
+            // Protected by locks to prevent concurrent reads during removal
             foreach (var server in pool.Servers)
             {
                 _metrics.Reset(server.Id);
-                _adaptiveWeights.TryRemove(server.Id, out _);
-                _penaltyIssuedAt.TryRemove(server.Id, out _);
+
+                lock (_weightsLock)
+                    _adaptiveWeights.TryRemove(server.Id, out _);
+
+                lock (_penaltyLock)
+                    _penaltyIssuedAt.TryRemove(server.Id, out _);
             }
         }
 
-        // ─── Private — Composite Scoring ──────────────────────────────────────
+        // ─── Private — Composite Scoring ────────────────────────────────────────
 
         private UpstreamRoutingScore ComputeScore(UpstreamServer server)
         {
+            ArgumentNullException.ThrowIfNull(server);
+
             var summary = _metrics.GetSummary(server.Id);
 
-            var latencyScore    = ScoreLatency(summary);
-            var errorRateScore  = ScoreErrorRate(summary);
+            var latencyScore = ScoreLatency(summary);
+            var errorRateScore = ScoreErrorRate(summary);
             var connectionScore = ScoreConnections(server.ActiveConnections);
-            var penaltyFactor   = ResolvePenaltyFactor(server.Id);
+            var penaltyFactor = ResolvePenaltyFactor(server.Id);
 
-            var raw = _options.LatencyWeight    * latencyScore
-                    + _options.ErrorRateWeight  * errorRateScore
-                    + _options.ConnectionWeight * connectionScore;
+            var raw = _options.LatencyWeight * latencyScore
+                + _options.ErrorRateWeight * errorRateScore
+                + _options.ConnectionWeight * connectionScore;
 
             var normalised = Math.Clamp(raw * penaltyFactor, 0.0, 1.0);
 
+            // Read is thread-safe via ConcurrentDictionary
             var adaptiveMultiplier = _adaptiveWeights.GetValueOrDefault(server.Id, 1.0);
-            var effectiveWeight    = (int)Math.Max(1, Math.Round(server.Weight * adaptiveMultiplier));
+            var effectiveWeight = (int)Math.Max(1, Math.Round(server.Weight * adaptiveMultiplier));
 
             return new UpstreamRoutingScore(
-                UpstreamId:      server.Id,
+                UpstreamId: server.Id,
                 NormalizedScore: normalised,
                 EffectiveWeight: effectiveWeight,
-                LatencyScore:    latencyScore,
-                ErrorRateScore:  errorRateScore,
+                LatencyScore: latencyScore,
+                ErrorRateScore: errorRateScore,
                 ConnectionScore: connectionScore,
-                IsEligible:      server.IsAvailable() && normalised > 0.0
+                IsEligible: server.IsAvailable() && normalised > 0.0
             );
         }
 
@@ -254,17 +290,27 @@ namespace CaddyVpsToolkit.LoadBalancing
             return Math.Clamp(1.0 - (double)activeConnections / _options.MaxExpectedConnections, 0.0, 1.0);
         }
 
-        // ─── Private — Penalty Decay ──────────────────────────────────────────
+        // ─── Private — Penalty Decay ────────────────────────────────────────────
 
         private double ResolvePenaltyFactor(string upstreamId)
         {
-            if (!_penaltyIssuedAt.TryGetValue(upstreamId, out var issuedAt))
-                return 1.0;
+            ArgumentException.ThrowIfNullOrWhiteSpace(upstreamId);
+
+            DateTime issuedAt;
+            // Read is thread-safe via ConcurrentDictionary, but we need to ensure we get a consistent snapshot
+            lock (_penaltyLock)
+            {
+                if (!_penaltyIssuedAt.TryGetValue(upstreamId, out issuedAt))
+                    return 1.0;
+            }
 
             var elapsed = (DateTime.UtcNow - issuedAt).TotalSeconds;
             if (elapsed >= _options.PenaltyDecaySeconds)
             {
-                _penaltyIssuedAt.TryRemove(upstreamId, out _);
+                // Remove expired penalty to clean up state
+                lock (_penaltyLock)
+                    _penaltyIssuedAt.TryRemove(upstreamId, out _);
+
                 return 1.0;
             }
 

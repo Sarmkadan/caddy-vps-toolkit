@@ -1,9 +1,14 @@
+// =============================================================================
+// Author: Vladyslav Zaiets | https://sarmkadan.com
+// CTO & Software Architect
+// =============================================================================
+
 #nullable enable
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using CaddyVpsToolkit.Domain.Models;
 
 namespace CaddyVpsToolkit.LoadBalancing
@@ -24,7 +29,10 @@ namespace CaddyVpsToolkit.LoadBalancing
         /// <inheritdoc/>
         public UpstreamServer? Select(IReadOnlyList<UpstreamServer> servers, UpstreamSelectionContext context)
         {
-            if (servers is null || servers.Count == 0)
+            ArgumentNullException.ThrowIfNull(servers);
+            ArgumentNullException.ThrowIfNull(context);
+
+            if (servers.Count == 0)
                 return null;
 
             if (servers.Count == 1)
@@ -48,12 +56,16 @@ namespace CaddyVpsToolkit.LoadBalancing
 
         private UpstreamServer SelectRoundRobin(IReadOnlyList<UpstreamServer> servers, string poolId)
         {
-            var idx = _rrCursors.AddOrUpdate(
-                poolId,
-                addValue: 0,
-                updateValueFactory: (_, current) => (current + 1) % servers.Count);
+            // Use atomic lock to prevent race conditions when updating the cursor
+            lock (_rrCursors)
+            {
+                var idx = _rrCursors.AddOrUpdate(
+                    poolId,
+                    addValue: 0,
+                    updateValueFactory: (_, current) => (current + 1) % servers.Count);
 
-            return servers[idx % servers.Count];
+                return servers[idx % servers.Count];
+            }
         }
 
         private UpstreamServer SelectByIpHash(IReadOnlyList<UpstreamServer> servers, string clientIp)
@@ -66,15 +78,28 @@ namespace CaddyVpsToolkit.LoadBalancing
         {
             // Find the server with the fewest active connections
             // If multiple servers have the same minimum, return the first one
-            var minConnections = servers.Min(s => s.ActiveConnections);
-            return servers.First(s => s.ActiveConnections == minConnections);
+            // ActiveConnections is an int, so reading it is atomic and thread-safe
+            var minConnections = int.MaxValue;
+            UpstreamServer? selected = null;
+
+            foreach (var server in servers)
+            {
+                var active = server.ActiveConnections;
+                if (active < minConnections)
+                {
+                    minConnections = active;
+                    selected = server;
+                }
+            }
+
+            return selected ?? servers[0];
         }
 
         private UpstreamServer SelectRandom(IReadOnlyList<UpstreamServer> servers)
         {
             // Select a server uniformly at random
-            var random = new Random();
-            var index = random.Next(servers.Count);
+            // Using Random.Shared for thread-safety
+            var index = Random.Shared.Next(servers.Count);
             return servers[index];
         }
 
@@ -82,17 +107,21 @@ namespace CaddyVpsToolkit.LoadBalancing
         {
             // Weighted random selection based on UpstreamServer.Weight
             // Higher weights increase the probability of selection
-            var totalWeight = servers.Sum(s => s.Weight);
+            // ActiveConnections is an int, so reading it is atomic and thread-safe
+            var totalWeight = 0;
+            foreach (var server in servers)
+            {
+                totalWeight += server.Weight;
+            }
 
             if (totalWeight <= 0)
             {
                 // Fallback to uniform random if weights are invalid
-                var random = new Random();
-                var index = random.Next(servers.Count);
+                var index = Random.Shared.Next(servers.Count);
                 return servers[index];
             }
 
-            var randomValue = new Random().Next(0, totalWeight);
+            var randomValue = Random.Shared.Next(0, totalWeight);
             var cumulativeWeight = 0;
 
             foreach (var server in servers)
