@@ -89,9 +89,37 @@ namespace CaddyVpsToolkit.Utilities
         /// <exception cref="ArgumentException">Thrown when key is null or empty.</exception>
         public void Set(string key, object value)
         {
+            Set(key, value, null);
+        }
+
+        /// <summary>
+        /// Sets a variable value with an optional validation hook.
+        /// </summary>
+        /// <param name="key">Variable name (required).</param>
+        /// <param name="value">Variable value.</param>
+        /// <param name="validator">Optional validation function (returns true if valid).</param>
+        /// <exception cref="ArgumentException">Thrown when key is null or empty, or validation fails.</exception>
+        public void Set(string key, object value, Func<object, bool>? validator)
+        {
             ArgumentException.ThrowIfNullOrEmpty(key);
 
+            if (validator != null && !validator(value))
+            {
+                throw new ArgumentException($"Validation failed for variable '{key}'");
+            }
+
             _variables[key] = value;
+        }
+
+        /// <summary>
+        /// Sets a variable value, sanitized for Caddyfile context.
+        /// </summary>
+        /// <param name="key">Variable name (required).</param>
+        /// <param name="value">Variable value to sanitize.</param>
+        /// <exception cref="ArgumentException">Thrown when key is null or empty, or value contains invalid characters.</exception>
+        public void SetCaddyValue(string key, string value)
+        {
+            Set(key, TemplateValueSanitizer.SanitizeCaddyValue(value));
         }
 
         /// <summary>
