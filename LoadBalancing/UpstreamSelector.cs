@@ -28,8 +28,8 @@ namespace CaddyVpsToolkit.LoadBalancing
         private readonly ConcurrentDictionary<string, int> _rrCursors = new();
 
         /// <inheritdoc/>
-        /// <exception cref="ArgumentNullException">Thrown if servers or context is null.</exception>
-        /// <exception cref="CollectionValidationException{UpstreamServer}">Thrown if selection fails due to invalid server state.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="servers"/> or <paramref name="context"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="servers"/> contains null entries.</exception>
         public UpstreamServer? Select(IReadOnlyList<UpstreamServer> servers, UpstreamSelectionContext context)
         {
             ArgumentNullException.ThrowIfNull(servers);
@@ -37,6 +37,12 @@ namespace CaddyVpsToolkit.LoadBalancing
 
             if (servers.Count == 0)
                 return null;
+
+            // Validate that no server in the collection is null
+            for (var i = 0; i < servers.Count; i++)
+            {
+                ArgumentNullException.ThrowIfNull(servers[i]);
+            }
 
             if (servers.Count == 1)
                 return servers[0];
@@ -73,12 +79,15 @@ namespace CaddyVpsToolkit.LoadBalancing
 
         private UpstreamServer SelectByIpHash(IReadOnlyList<UpstreamServer> servers, string clientIp)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(clientIp);
             var hash = Math.Abs(clientIp.GetHashCode(StringComparison.Ordinal));
             return servers[hash % servers.Count];
         }
 
         private UpstreamServer SelectLeastConnections(IReadOnlyList<UpstreamServer> servers)
         {
+            ArgumentNullException.ThrowIfNull(servers);
+
             // Find the server with the fewest active connections
             // If multiple servers have the same minimum, return the first one
             // ActiveConnections is an int, so reading it is atomic and thread-safe
@@ -87,6 +96,7 @@ namespace CaddyVpsToolkit.LoadBalancing
 
             foreach (var server in servers)
             {
+                ArgumentNullException.ThrowIfNull(server);
                 var active = server.ActiveConnections;
                 if (active < minConnections)
                 {
@@ -100,6 +110,8 @@ namespace CaddyVpsToolkit.LoadBalancing
 
         private UpstreamServer SelectRandom(IReadOnlyList<UpstreamServer> servers)
         {
+            ArgumentNullException.ThrowIfNull(servers);
+
             // Select a server uniformly at random
             // Using Random.Shared for thread-safety
             var index = Random.Shared.Next(servers.Count);
@@ -108,12 +120,15 @@ namespace CaddyVpsToolkit.LoadBalancing
 
         private UpstreamServer SelectWeightedRandom(IReadOnlyList<UpstreamServer> servers)
         {
+            ArgumentNullException.ThrowIfNull(servers);
+
             // Weighted random selection based on UpstreamServer.Weight
             // Higher weights increase the probability of selection
             // ActiveConnections is an int, so reading it is atomic and thread-safe
             var totalWeight = 0;
             foreach (var server in servers)
             {
+                ArgumentNullException.ThrowIfNull(server);
                 totalWeight += server.Weight;
             }
 
@@ -129,6 +144,7 @@ namespace CaddyVpsToolkit.LoadBalancing
 
             foreach (var server in servers)
             {
+                ArgumentNullException.ThrowIfNull(server);
                 cumulativeWeight += server.Weight;
                 if (randomValue < cumulativeWeight)
                 {
