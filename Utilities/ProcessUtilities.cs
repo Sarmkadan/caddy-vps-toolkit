@@ -115,12 +115,23 @@ namespace CaddyVpsToolkit.Utilities
             var startInfo = new ProcessStartInfo
             {
                 FileName = command,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+
+            // Use ArgumentList for proper quoting/escaping instead of Arguments string
+            // This prevents injection issues with spaces, quotes, and backslashes
+            if (!string.IsNullOrEmpty(arguments))
+            {
+                var args = CommandLineToArgs(arguments);
+                foreach (var arg in args)
+                {
+                    startInfo.ArgumentList.Add(arg);
+                }
+            }
+
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
 
             using var process = new Process { StartInfo = startInfo };
 
@@ -201,6 +212,65 @@ namespace CaddyVpsToolkit.Utilities
                     IsSuccess = false
                 };
             }
+        }
+
+        /// <summary>
+        /// Parse command line string into individual arguments using MSVCRT/CommandLineToArgvW rules.
+        /// This provides proper handling of spaces, quotes, and backslashes.
+        /// </summary>
+        /// <param name="commandLine">The command line string to parse</param>
+        /// <returns>Array of individual arguments</returns>
+        /// <exception cref="ArgumentException">Thrown when commandLine is null or empty</exception>
+        private static string[] CommandLineToArgs(string commandLine)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(commandLine);
+
+            var args = new System.Collections.Generic.List<string>();
+            int i = 0;
+            int n = commandLine.Length;
+
+            while (i < n)
+            {
+                // Skip whitespace
+                while (i < n && char.IsWhiteSpace(commandLine[i]))
+                    i++;
+
+                if (i >= n)
+                    break;
+
+                // Start of argument
+                int start = i;
+                bool inQuotes = false;
+
+                while (i < n)
+                {
+                    if (commandLine[i] == '"')
+                    {
+                        inQuotes = !inQuotes;
+                        i++;
+                    }
+                    else if (commandLine[i] == '\\' && i + 1 < n && commandLine[i + 1] == '"')
+                    {
+                        // Escaped quote - skip both characters
+                        i += 2;
+                    }
+                    else if (char.IsWhiteSpace(commandLine[i]) && !inQuotes)
+                    {
+                        // End of argument
+                        break;
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                }
+
+                // Extract argument
+                string arg = commandLine.Substring(start, i - start);
+                args.Add(arg);
+            }
+
+            return args.ToArray();
         }
 
         /// <summary>
@@ -334,8 +404,7 @@ namespace CaddyVpsToolkit.Utilities
             {
                 var processes = Process.GetProcessesByName(processName);
                 var running = processes.Length > 0;
-                foreach (var process in processes)
-                    process.Dispose();
+                foreach (var process in processes) process.Dispose();
                 return running;
             }
             catch
@@ -358,8 +427,7 @@ namespace CaddyVpsToolkit.Utilities
             {
                 var processes = Process.GetProcessesByName(processName);
                 var count = processes.Length;
-                foreach (var process in processes)
-                    process.Dispose();
+                foreach (var process in processes) process.Dispose();
                 return count;
             }
             catch
@@ -402,8 +470,7 @@ namespace CaddyVpsToolkit.Utilities
                 }
                 finally
                 {
-                    foreach (var process in processes)
-                        process.Dispose();
+                    foreach (var process in processes) process.Dispose();
                 }
             }
             catch
