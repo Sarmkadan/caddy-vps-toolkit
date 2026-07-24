@@ -96,6 +96,10 @@ namespace CaddyVpsToolkit.LoadBalancing
                     }
                     await _poolRepository.UpdateAsync(pool);
 
+                    // Track the pool instance the current server reference belongs to,
+                    // so the final UpdateAsync persists the object we actually mutated
+                    // (persisting the original stale pool would drop the Disabled state).
+                    var currentPool = pool;
                     var deadline = DateTime.UtcNow.Add(drainTimeout);
                     while (server.ActiveConnections > 0 && DateTime.UtcNow < deadline)
                     {
@@ -105,6 +109,7 @@ namespace CaddyVpsToolkit.LoadBalancing
                         var updatedPool = await _poolRepository.GetByIdAsync(pool.Id);
                         server = updatedPool?.Servers.Find(s => s.Id == upstreamId);
                         if (server is null) break;
+                        currentPool = updatedPool;
                     }
 
                     if (server is not null)
@@ -113,7 +118,7 @@ namespace CaddyVpsToolkit.LoadBalancing
                         {
                             server.Status = UpstreamServerStatus.Disabled;
                         }
-                        await _poolRepository.UpdateAsync(pool);
+                        await _poolRepository.UpdateAsync(currentPool);
                     }
                     break;
                 }

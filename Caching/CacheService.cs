@@ -17,6 +17,7 @@ namespace CaddyVpsToolkit.Caching
     public interface ICacheService
     {
         ValueTask<T> GetAsync<T>(string key);
+        ValueTask<(bool Found, T Value)> TryGetAsync<T>(string key);
         ValueTask SetAsync<T>(string key, T value, TimeSpan? expiration = null);
         ValueTask RemoveAsync(string key);
         ValueTask ClearAsync();
@@ -42,21 +43,40 @@ namespace CaddyVpsToolkit.Caching
 
         public ValueTask<T> GetAsync<T>(string key)
         {
+            var (found, value) = TryGet<T>(key);
+            return ValueTask.FromResult(found ? value : default);
+        }
+
+        public ValueTask<(bool Found, T Value)> TryGetAsync<T>(string key)
+        {
+            return ValueTask.FromResult(TryGet<T>(key));
+        }
+
+        private (bool Found, T Value) TryGet<T>(string key)
+        {
             if (string.IsNullOrEmpty(key))
-                return ValueTask.FromResult<T>(default);
+                return (false, default);
 
             if (_cache.TryGetValue(key, out var entry))
             {
                 if (entry.ExpiresAt.HasValue && DateTime.UtcNow > entry.ExpiresAt)
                 {
                     _cache.TryRemove(key, out _);
-                    return ValueTask.FromResult<T>(default);
+                    return (false, default);
                 }
 
-                return ValueTask.FromResult((T)entry.Value);
+                // Type-safe unwrap: a mismatched type behaves like a miss instead of
+                // throwing InvalidCastException at the call site.
+                if (entry.Value is T typed)
+                    return (true, typed);
+
+                if (entry.Value is null && default(T) is null)
+                    return (true, default);
+
+                return (false, default);
             }
 
-            return ValueTask.FromResult<T>(default);
+            return (false, default);
         }
 
         public ValueTask SetAsync<T>(string key, T value, TimeSpan? expiration = null)
@@ -89,7 +109,8 @@ namespace CaddyVpsToolkit.Caching
 
         public async ValueTask<bool> ExistsAsync(string key)
         {
-            return await GetAsync<object>(key) is not null;
+            var (found, _) = await TryGetAsync<object>(key);
+            return found;
         }
 
         /// <summary>
@@ -122,8 +143,11 @@ namespace CaddyVpsToolkit.Caching
             Func<Task<T>> factory,
             TimeSpan? expiration = null)
         {
-            var cached = await cache.GetAsync<T>(key);
-            if (cached is not null)
+            // TryGetAsync distinguishes a genuine miss from a cached default value,
+            // which matters for value types (a cached 0/false is a valid hit) and
+            // avoids re-invoking the factory on every call for missing value types.
+            var (found, cached) = await cache.TryGetAsync<T>(key);
+            if (found)
                 return cached;
 
             var value = await factory();

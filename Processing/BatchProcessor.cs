@@ -283,6 +283,8 @@ namespace CaddyVpsToolkit.Processing
             await Task.WhenAll(tasks);
         }
 
+        private readonly object _resultLock = new();
+
         private async Task ProcessBatchAsync(List<T> batch, BatchResult<T> result)
         {
             foreach (var item in batch)
@@ -290,11 +292,19 @@ namespace CaddyVpsToolkit.Processing
                 try
                 {
                     await _processFunction(item);
-                    result.SuccessfulItems.Add(item);
+                    // BatchResult uses plain List<T>; when maxDegreeOfParallelism > 1
+                    // multiple batches append concurrently, so guard the shared lists.
+                    lock (_resultLock)
+                    {
+                        result.SuccessfulItems.Add(item);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    result.FailedItems.Add((item, ex));
+                    lock (_resultLock)
+                    {
+                        result.FailedItems.Add((item, ex));
+                    }
 
                     if (!_continueOnError)
                         throw;
