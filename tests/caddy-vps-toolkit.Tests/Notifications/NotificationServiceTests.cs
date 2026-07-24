@@ -688,3 +688,254 @@ namespace CaddyVpsToolkit.Tests.Notifications
         }
     }
 }
+
+/// <summary>
+/// Tests for destination validation functionality
+/// </summary>
+public class DestinationValidationTests
+{
+    [Fact]
+    public void ValidateEmail_ValidEmail_ReturnsEmail()
+    {
+        // Arrange
+        var validEmail = "test@example.com";
+
+        // Act
+        var result = validEmail.ValidateEmail();
+
+        // Assert
+        result.Should().Be(validEmail);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ValidateEmail_NullOrEmpty_ThrowsArgumentException(string invalidEmail)
+    {
+        // Arrange & Act
+        Action act = () => invalidEmail.ValidateEmail();
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("invalid-email")]
+    [InlineData("test@")]
+    [InlineData("@example.com")]
+    [InlineData("test@@example.com")]
+    public void ValidateEmail_InvalidFormat_ThrowsArgumentException(string invalidEmail)
+    {
+        // Arrange & Act
+        Action act = () => invalidEmail.ValidateEmail();
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void ValidateWebhookUrl_ValidHttpsUrl_ReturnsUrl()
+    {
+        // Arrange
+        var validUrl = "https://example.com/webhook";
+
+        // Act
+        var result = validUrl.ValidateWebhookUrl();
+
+        // Assert
+        result.Should().Be(validUrl);
+    }
+
+    [Fact]
+    public void ValidateWebhookUrl_ValidHttpUrl_ReturnsUrl()
+    {
+        // Arrange
+        var validUrl = "http://example.com/webhook";
+
+        // Act
+        var result = validUrl.ValidateWebhookUrl();
+
+        // Assert
+        result.Should().Be(validUrl);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ValidateWebhookUrl_NullOrEmpty_ThrowsArgumentException(string invalidUrl)
+    {
+        // Arrange & Act
+        Action act = () => invalidUrl.ValidateWebhookUrl();
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("ftp://example.com/webhook")]
+    [InlineData("ws://example.com/webhook")]
+    public void ValidateWebhookUrl_InvalidScheme_ThrowsArgumentException(string invalidUrl)
+    {
+        // Arrange & Act
+        Action act = () => invalidUrl.ValidateWebhookUrl();
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("http://localhost/webhook")]
+    [InlineData("http://127.0.0.1/webhook")]
+    [InlineData("http://192.168.1.1/webhook")]
+    [InlineData("http://10.0.0.1/webhook")]
+    [InlineData("http://172.16.0.1/webhook")]
+    public void ValidateWebhookUrl_LocalhostOrPrivateIp_ThrowsArgumentException(string blockedUrl)
+    {
+        // Arrange & Act
+        Action act = () => blockedUrl.ValidateWebhookUrl();
+
+        // Assert
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*localhost or private address*");
+    }
+
+    [Theory]
+    [InlineData("https://192.168.1.1:8080/webhook")]
+    [InlineData("http://10.10.10.10/webhook")]
+    public void ValidateWebhookUrl_PrivateIpRanges_ThrowsArgumentException(string blockedUrl)
+    {
+        // Arrange & Act
+        Action act = () => blockedUrl.ValidateWebhookUrl();
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void ValidatePhoneNumber_ValidPhoneNumber_ReturnsPhoneNumber()
+    {
+        // Arrange
+        var validPhone = "+1234567890";
+
+        // Act
+        var result = validPhone.ValidatePhoneNumber();
+
+        // Assert
+        result.Should().Be(validPhone);
+    }
+
+    [Fact]
+    public void ValidatePhoneNumber_ValidPhoneWithDashes_ReturnsPhoneNumber()
+    {
+        // Arrange
+        var validPhone = "123-456-7890";
+
+        // Act
+        var result = validPhone.ValidatePhoneNumber();
+
+        // Assert
+        result.Should().Be(validPhone);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ValidatePhoneNumber_NullOrEmpty_ThrowsArgumentException(string invalidPhone)
+    {
+        // Arrange & Act
+        Action act = () => invalidPhone.ValidatePhoneNumber();
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("123")]
+    [InlineData("123-45")]
+    public void ValidatePhoneNumber_InvalidFormat_ThrowsArgumentException(string invalidPhone)
+    {
+        // Arrange & Act
+        Action act = () => invalidPhone.ValidatePhoneNumber();
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void ValidateMessageContent_ValidMessage_ReturnsMessage()
+    {
+        // Arrange
+        var validMessage = "This is a normal message without any templates";
+
+        // Act
+        var result = validMessage.ValidateMessageContent();
+
+        // Assert
+        result.Should().Be(validMessage);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    public void ValidateMessageContent_NullOrEmpty_ThrowsArgumentException(string invalidMessage)
+    {
+        // Arrange & Act
+        Action act = () => invalidMessage.ValidateMessageContent();
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("Hello {{name}}")]
+    [InlineData("Value: {{value}} and {{other}}")]
+    [InlineData("Template: {{user}} please check {{action}}")]
+    public void ValidateMessageContent_TemplateInjectionPatterns_ThrowsArgumentException(string messageWithTemplate)
+    {
+        // Arrange & Act
+        Action act = () => messageWithTemplate.ValidateMessageContent();
+
+        // Assert
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*template injection patterns*");
+    }
+
+    [Fact]
+    public void ValidateDestination_EmailType_ValidatesAsEmail()
+    {
+        // Arrange
+        var email = "test@example.com";
+
+        // Act
+        var result = email.ValidateDestination(DestinationType.Email);
+
+        // Assert
+        result.Should().Be(email);
+    }
+
+    [Fact]
+    public void ValidateDestination_WebhookType_ValidatesAsWebhook()
+    {
+        // Arrange
+        var url = "https://example.com/webhook";
+
+        // Act
+        var result = url.ValidateDestination(DestinationType.Webhook);
+
+        // Assert
+        result.Should().Be(url);
+    }
+
+    [Fact]
+    public void ValidateDestination_PhoneType_ValidatesAsPhone()
+    {
+        // Arrange
+        var phone = "+1234567890";
+
+        // Act
+        var result = phone.ValidateDestination(DestinationType.Phone);
+
+        // Assert
+        result.Should().Be(phone);
+    }
+}
