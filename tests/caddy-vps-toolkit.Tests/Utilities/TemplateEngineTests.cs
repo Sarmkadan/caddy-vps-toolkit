@@ -47,29 +47,30 @@ namespace CaddyVpsToolkit.Tests.Utilities
         }
 
         /// <summary>
-        /// Tests that an unknown variable leaves the placeholder intact.
+        /// Tests that an unknown variable throws TemplateVariableMissingException in strict mode.
         /// </summary>
         [Fact]
-        public void Render_UnknownVariable_LeavesPlaceholderIntact()
+        public void Render_UnknownVariable_ThrowsTemplateVariableMissingException()
         {
             var engine = new TemplateEngine();
 
-            var result = engine.Render("Hello {{unknown}}!");
+            Action act = () => engine.Render("Hello {{unknown}}!");
 
-            result.Should().Be("Hello {{unknown}}!");
+            act.Should().Throw<TemplateVariableMissingException>()
+                .Where(e => e.MissingVariables.Contains("unknown"));
         }
 
         /// <summary>
-        /// Tests that a null template returns null.
+        /// Tests that a null template throws ArgumentNullException.
         /// </summary>
         [Fact]
-        public void Render_NullTemplate_ReturnsNull()
+        public void Render_NullTemplate_ThrowsArgumentNullException()
         {
             var engine = new TemplateEngine();
 
-            var result = engine.Render(null!);
+            Action act = () => engine.Render(null!);
 
-            result.Should().BeNull();
+            act.Should().Throw<ArgumentNullException>();
         }
 
         /// <summary>
@@ -117,6 +118,23 @@ namespace CaddyVpsToolkit.Tests.Utilities
         }
 
         /// <summary>
+        /// Tests that a static overload throws TemplateVariableMissingException for missing variables.
+        /// </summary>
+        [Fact]
+        public void Render_StaticOverload_ThrowsTemplateVariableMissingExceptionForMissingVariables()
+        {
+            var vars = new Dictionary<string, object>
+            {
+                ["service"] = "caddy"
+            };
+
+            Action act = () => TemplateEngine.Render("{{service}} v{{missing}}", vars);
+
+            act.Should().Throw<TemplateVariableMissingException>()
+                .Where(e => e.MissingVariables.Contains("missing"));
+        }
+
+        /// <summary>
         /// Tests that setting an empty key throws an ArgumentException.
         /// </summary>
         /// <param name="act">The action to test.</param>
@@ -131,17 +149,17 @@ namespace CaddyVpsToolkit.Tests.Utilities
         }
 
         /// <summary>
-        /// Tests that setting a null key throws an ArgumentException.
+        /// Tests that setting a null key throws an ArgumentNullException.
         /// </summary>
         /// <param name="act">The action to test.</param>
         [Fact]
-        public void Set_NullKey_ThrowsArgumentException()
+        public void Set_NullKey_ThrowsArgumentNullException()
         {
             var engine = new TemplateEngine();
 
             Action act = () => engine.Set(null!, "value");
 
-            act.Should().Throw<ArgumentException>();
+            act.Should().Throw<ArgumentNullException>();
         }
 
         /// <summary>

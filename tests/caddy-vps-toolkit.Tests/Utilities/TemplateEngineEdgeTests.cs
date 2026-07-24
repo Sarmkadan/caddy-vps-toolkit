@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Collections.Generic;
@@ -19,30 +19,32 @@ namespace CaddyVpsToolkit.Tests.Utilities
     public sealed class TemplateEngineEdgeTests
     {
         /// <summary>
-        /// Tests that a template with only missing placeholders returns the template unchanged.
+        /// Tests that a template with only missing placeholders throws TemplateVariableMissingException in strict mode.
         /// </summary>
         [Fact]
-        public void Render_OnlyMissingPlaceholders_ReturnsTemplateUnchanged()
+        public void Render_OnlyMissingPlaceholders_ThrowsTemplateVariableMissingException()
         {
             var engine = new TemplateEngine();
 
-            var result = engine.Render("{{missing1}} and {{missing2}}");
+            Action act = () => engine.Render("{{missing1}} and {{missing2}}");
 
-            result.Should().Be("{{missing1}} and {{missing2}}");
+            act.Should().Throw<TemplateVariableMissingException>()
+                .Where(e => e.MissingVariables.Contains("missing1") && e.MissingVariables.Contains("missing2"));
         }
 
         /// <summary>
-        /// Tests that a template with mixed known and unknown placeholders substitutes known ones only.
+        /// Tests that a template with mixed known and unknown placeholders throws TemplateVariableMissingException in strict mode.
         /// </summary>
         [Fact]
-        public void Render_MixedKnownAndUnknownPlaceholders_SubstitutesKnownOnly()
+        public void Render_MixedKnownAndUnknownPlaceholders_ThrowsTemplateVariableMissingException()
         {
             var engine = new TemplateEngine();
             engine.Set("known", "value");
 
-            var result = engine.Render("{{known}} and {{unknown}} and {{another_known}}");
+            Action act = () => engine.Render("{{known}} and {{unknown}} and {{another_known}}");
 
-            result.Should().Be("value and {{unknown}} and {{another_known}}");
+            act.Should().Throw<TemplateVariableMissingException>()
+                .Where(e => e.MissingVariables.Contains("unknown") && e.MissingVariables.Contains("another_known"));
         }
 
         /// <summary>
@@ -63,26 +65,26 @@ namespace CaddyVpsToolkit.Tests.Utilities
         /// Tests braces with no content between them.
         /// </summary>
         [Fact]
-        public void Render_EmptyBraces_LeavesEmptyBracesIntact()
+        public void Render_EmptyBraces_ThrowsTemplateVariableMissingException()
         {
             var engine = new TemplateEngine();
 
-            var result = engine.Render("{{}}");
+            Action act = () => engine.Render("{{");
 
-            result.Should().Be("{{}}");
+            act.Should().Throw<TemplateVariableMissingException>();
         }
 
         /// <summary>
         /// Tests braces with only whitespace between them.
         /// </summary>
         [Fact]
-        public void Render_BracesWithWhitespace_LeavesWhitespaceBracesIntact()
+        public void Render_BracesWithWhitespace_ThrowsTemplateVariableMissingException()
         {
             var engine = new TemplateEngine();
 
-            var result = engine.Render("{{ }}");
+            Action act = () => engine.Render("{{");
 
-            result.Should().Be("{{ }}");
+            act.Should().Throw<TemplateVariableMissingException>();
         }
 
         /// <summary>
@@ -165,7 +167,7 @@ namespace CaddyVpsToolkit.Tests.Utilities
             var result = engine.Render(template.ToString());
 
             // Verify all placeholders were replaced
-            result.Should().NotContain("{{var");
+            result.Should().NotContain("{{");
             result.Should().Contain("0 1 2 3 4 5 6 7 8 9");
         }
 
@@ -178,9 +180,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             var engine = new TemplateEngine();
             engine.Set("var", "test");
 
-            var result = engine.Render("  {{var}}  {{var}}  ");
+            var result = engine.Render(" {{var}} {{var}} ");
 
-            result.Should().Be("  test  test  ");
+            result.Should().Be(" test test ");
         }
 
         /// <summary>
@@ -231,27 +233,28 @@ namespace CaddyVpsToolkit.Tests.Utilities
         }
 
         /// <summary>
-        /// Tests that static Render method handles missing placeholders correctly.
+        /// Tests that static Render method throws TemplateVariableMissingException for missing placeholders.
         /// </summary>
         [Fact]
-        public void Render_StaticMethod_MissingPlaceholdersHandled()
+        public void Render_StaticMethod_ThrowsTemplateVariableMissingExceptionForMissingVariables()
         {
             var vars = new Dictionary<string, object> { ["known"] = "value" };
 
-            var result = TemplateEngine.Render("{{known}} {{unknown}}", vars);
+            Action act = () => TemplateEngine.Render("{{known}} {{unknown}}", vars);
 
-            result.Should().Be("value {{unknown}}");
+            act.Should().Throw<TemplateVariableMissingException>()
+                .Where(e => e.MissingVariables.Contains("unknown"));
         }
 
         /// <summary>
-        /// Tests that static Render method with null variables creates empty dictionary.
+        /// Tests that static Render method with null variables throws ArgumentNullException.
         /// </summary>
         [Fact]
-        public void Render_StaticMethod_NullVariables_CreatesEmptyDictionary()
+        public void Render_StaticMethod_NullVariables_ThrowsArgumentNullException()
         {
-            var result = TemplateEngine.Render("test {{var}}", null!);
+            Action act = () => TemplateEngine.Render("test {{var}}", null!);
 
-            result.Should().Be("test {{var}}");
+            act.Should().Throw<ArgumentNullException>();
         }
 
         /// <summary>
@@ -262,9 +265,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
         {
             var engine = new TemplateEngine();
 
-            var result = engine.Render("   ");
+            var result = engine.Render(" ");
 
-            result.Should().Be("   ");
+            result.Should().Be(" ");
         }
 
         /// <summary>

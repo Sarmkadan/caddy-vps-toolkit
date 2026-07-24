@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Xunit;
 using CaddyVpsToolkit.Utilities;
+using Xunit;
 
 namespace CaddyVpsToolkit.Tests
 {
@@ -23,17 +23,14 @@ namespace CaddyVpsToolkit.Tests
         }
 
         [Fact]
-        public void Render_MissingPlaceholderValue_LeavesPlaceholderUnchanged()
+        public void Render_MissingPlaceholderValue_ThrowsTemplateVariableMissingException()
         {
             // Arrange
             var engine = new TemplateEngine();
             var template = "Hello {{name}}!";
 
-            // Act
-            var result = engine.Render(template);
-
-            // Assert
-            Assert.Equal("Hello {{name}}!", result);
+            // Act & Assert
+            Assert.Throws<TemplateVariableMissingException>(() => engine.Render(template));
         }
 
         [Fact]
@@ -93,13 +90,13 @@ namespace CaddyVpsToolkit.Tests
         }
 
         [Fact]
-        public void Set_ThrowsArgumentException_WhenKeyIsNullOrEmpty()
+        public void Set_ThrowsArgumentNullException_WhenKeyIsNullOrEmpty()
         {
             // Arrange
             var engine = new TemplateEngine();
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => engine.Set(null!, "value"));
+            Assert.Throws<ArgumentNullException>(() => engine.Set(null!, "value"));
             Assert.Throws<ArgumentException>(() => engine.Set(string.Empty, "value"));
         }
     }
