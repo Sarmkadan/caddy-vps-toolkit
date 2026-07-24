@@ -248,6 +248,59 @@ class Program
 }
 ```
 
+## Error Handling Convention
+
+This toolkit defines a consistent error-handling convention for extension methods:
+
+### Expected Failures vs. Programmer Errors
+
+- **Expected failures**: Use `Result<T>` pattern - methods return a `Result<T>` or `Result` object containing either the successful result or an error message
+- **Programmer errors**: Throw exceptions - methods throw `ArgumentNullException`, `ArgumentException`, or other appropriate exceptions for invalid arguments or null references
+
+### When to Use Each Pattern
+
+**Use `Result<T>` for:**
+- JSON deserialization operations that can fail due to invalid input
+- External service calls that may fail (network issues, timeouts)
+- Operations that can legitimately fail in normal usage (file parsing, network requests)
+
+**Throw exceptions for:**
+- Null arguments (use `ArgumentNullException.ThrowIfNull()`)
+- Invalid argument values (use `ArgumentException.ThrowIfNullOrEmpty()`)
+- Programming errors (wrong types, invalid states)
+- Configuration errors that should fail fast during development
+
+### Examples
+
+```csharp
+// Good: Using Result<T> for expected failure
+var result = ProcessUtilitiesJsonExtensions.FromJson(invalidJson);
+if (result.IsSuccess)
+{
+    var config = result.Data;
+}
+else
+{
+    Console.WriteLine($"Error: {result.ErrorMessage}");
+}
+
+// Good: Throwing exception for programmer error
+var certificate = new SslCertificateInfo();
+// This will throw ArgumentNullException if certificate is null
+certificate.GetStatus();
+
+// Good: Using Result<T> for expected failure  
+var serviceResult = ConfigurationServiceJsonExtensions.FromJson(invalidJson);
+if (serviceResult.IsSuccess)
+{
+    var service = serviceResult.Data;
+}
+else
+{
+    Console.WriteLine($"Failed to deserialize: {serviceResult.ErrorMessage}");
+}
+```
+
 ## UpstreamManagerServiceExtensions
 
 The `UpstreamManagerServiceExtensions` class provides extension methods for `UpstreamManagerService` that add convenience and batch operations for upstream pool management, health monitoring, and configuration generation. These methods simplify common operations like retrieving pools, checking health status, generating Caddy configuration, and recording upstream results.
