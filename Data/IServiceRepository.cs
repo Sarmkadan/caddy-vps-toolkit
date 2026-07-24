@@ -43,17 +43,7 @@ namespace CaddyVpsToolkit.Data
         Task<HealthCheckStatistics> GetStatisticsAsync(string serviceId, DateTime from, DateTime to);
     }
 
-    /// <summary>
-    /// Repository interface for application configuration
-    /// </summary>
-    public interface IConfigurationRepository
-    {
-        Task<string> GetValueAsync(string key);
-        Task SetValueAsync(string key, string value);
-        Task<bool> DeleteAsync(string key);
-        Task<Dictionary<string, string>> GetAllAsync();
-    }
-
+    
     public sealed class HealthCheckStatistics
     {
         public int TotalChecks { get; set; }
