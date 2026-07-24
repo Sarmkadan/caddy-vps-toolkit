@@ -43,6 +43,10 @@ namespace CaddyVpsToolkit.Utilities
         /// <exception cref="ArgumentException">Thrown if basePath is null or empty</exception>
         /// <exception cref="ArgumentException">Thrown if any part is rooted (starts with / or drive letter)</exception>
         /// <exception cref="ArgumentException">Thrown if any part contains reserved names (Windows) or invalid patterns</exception>
+/// <remarks>
+/// This is the designated path-combining entry point for the application.
+/// Use this method instead of System.IO.Path.Combine to ensure security checks are applied.
+/// </remarks>
         /// <exception cref="InvalidOperationException">Thrown if path traversal is detected</exception>
         public static string SafeCombine(string basePath, params string[] parts)
         {
@@ -287,6 +291,10 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Get unique filename if file exists
         /// </summary>
+/// <remarks>
+/// Uses Path.Combine internally for simple concatenation within the whitelisted file.
+/// This is allowed as PathUtilities.cs is excluded from BannedApiAnalyzers bans.
+/// </remarks>
         public static string GetUniqueFilePath(string filePath)
         {
             if (!File.Exists(filePath))

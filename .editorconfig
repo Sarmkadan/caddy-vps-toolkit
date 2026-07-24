@@ -171,3 +171,7 @@ csharp_style_namespace_declarations = file_scoped:suggestion
 
 # Using directives placement
 csharp_using_directive_placement = outside_namespace:suggestion
+
+#### BannedApiAnalyzers Configuration ####
+# Exclude PathUtilities.cs from Path.Combine bans since it's the safe implementation
+dotnet_diagnostic.BA0001.excluded_files = Utilities/PathUtilities.cs

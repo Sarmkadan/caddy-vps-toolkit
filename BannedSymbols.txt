@@ -1,0 +1,7 @@
+// Ban Path.Combine and Path.Join to enforce using PathUtilities.SafeCombine instead
+// This ensures path combining is always done with security checks
+// Exception: PathUtilities.cs is whitelisted as it contains the SafeCombine implementation
+// Exception: PathUtilities.GetUniqueFilePath uses Path.Combine internally for simple concatenation
+
+T:System.IO.Path.Combine
+T:System.IO.Path.Join
