@@ -9,6 +9,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using CaddyVpsToolkit.Core;
 using CaddyVpsToolkit.Domain.Models;
 
 namespace CaddyVpsToolkit.LoadBalancing
@@ -27,6 +28,8 @@ namespace CaddyVpsToolkit.LoadBalancing
         private readonly ConcurrentDictionary<string, int> _rrCursors = new();
 
         /// <inheritdoc/>
+        /// <exception cref="ArgumentNullException">Thrown if servers or context is null.</exception>
+        /// <exception cref="CollectionValidationException{UpstreamServer}">Thrown if selection fails due to invalid server state.</exception>
         public UpstreamServer? Select(IReadOnlyList<UpstreamServer> servers, UpstreamSelectionContext context)
         {
             ArgumentNullException.ThrowIfNull(servers);

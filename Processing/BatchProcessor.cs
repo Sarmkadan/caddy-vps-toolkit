@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using CaddyVpsToolkit.Core;
 
 namespace CaddyVpsToolkit.Processing
 {
@@ -49,6 +50,7 @@ namespace CaddyVpsToolkit.Processing
         /// <param name="cancellationToken">A cancellation token to observe while waiting for items to be processed.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown if items is null.</exception>
+        /// <exception cref="CollectionValidationException{T}">Thrown if processing fails for any batch.</exception>
         /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
         public async Task ProcessAsync(IEnumerable<T> items, CancellationToken cancellationToken = default)
         {
@@ -196,6 +198,7 @@ namespace CaddyVpsToolkit.Processing
         /// <param name="cancellationToken">A cancellation token to observe while waiting for items to be processed.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the batch processing results.</returns>
         /// <exception cref="ArgumentNullException">Thrown if items is null.</exception>
+        /// <exception cref="CollectionValidationException{T}">Thrown if processing fails and continueOnError is false.</exception>
         /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
         public async Task<BatchResult<T>> ProcessAsync(IEnumerable<T> items, CancellationToken cancellationToken = default)
         {
@@ -307,7 +310,16 @@ namespace CaddyVpsToolkit.Processing
                     }
 
                     if (!_continueOnError)
-                        throw;
+                    {
+                        throw new CollectionValidationException<T>(
+                            $"Batch processing failed for item at index {{index}}: {{error}}",
+                            new List<(T Item, Exception Error, int? Index)>
+                            {
+                                (item, ex, null) // Index not tracked at item level in batch
+                            },
+                            result.TotalProcessed + 1,
+                            result.SuccessCount);
+                    }
                 }
             }
         }
