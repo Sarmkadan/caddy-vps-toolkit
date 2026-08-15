@@ -14,15 +14,15 @@ using CaddyVpsToolkit.Utilities;
 namespace CaddyVpsToolkit.Integration
 {
     /// <summary>
-    /// Wrapper around HttpClient with built-in retry, timeout, and error handling.
+    /// Wrapper around HttpClient with built‑in retry, timeout, and error handling.
     /// Abstracts HTTP communication for cleaner service code.
     /// </summary>
     public interface IHttpClient
     {
-        Task<HttpResponse<T>> GetAsync<T>(string url, Dictionary<string, string> headers = null);
-        Task<HttpResponse<T>> PostAsync<T>(string url, object data, Dictionary<string, string> headers = null);
-        Task<HttpResponse<T>> PutAsync<T>(string url, object data, Dictionary<string, string> headers = null);
-        Task<HttpResponse<string>> DeleteAsync(string url, Dictionary<string, string> headers = null);
+        Task<HttpResponse<T>> GetAsync<T>(string url, Dictionary<string, string>? headers = null);
+        Task<HttpResponse<T>> PostAsync<T>(string url, object data, Dictionary<string, string>? headers = null);
+        Task<HttpResponse<T>> PutAsync<T>(string url, object data, Dictionary<string, string>? headers = null);
+        Task<HttpResponse<string>> DeleteAsync(string url, Dictionary<string, string>? headers = null);
     }
 
     public sealed class HttpClientWrapper : IHttpClient
@@ -31,20 +31,39 @@ namespace CaddyVpsToolkit.Integration
         private readonly IRetryPolicy _retryPolicy;
         private readonly int _timeoutMs;
 
-        public HttpClientWrapper(
-            int timeoutMs = 30000,
-            IRetryPolicy retryPolicy = null)
+        /// <summary>
+        /// Primary constructor that receives a fully configured <see cref="HttpClientWrapperOptions"/>
+        /// instance. This moves the previously hard‑coded timeout and retry policy into a
+        /// strongly‑typed options class that can be bound from configuration.
+        /// </summary>
+        /// <param name="options">Configuration options; if <c>null</c>, defaults are used.</param>
+        public HttpClientWrapper(HttpClientWrapperOptions? options = null)
         {
-            _timeoutMs = timeoutMs;
-            _retryPolicy = retryPolicy ?? new NoRetryPolicy();
+            var opts = options ?? new HttpClientWrapperOptions();
 
-            _client = new HttpClient();
-            _client.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
+            _timeoutMs = opts.TimeoutMs;
+            _retryPolicy = opts.RetryPolicy ?? new NoRetryPolicy();
+
+            _client = new HttpClient
+            {
+                Timeout = TimeSpan.FromMilliseconds(_timeoutMs)
+            };
+        }
+
+        /// <summary>
+        /// Backward‑compatible overload that mirrors the original signature.
+        /// It forwards to the options‑based constructor, preserving existing call‑sites.
+        /// </summary>
+        /// <param name="timeoutMs">Timeout in milliseconds (default 30 000).</param>
+        /// <param name="retryPolicy">Retry policy; if <c>null</c>, a <see cref="NoRetryPolicy"/> is used.</param>
+        public HttpClientWrapper(int timeoutMs = 30_000, IRetryPolicy? retryPolicy = null)
+            : this(new HttpClientWrapperOptions { TimeoutMs = timeoutMs, RetryPolicy = retryPolicy })
+        {
         }
 
         public async Task<HttpResponse<T>> GetAsync<T>(
             string url,
-            Dictionary<string, string> headers = null)
+            Dictionary<string, string>? headers = null)
         {
             return await ExecuteAsync<T>(async () =>
             {
@@ -57,7 +76,7 @@ namespace CaddyVpsToolkit.Integration
         public async Task<HttpResponse<T>> PostAsync<T>(
             string url,
             object data,
-            Dictionary<string, string> headers = null)
+            Dictionary<string, string>? headers = null)
         {
             return await ExecuteAsync<T>(async () =>
             {
@@ -75,7 +94,7 @@ namespace CaddyVpsToolkit.Integration
         public async Task<HttpResponse<T>> PutAsync<T>(
             string url,
             object data,
-            Dictionary<string, string> headers = null)
+            Dictionary<string, string>? headers = null)
         {
             return await ExecuteAsync<T>(async () =>
             {
@@ -92,7 +111,7 @@ namespace CaddyVpsToolkit.Integration
 
         public async Task<HttpResponse<string>> DeleteAsync(
             string url,
-            Dictionary<string, string> headers = null)
+            Dictionary<string, string>? headers = null)
         {
             return await ExecuteAsync<string>(async () =>
             {
@@ -105,7 +124,7 @@ namespace CaddyVpsToolkit.Integration
         private HttpRequestMessage CreateRequest(
             HttpMethod method,
             string url,
-            Dictionary<string, string> headers)
+            Dictionary<string, string>? headers)
         {
             var request = new HttpRequestMessage(method, url);
 
@@ -172,8 +191,8 @@ namespace CaddyVpsToolkit.Integration
     {
         public int StatusCode { get; set; }
         public bool IsSuccess { get; set; }
-        public T Data { get; set; }
-        public string Error { get; set; }
-        public string RawContent { get; set; }
+        public T? Data { get; set; }
+        public string? Error { get; set; }
+        public string? RawContent { get; set; }
     }
 }
