@@ -46,6 +46,11 @@ namespace CaddyVpsToolkit.Services
             @"^\[(?<ts>[^\]]+)\]\s+\[(?<level>[^\]]+)\]\s+(?<msg>.+)$",
             RegexOptions.Compiled);
 
+        // Matches filenames like "service-<id>"
+        private static readonly Regex ServiceIdRegex = new(
+            @"^service-(.+)$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         private static readonly string[] KnownLevelOrder = { "Debug", "Info", "Warning", "Error" };
 
         private readonly string _logDirectory;
@@ -160,8 +165,9 @@ namespace CaddyVpsToolkit.Services
             // Derive a serviceId from the filename convention "service-<id>.log"
             string? serviceId = null;
             var nameWithoutExt = Path.GetFileNameWithoutExtension(filePath);
-            if (nameWithoutExt.StartsWith("service-", StringComparison.OrdinalIgnoreCase))
-                serviceId = nameWithoutExt["service-".Length..];
+            var serviceMatch = ServiceIdRegex.Match(nameWithoutExt);
+            if (serviceMatch.Success)
+                serviceId = serviceMatch.Groups[1].Value;
 
             // Apply service filter early
             if (!string.IsNullOrWhiteSpace(options.ServiceId) &&
