@@ -11,16 +11,6 @@ using System.Text.Json;
 namespace CaddyVpsToolkit.Formatters
 {
     /// <summary>
-    /// Base interface for output formatters.
-    /// Allows multiple output formats (JSON, CSV, table, XML) for the same data.
-    /// </summary>
-    public interface IOutputFormatter
-    {
-        string Format<T>(List<T> items);
-        string Format<T>(T item);
-    }
-
-    /// <summary>
     /// Table formatter for console output with aligned columns
     /// </summary>
     public sealed class TableFormatter : IOutputFormatter
