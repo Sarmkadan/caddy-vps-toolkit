@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CaddyVpsToolkit.Caching
@@ -134,8 +135,14 @@ namespace CaddyVpsToolkit.Caching
     /// </summary>
     public static class CacheExtensions
     {
+        // Holds a per‑key semaphore to guarantee that only one factory execution
+        // runs for a given cache key at a time.
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _keyLocks = new();
+
         /// <summary>
-        /// Get or set cache value using factory function
+        /// Get or set cache value using factory function.
+        /// This version does **not** provide any locking – concurrent calls may
+        /// invoke the factory multiple times.
         /// </summary>
         public static async ValueTask<T> GetOrSetAsync<T>(
             this ICacheService cache,
@@ -153,6 +160,52 @@ namespace CaddyVpsToolkit.Caching
             var value = await factory();
             await cache.SetAsync(key, value, expiration);
             return value;
+        }
+
+        /// <summary>
+        /// Get or create cache value using factory function with per‑key locking.
+        /// Guarantees that the <paramref name="factory"/> is executed at most once
+        /// concurrently for the same <paramref name="key"/>. Subsequent callers
+        /// will await the first execution and receive the same result.
+        /// </summary>
+        public static async ValueTask<T> GetOrCreateAsync<T>(
+            this ICacheService cache,
+            string key,
+            Func<Task<T>> factory,
+            TimeSpan? expiration = null)
+        {
+            // Fast path – try to get the value without taking a lock.
+            var (found, cached) = await cache.TryGetAsync<T>(key);
+            if (found)
+                return cached;
+
+            // Acquire a semaphore specific to the key.
+            var semaphore = _keyLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+            await semaphore.WaitAsync();
+            try
+            {
+                // Re‑check after acquiring the lock – another thread may have
+                // populated the cache while we were waiting.
+                var (foundAfterLock, cachedAfterLock) = await cache.TryGetAsync<T>(key);
+                if (foundAfterLock)
+                    return cachedAfterLock;
+
+                // Execute the factory, store the result and return it.
+                var value = await factory();
+                await cache.SetAsync(key, value, expiration);
+                return value;
+            }
+            finally
+            {
+                semaphore.Release();
+
+                // Optional cleanup: remove the semaphore when no one is waiting.
+                // This prevents unbounded growth of the dictionary.
+                if (semaphore.CurrentCount == 1)
+                {
+                    _keyLocks.TryRemove(key, out _);
+                }
+            }
         }
 
         /// <summary>
