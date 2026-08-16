@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace CaddyVpsToolkit.Utilities
@@ -85,7 +86,10 @@ namespace CaddyVpsToolkit.Utilities
     {
         private readonly Dictionary<string, object> _variables;
         private readonly bool _strictMode;
-        private static readonly ConcurrentDictionary<(string, bool), List<ITemplateSegment>> _templateCache = new();
+
+        // Cache key is a hash of the template string combined with the strict‑mode flag.
+        // Using a hash reduces memory pressure compared to storing the full template string as a key.
+        private static readonly ConcurrentDictionary<(string hash, bool strict), List<ITemplateSegment>> _templateCache = new();
 
         /// <summary>
         /// Gets or sets a value indicating whether strict mode is enabled.
@@ -220,6 +224,22 @@ namespace CaddyVpsToolkit.Utilities
         }
 
         /// <summary>
+        /// Compute a stable SHA‑256 hash for a template string.
+        /// The hash is returned as a lower‑case hexadecimal string.
+        /// </summary>
+        private static string ComputeHash(string input)
+        {
+            // SHA256 is deterministic and does not depend on process‑wide randomization.
+            using var sha = SHA256.Create();
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var hash = sha.ComputeHash(bytes);
+            var sb = new StringBuilder(hash.Length * 2);
+            foreach (var b in hash)
+                sb.Append(b.ToString("x2"));
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// Render template with variable substitution.
         ///
         /// <para>Placeholder syntax: {{variableName}}</para>
@@ -239,11 +259,14 @@ namespace CaddyVpsToolkit.Utilities
             ArgumentNullException.ThrowIfNull(template);
 
             if (template.Length == 0)
-            {
                 return template;
-            }
 
-            var segments = _templateCache.GetOrAdd((template, _strictMode), t => Parse(t.Item1, t.Item2));
+            // Use a hash of the template as the cache key.
+            var hash = ComputeHash(template);
+            var cacheKey = (hash, _strictMode);
+
+            var segments = _templateCache.GetOrAdd(cacheKey, _ => Parse(template, _strictMode));
+
             var unresolvedVariables = new HashSet<string>(StringComparer.Ordinal);
             var result = new StringBuilder(template.Length);
 
