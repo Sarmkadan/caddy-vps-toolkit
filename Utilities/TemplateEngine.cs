@@ -5,6 +5,7 @@
 // =====================================================================
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
@@ -32,6 +33,42 @@ namespace CaddyVpsToolkit.Utilities
         }
     }
 
+    internal interface ITemplateSegment
+    {
+        void Render(StringBuilder builder, Dictionary<string, object> variables, bool strictMode, HashSet<string> unresolved);
+    }
+
+    internal sealed class LiteralSegment : ITemplateSegment
+    {
+        private readonly string _text;
+        public LiteralSegment(string text) => _text = text;
+        public void Render(StringBuilder builder, Dictionary<string, object> variables, bool strictMode, HashSet<string> unresolved) => builder.Append(_text);
+    }
+
+    internal sealed class VariableSegment : ITemplateSegment
+    {
+        private readonly string _name;
+        private readonly string _originalPlaceholder;
+        public VariableSegment(string name, string originalPlaceholder)
+        {
+            _name = name;
+            _originalPlaceholder = originalPlaceholder;
+        }
+
+        public void Render(StringBuilder builder, Dictionary<string, object> variables, bool strictMode, HashSet<string> unresolved)
+        {
+            if (variables.TryGetValue(_name, out var value))
+            {
+                builder.Append(value?.ToString() ?? string.Empty);
+            }
+            else
+            {
+                unresolved.Add(_name);
+                builder.Append(_originalPlaceholder);
+            }
+        }
+    }
+
     /// <summary>
     /// Simple template engine for string substitution.
     /// Uses {{variable}} syntax for placeholder replacement.
@@ -48,6 +85,7 @@ namespace CaddyVpsToolkit.Utilities
     {
         private readonly Dictionary<string, object> _variables;
         private readonly bool _strictMode;
+        private static readonly ConcurrentDictionary<(string, bool), List<ITemplateSegment>> _templateCache = new();
 
         /// <summary>
         /// Gets or sets a value indicating whether strict mode is enabled.
@@ -132,6 +170,55 @@ namespace CaddyVpsToolkit.Utilities
             return _variables.TryGetValue(key, out var value) ? value : null;
         }
 
+        private static List<ITemplateSegment> Parse(string template, bool strictMode)
+        {
+            var segments = new List<ITemplateSegment>();
+            var remaining = template.AsSpan();
+
+            while (!remaining.IsEmpty)
+            {
+                var placeholderIndex = remaining.IndexOf("{{", StringComparison.Ordinal);
+                var escapeIndex = remaining.IndexOf("\\{{", StringComparison.Ordinal);
+
+                if (strictMode && escapeIndex >= 0 && (placeholderIndex < 0 || escapeIndex < placeholderIndex))
+                {
+                    segments.Add(new LiteralSegment(remaining[..escapeIndex].ToString() + "{"));
+                    remaining = remaining[(escapeIndex + 2)..];
+                    continue;
+                }
+
+                if (placeholderIndex < 0)
+                {
+                    segments.Add(new LiteralSegment(remaining.ToString()));
+                    break;
+                }
+
+                segments.Add(new LiteralSegment(remaining[..placeholderIndex].ToString()));
+                remaining = remaining[(placeholderIndex + 2)..];
+
+                var nameEnd = remaining.IndexOf('}');
+                if (nameEnd < 0)
+                {
+                    segments.Add(new LiteralSegment("{{"));
+                    continue;
+                }
+
+                var variableName = remaining[..nameEnd].ToString();
+                var closingBraceEnd = nameEnd + 1;
+
+                if (closingBraceEnd < remaining.Length && remaining[closingBraceEnd] == '}')
+                {
+                    segments.Add(new VariableSegment(variableName, "{{" + variableName + "}}"));
+                    remaining = remaining[(closingBraceEnd + 1)..];
+                }
+                else
+                {
+                    segments.Add(new LiteralSegment("{{" + variableName));
+                }
+            }
+            return segments;
+        }
+
         /// <summary>
         /// Render template with variable substitution.
         ///
@@ -156,86 +243,15 @@ namespace CaddyVpsToolkit.Utilities
                 return template;
             }
 
+            var segments = _templateCache.GetOrAdd((template, _strictMode), t => Parse(t.Item1, t.Item2));
             var unresolvedVariables = new HashSet<string>(StringComparer.Ordinal);
             var result = new StringBuilder(template.Length);
-            var remaining = template.AsSpan();
 
-            while (!remaining.IsEmpty)
+            foreach (var segment in segments)
             {
-                // Find next placeholder or escape sequence
-                var placeholderIndex = remaining.IndexOf("{{", StringComparison.Ordinal);
-                var escapeIndex = remaining.IndexOf("\\{{", StringComparison.Ordinal);
-
-                // Handle escape sequences first (only in strict mode)
-                if (StrictMode && escapeIndex >= 0 && (placeholderIndex < 0 || escapeIndex < placeholderIndex))
-                {
-                    // Escaped literal brace: \{{ → {{
-                    result.Append(remaining[..escapeIndex]);
-                    result.Append('{');
-                    remaining = remaining[(escapeIndex + 2)..];
-                    continue;
-                }
-
-                // No more placeholders found
-                if (placeholderIndex < 0)
-                {
-                    result.Append(remaining);
-                    break;
-                }
-
-                // Append text before placeholder
-                result.Append(remaining[..placeholderIndex]);
-                remaining = remaining[(placeholderIndex + 2)..];
-
-                // Extract variable name
-                var nameEnd = remaining.IndexOf('}');
-                if (nameEnd < 0)
-                {
-                    // Malformed placeholder, leave as-is
-                    result.Append("{{");
-                    continue;
-                }
-
-                var variableName = remaining[..nameEnd].ToString();
-
-                // Check if we have a closing brace to consume
-                var closingBraceEnd = nameEnd + 1;
-                if (closingBraceEnd < remaining.Length && remaining[closingBraceEnd] == '}')
-                {
-                    // Consume the closing brace
-                    remaining = remaining[(closingBraceEnd + 1)..];
-                }
-                else
-                {
-                    // Malformed placeholder, leave as-is
-                    result.Append("{{").Append(variableName).Append("}}");
-                    continue;
-                }
-
-                // Check if variable exists
-                if (_variables.TryGetValue(variableName, out var value))
-                {
-                    result.Append(value?.ToString() ?? string.Empty);
-                }
-                else
-                {
-                    unresolvedVariables.Add(variableName);
-
-                    if (_strictMode)
-                    {
-                        // In strict mode, leave placeholder as-is for now
-                        // We'll throw after collecting all unresolved variables
-                        result.Append("{{").Append(variableName).Append("}}");
-                    }
-                    else
-                    {
-                        // In lenient mode, leave placeholder unchanged
-                        result.Append("{{").Append(variableName).Append("}}");
-                    }
-                }
+                segment.Render(result, _variables, _strictMode, unresolvedVariables);
             }
 
-            // Throw if any unresolved variables found in strict mode
             if (_strictMode && unresolvedVariables.Count > 0)
             {
                 throw new TemplateVariableMissingException(
