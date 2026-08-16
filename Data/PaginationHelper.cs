@@ -25,24 +25,37 @@ namespace CaddyVpsToolkit.Data
             int page = 1,
             int pageSize = 10)
         {
+            // Guard against null input
             if (items is null)
-                items = new List<T>();
+                items = Enumerable.Empty<T>();
 
+            // Normalise paging parameters
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
 
-            var list = items.ToList();
-            var totalCount = list.Count;
-            var skipCount = (page - 1) * pageSize;
+            // Calculate how many items to skip before we start collecting the page
+            int skip = (page - 1) * pageSize;
 
-            var paginatedItems = list
-                .Skip(skipCount)
-                .Take(pageSize)
-                .ToList();
+            var pageItems = new List<T>(pageSize);
+            int totalCount = 0;
+            int index = 0;
+
+            // Single-pass enumeration: count total items and collect only the items that belong to the requested page
+            foreach (var item in items)
+            {
+                totalCount++;
+
+                if (index >= skip && pageItems.Count < pageSize)
+                {
+                    pageItems.Add(item);
+                }
+
+                index++;
+            }
 
             return new PaginatedResult<T>
             {
-                Items = paginatedItems,
+                Items = pageItems,
                 Page = page,
                 PageSize = pageSize,
                 TotalCount = totalCount
