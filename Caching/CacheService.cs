@@ -44,12 +44,18 @@ namespace CaddyVpsToolkit.Caching
 
         public ValueTask<T> GetAsync<T>(string key)
         {
+            // Ensure expired entries are purged before attempting to read.
+            CleanExpiredEntries();
+
             var (found, value) = TryGet<T>(key);
             return ValueTask.FromResult(found ? value : default);
         }
 
         public ValueTask<(bool Found, T Value)> TryGetAsync<T>(string key)
         {
+            // Ensure expired entries are purged before attempting to read.
+            CleanExpiredEntries();
+
             return ValueTask.FromResult(TryGet<T>(key));
         }
 
@@ -110,6 +116,9 @@ namespace CaddyVpsToolkit.Caching
 
         public async ValueTask<bool> ExistsAsync(string key)
         {
+            // Ensure expired entries are purged before checking existence.
+            CleanExpiredEntries();
+
             var (found, _) = await TryGetAsync<object>(key);
             return found;
         }
