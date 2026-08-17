@@ -91,8 +91,18 @@ namespace CaddyVpsToolkit.Events
                 handlers = rawHandlers.Cast<IEventHandler<TEvent>>().ToList();
             }
 
-            // Execute handlers in parallel for better performance
-            var tasks = handlers.Select(h => h.HandleAsync(@event)).ToList();
+            // Execute handlers in parallel for better performance and log exceptions
+            var tasks = handlers.Select(async h =>
+            {
+                try
+                {
+                    await h.HandleAsync(@event);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error handling event {typeof(TEvent).Name}: {ex.Message}");
+                }
+            }).ToList();
             await Task.WhenAll(tasks);
         }
 
