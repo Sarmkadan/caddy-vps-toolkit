@@ -1,9 +1,3 @@
-#nullable enable
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
-
 using System;
 
 namespace CaddyVpsToolkit.Results
@@ -27,9 +21,15 @@ namespace CaddyVpsToolkit.Results
 
         public static Result<T> Failure(string errorMessage, string errorCode = null)
         {
+            if (string.IsNullOrEmpty(errorMessage))
+            {
+                throw new ArgumentException("Parameter cannot be null or empty", nameof(errorMessage));
+            }
+
             return new Result<T>
             {
                 IsSuccess = false,
+                Data = default,
                 ErrorMessage = errorMessage,
                 ErrorCode = errorCode ?? "UNKNOWN_ERROR"
             };
@@ -52,6 +52,11 @@ namespace CaddyVpsToolkit.Results
 
         public static Result Failure(string errorMessage, string errorCode = null)
         {
+            if (string.IsNullOrEmpty(errorMessage))
+            {
+                throw new ArgumentException("Parameter cannot be null or empty", nameof(errorMessage));
+            }
+
             return new Result
             {
                 IsSuccess = false,
