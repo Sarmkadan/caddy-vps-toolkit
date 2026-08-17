@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System;
 using System.Collections.Generic;
 using CaddyVpsToolkit.Utilities;
 using FluentAssertions;
@@ -199,5 +200,29 @@ namespace CaddyVpsToolkit.Tests.Utilities
 			// Assert
 			triggers.Should().ContainSingle().Which.Should().Be(Trigger.Start);
 		}
+
+        // --------------------------------------------------------------------
+        // New test: guard against reentrant transitions
+        // --------------------------------------------------------------------
+        private enum SimpleState { A, B, C }
+        private enum SimpleTrigger { ToB, ToC }
+
+        [Fact]
+        public void Fire_ReentrantTransition_ThrowsInvalidOperationException()
+        {
+            var sm = new StateMachine<SimpleState, SimpleTrigger>(SimpleState.A);
+            sm.Configure(SimpleState.A, SimpleTrigger.ToB, SimpleState.B);
+            sm.Configure(SimpleState.B, SimpleTrigger.ToC, SimpleState.C);
+
+            // Register a transition callback that attempts to fire another transition
+            sm.OnTransition((prev, cur, trig) =>
+            {
+                // This call should cause an InvalidOperationException due to reentrancy
+                sm.Fire(SimpleTrigger.ToC);
+            });
+
+            var ex = Assert.Throws<InvalidOperationException>(() => sm.Fire(SimpleTrigger.ToB));
+            Assert.Contains("Reentrant transition", ex.Message);
+        }
 	}
 }
