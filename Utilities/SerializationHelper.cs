@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 
 namespace CaddyVpsToolkit.Utilities
@@ -20,10 +21,20 @@ namespace CaddyVpsToolkit.Utilities
     {
         // Cached once at startup — JsonSerializerOptions is expensive to construct and immutable after first use.
         private static readonly JsonSerializerOptions _indentedOptions =
-            new(JsonSerializerDefaults.General) { WriteIndented = true };
+            new(JsonSerializerDefaults.General)
+            {
+                WriteIndented = true,
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                MaxDepth = 64
+            };
 
         private static readonly JsonSerializerOptions _compactOptions =
-            new(JsonSerializerDefaults.General) { WriteIndented = false };
+            new(JsonSerializerDefaults.General)
+            {
+                WriteIndented = false,
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                MaxDepth = 64
+            };
 
         /// <summary>
         /// Serialize object to JSON string
