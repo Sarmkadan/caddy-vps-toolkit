@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Threading;
 
 namespace CaddyVpsToolkit.Events
 {
@@ -86,6 +87,7 @@ namespace CaddyVpsToolkit.Events
                 if (!_handlers.TryGetValue(eventType, out var rawHandlers))
                     return; // No handlers subscribed
 
+                // Copy the list to avoid mutation‑during‑enumeration issues
                 handlers = rawHandlers.Cast<IEventHandler<TEvent>>().ToList();
             }
 
@@ -101,6 +103,36 @@ namespace CaddyVpsToolkit.Events
                 return _handlers.TryGetValue(typeof(TEvent), out var handlers)
                     ? handlers.Count
                     : 0;
+            }
+        }
+
+        /// <summary>
+        /// Subscribe and receive a disposable token. Disposing the token automatically unsubscribes.
+        /// </summary>
+        public IDisposable SubscribeWithToken<TEvent>(IEventHandler<TEvent> handler) where TEvent : DomainEvent
+        {
+            Subscribe(handler);
+            return new SubscriptionToken<TEvent>(this, handler);
+        }
+
+        private sealed class SubscriptionToken<TEvent> : IDisposable where TEvent : DomainEvent
+        {
+            private readonly EventBus _bus;
+            private IEventHandler<TEvent>? _handler;
+
+            public SubscriptionToken(EventBus bus, IEventHandler<TEvent> handler)
+            {
+                _bus = bus;
+                _handler = handler;
+            }
+
+            public void Dispose()
+            {
+                var h = Interlocked.Exchange(ref _handler, null);
+                if (h != null)
+                {
+                    _bus.Unsubscribe<TEvent>(h);
+                }
             }
         }
     }

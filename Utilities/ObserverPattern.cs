@@ -65,6 +65,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public void NotifyObservers()
         {
+            // Copy the list to avoid mutation‑during‑enumeration issues
             List<IObserver<T>> observersCopy;
             lock (_lockObject)
             {
@@ -101,6 +102,37 @@ namespace CaddyVpsToolkit.Utilities
                 return _observers.Count;
             }
         }
+
+        /// <summary>
+        /// Attach an observer and receive an <see cref="IDisposable"/> token.
+        /// Disposing the token automatically detaches the observer, preventing leaks.
+        /// </summary>
+        public IDisposable AttachWithToken(IObserver<T> observer)
+        {
+            Attach(observer);
+            return new ObserverToken(this, observer);
+        }
+
+        private sealed class ObserverToken : IDisposable
+        {
+            private readonly Observable<T> _observable;
+            private IObserver<T>? _observer;
+
+            public ObserverToken(Observable<T> observable, IObserver<T> observer)
+            {
+                _observable = observable;
+                _observer = observer;
+            }
+
+            public void Dispose()
+            {
+                var obs = Interlocked.Exchange(ref _observer, null);
+                if (obs != null)
+                {
+                    _observable.Detach(obs);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -135,6 +167,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public void Publish(T value)
         {
+            // Copy the list to avoid mutation‑during‑enumeration issues
             List<Action<T>> subscribersCopy;
             lock (_lockObject)
             {
@@ -159,6 +192,36 @@ namespace CaddyVpsToolkit.Utilities
             lock (_lockObject)
             {
                 return _subscribers.Count;
+            }
+        }
+
+        /// <summary>
+        /// Subscribe with a disposable token. Disposing the token automatically unsubscribes.
+        /// </summary>
+        public IDisposable SubscribeWithToken(Action<T> handler)
+        {
+            Subscribe(handler);
+            return new SubscriptionToken(this, handler);
+        }
+
+        private sealed class SubscriptionToken : IDisposable
+        {
+            private readonly Subject<T> _subject;
+            private Action<T>? _handler;
+
+            public SubscriptionToken(Subject<T> subject, Action<T> handler)
+            {
+                _subject = subject;
+                _handler = handler;
+            }
+
+            public void Dispose()
+            {
+                var h = Interlocked.Exchange(ref _handler, null);
+                if (h != null)
+                {
+                    _subject.Unsubscribe(h);
+                }
             }
         }
     }
