@@ -65,6 +65,16 @@ namespace CaddyVpsToolkit.Integration
             string url,
             Dictionary<string, string>? headers = null)
         {
+            if (url == null)
+                throw new ArgumentNullException(nameof(url));
+            if (headers != null)
+            {
+                foreach (var kvp in headers)
+                {
+                    if (kvp.Value == null)
+                        throw new ArgumentException("Header value cannot be null", nameof(kvp.Value));
+                }
+            }
             return await ExecuteAsync<T>(async () =>
             {
                 var request = CreateRequest(HttpMethod.Get, url, headers);
