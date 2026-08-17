@@ -38,6 +38,8 @@ namespace CaddyVpsToolkit.Tests
         [InlineData("C:\\Folder", "D:\\Other\\File.txt", "D:\\Other\\File.txt")]
         public void GetRelativePath_ValidInputs_ReturnsExpected(string from, string to, string expected)
         {
+            ArgumentNullException.ThrowIfNull(from);
+            ArgumentException.ThrowIfNullOrEmpty(to);
             var result = PathUtilities.GetRelativePath(from, to);
             Assert.Equal(expected, result);
         }
@@ -195,6 +197,8 @@ namespace CaddyVpsToolkit.Tests
         [InlineData("", "")]
         public void NormalizePath_ValidInputs_ReturnsNormalized(string input, string expected)
         {
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentException.ThrowIfNullOrEmpty(expected);
             var result = PathUtilities.NormalizePath(input);
             Assert.Equal(expected, result);
         }
@@ -240,6 +244,7 @@ namespace CaddyVpsToolkit.Tests
         [InlineData(1073741824, "1 GB")]
         public void FormatFileSize_Values_ReturnsHumanReadable(long bytes, string expected)
         {
+            ArgumentException.ThrowIfNullOrEmpty(expected);
             var result = PathUtilities.FormatFileSize(bytes);
             Assert.Equal(expected, result);
         }
@@ -324,6 +329,8 @@ namespace CaddyVpsToolkit.Tests
         [InlineData("valid_name.txt", "valid_name.txt")]
         public void SanitizeFileName_RemovesInvalidChars(string input, string expected)
         {
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentException.ThrowIfNullOrEmpty(expected);
             var result = PathUtilities.SanitizeFileName(input);
             Assert.Equal(expected, result);
         }
