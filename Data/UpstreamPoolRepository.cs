@@ -33,6 +33,9 @@ namespace CaddyVpsToolkit.Data
         /// <returns>The <see cref="UpstreamPool"/> if found; otherwise, null.</returns>
         public async Task<UpstreamPool?> GetByIdAsync(string poolId)
         {
+            if (string.IsNullOrEmpty(poolId))
+                throw new ArgumentException("PoolId is null or empty", nameof(poolId));
+
             using var connection = new SQLiteConnection(_connectionString);
             await connection.OpenAsync();
             var command = connection.CreateCommand();
@@ -42,7 +45,7 @@ namespace CaddyVpsToolkit.Data
             using var reader = await command.ExecuteReaderAsync();
             if (await reader.ReadAsync())
                 return MapReaderToPool(reader);
-            
+
             return null;
         }
 
@@ -53,6 +56,9 @@ namespace CaddyVpsToolkit.Data
         /// <returns>A list of <see cref="UpstreamPool"/>s.</returns>
         public async Task<List<UpstreamPool>> GetByServiceIdAsync(string serviceId)
         {
+            if (string.IsNullOrEmpty(serviceId))
+                throw new ArgumentException("ServiceId is null or empty", nameof(serviceId));
+
             var pools = new List<UpstreamPool>();
             using var connection = new SQLiteConnection(_connectionString);
             await connection.OpenAsync();
@@ -63,7 +69,7 @@ namespace CaddyVpsToolkit.Data
             using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
                 pools.Add(MapReaderToPool(reader));
-            
+
             return pools;
         }
 
@@ -82,7 +88,7 @@ namespace CaddyVpsToolkit.Data
             using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
                 pools.Add(MapReaderToPool(reader));
-            
+
             return pools;
         }
 
@@ -93,6 +99,9 @@ namespace CaddyVpsToolkit.Data
         /// <returns>The unique identifier of the added <see cref="UpstreamPool"/>.</returns>
         public async Task<string> AddAsync(UpstreamPool pool)
         {
+            if (pool == null)
+                throw new ArgumentNullException(nameof(pool));
+
             pool.Validate();
             if (string.IsNullOrEmpty(pool.Id))
                 pool.Id = Guid.NewGuid().ToString();
@@ -101,13 +110,13 @@ namespace CaddyVpsToolkit.Data
             await connection.OpenAsync();
             var command = connection.CreateCommand();
             command.CommandText = @"
-                INSERT INTO UpstreamPools (Id, Name, ServiceId, Strategy, Servers, PassiveHealthEnabled, 
-                    ActiveHealthEnabled, HealthCheckIntervalSeconds, UnhealthyThreshold, HealthyThreshold, 
-                    MaxRetries, RetryDurationSeconds, StickyCookieName, HealthProbePath, IsEnabled, 
+                INSERT INTO UpstreamPools (Id, Name, ServiceId, Strategy, Servers, PassiveHealthEnabled,
+                    ActiveHealthEnabled, HealthCheckIntervalSeconds, UnhealthyThreshold, HealthyThreshold,
+                    MaxRetries, RetryDurationSeconds, StickyCookieName, HealthProbePath, IsEnabled,
                     CreatedAt, UpdatedAt)
-                VALUES (@id, @name, @serviceId, @strategy, @servers, @passiveHealth, 
-                    @activeHealth, @healthInterval, @unhealthyThresh, @healthyThresh, 
-                    @maxRetries, @retryDuration, @stickyCookie, @healthProbe, @isEnabled, 
+                VALUES (@id, @name, @serviceId, @strategy, @servers, @passiveHealth,
+                    @activeHealth, @healthInterval, @unhealthyThresh, @healthyThresh,
+                    @maxRetries, @retryDuration, @stickyCookie, @healthProbe, @isEnabled,
                     @createdAt, @updatedAt)";
 
             command.Parameters.AddWithValue("@id", pool.Id);
@@ -139,6 +148,9 @@ namespace CaddyVpsToolkit.Data
         /// <returns>True if the update was successful; otherwise, false.</returns>
         public async Task<bool> UpdateAsync(UpstreamPool pool)
         {
+            if (pool == null)
+                throw new ArgumentNullException(nameof(pool));
+
             pool.Validate();
             pool.UpdatedAt = DateTime.UtcNow;
 
@@ -146,11 +158,11 @@ namespace CaddyVpsToolkit.Data
             await connection.OpenAsync();
             var command = connection.CreateCommand();
             command.CommandText = @"
-                UPDATE UpstreamPools SET Name = @name, ServiceId = @serviceId, Strategy = @strategy, 
-                    Servers = @servers, PassiveHealthEnabled = @passiveHealth, ActiveHealthEnabled = @activeHealth, 
-                    HealthCheckIntervalSeconds = @healthInterval, UnhealthyThreshold = @unhealthyThresh, 
-                    HealthyThreshold = @healthyThresh, MaxRetries = @maxRetries, RetryDurationSeconds = @retryDuration, 
-                    StickyCookieName = @stickyCookie, HealthProbePath = @healthProbe, IsEnabled = @isEnabled, 
+                UPDATE UpstreamPools SET Name = @name, ServiceId = @serviceId, Strategy = @strategy,
+                    Servers = @servers, PassiveHealthEnabled = @passiveHealth, ActiveHealthEnabled = @activeHealth,
+                    HealthCheckIntervalSeconds = @healthInterval, UnhealthyThreshold = @unhealthyThresh,
+                    HealthyThreshold = @healthyThresh, MaxRetries = @maxRetries, RetryDurationSeconds = @retryDuration,
+                    StickyCookieName = @stickyCookie, HealthProbePath = @healthProbe, IsEnabled = @isEnabled,
                     UpdatedAt = @updatedAt
                 WHERE Id = @id";
 
@@ -181,6 +193,9 @@ namespace CaddyVpsToolkit.Data
         /// <returns>True if the pool was successfully deleted; otherwise, false.</returns>
         public async Task<bool> DeleteAsync(string poolId)
         {
+            if (string.IsNullOrEmpty(poolId))
+                throw new ArgumentException("PoolId is null or empty", nameof(poolId));
+
             using var connection = new SQLiteConnection(_connectionString);
             await connection.OpenAsync();
             var command = connection.CreateCommand();
@@ -196,6 +211,9 @@ namespace CaddyVpsToolkit.Data
         /// <returns>True if the pool exists; otherwise, false.</returns>
         public async Task<bool> ExistsAsync(string poolId)
         {
+            if (string.IsNullOrEmpty(poolId))
+                throw new ArgumentException("PoolId is null or empty", nameof(poolId));
+
             using var connection = new SQLiteConnection(_connectionString);
             await connection.OpenAsync();
             var command = connection.CreateCommand();
@@ -208,8 +226,8 @@ namespace CaddyVpsToolkit.Data
         private UpstreamPool MapReaderToPool(System.Data.Common.DbDataReader reader)
         {
             var serversJson = reader["Servers"].ToString();
-            var servers = string.IsNullOrEmpty(serversJson) 
-                ? new List<UpstreamServer>() 
+            var servers = string.IsNullOrEmpty(serversJson)
+                ? new List<UpstreamServer>()
                 : JsonSerializer.Deserialize<List<UpstreamServer>>(serversJson) ?? new List<UpstreamServer>();
 
             return new UpstreamPool
