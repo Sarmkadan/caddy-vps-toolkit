@@ -1,9 +1,4 @@
 #nullable enable
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
-
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -43,6 +38,7 @@ namespace CaddyVpsToolkit.Domain.Models
 
         public static HealthCheckResult CreateSuccess(string serviceId, int responseTimeMs, int httpStatus = 200)
         {
+            ArgumentNullException.ThrowIfNull(serviceId);
             return new HealthCheckResult
             {
                 ServiceId = serviceId,
@@ -56,6 +52,8 @@ namespace CaddyVpsToolkit.Domain.Models
 
         public static HealthCheckResult CreateFailure(string serviceId, string errorMessage, int responseTimeMs = 0)
         {
+            ArgumentNullException.ThrowIfNull(serviceId);
+            ArgumentException.ThrowIfNullOrEmpty(errorMessage);
             return new HealthCheckResult
             {
                 ServiceId = serviceId,
