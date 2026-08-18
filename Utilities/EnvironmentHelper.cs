@@ -20,6 +20,8 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string GetEnvironmentVariable(string name, string defaultValue = null)
         {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException("name cannot be null or empty", nameof(name));
             return Environment.GetEnvironmentVariable(name) ?? defaultValue;
         }
 
@@ -28,6 +30,8 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static void SetEnvironmentVariable(string name, string value)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+            ArgumentException.ThrowIfNullOrEmpty(value);
             Environment.SetEnvironmentVariable(name, value);
         }
 
