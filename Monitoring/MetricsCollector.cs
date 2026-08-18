@@ -27,6 +27,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// </summary>
         public void IncrementCounter(string name, long value = 1)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 if (!_counters.TryGetValue(name, out var counter))
@@ -43,6 +44,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// </summary>
         public void SetGauge(string name, double value)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 if (!_gauges.TryGetValue(name, out var gauge))
@@ -59,6 +61,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// </summary>
         public void RecordHistogram(string name, double value)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 if (!_histograms.TryGetValue(name, out var histogram))
@@ -75,6 +78,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// </summary>
         public void StartTimer(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 if (!_timers.TryGetValue(name, out var timer))
@@ -91,6 +95,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// </summary>
         public void StopTimer(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 if (_timers.TryGetValue(name, out var timer))
@@ -105,6 +110,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// </summary>
         public void RecordTimer(string name, double milliseconds)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 if (!_timers.TryGetValue(name, out var timer))
@@ -122,6 +128,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// <param name="name">Counter name.</param>
         public long GetCounter(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 return _counters.TryGetValue(name, out var counter) ? counter.Value : 0;
@@ -134,6 +141,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// <param name="name">Gauge name.</param>
         public double GetGauge(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 return _gauges.TryGetValue(name, out var gauge) ? gauge.Value : 0;
@@ -146,6 +154,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// <param name="name">Histogram name.</param>
         public HistogramStats GetHistogramStats(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 return _histograms.TryGetValue(name, out var histogram) ? histogram.GetStats() : null;
@@ -158,6 +167,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// <param name="name">Timer name.</param>
         public HistogramStats GetTimerStats(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             lock (_lockObject)
             {
                 return _timers.TryGetValue(name, out var timer) ? timer.GetStats() : null;
