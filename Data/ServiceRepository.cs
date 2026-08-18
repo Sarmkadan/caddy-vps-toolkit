@@ -29,13 +29,14 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<ManagedService> GetByIdAsync(string id)
         {
+            if (string.IsNullOrEmpty(id))
+                throw new ArgumentException("Id cannot be null or empty", nameof(id));
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
                 var command = connection.CreateCommand();
                 command.CommandText = "SELECT * FROM Services WHERE Id = @id";
                 command.Parameters.AddWithValue("@id", id);
-
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     if (await reader.ReadAsync())
@@ -47,13 +48,14 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<ManagedService> GetByNameAsync(string name)
         {
+            if (string.IsNullOrEmpty(name))
+                throw new ArgumentException("Name cannot be null or empty", nameof(name));
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
                 var command = connection.CreateCommand();
                 command.CommandText = "SELECT * FROM Services WHERE Name = @name";
                 command.Parameters.AddWithValue("@name", name);
-
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     if (await reader.ReadAsync())
@@ -71,7 +73,6 @@ namespace CaddyVpsToolkit.Data
                 await connection.OpenAsync();
                 var command = connection.CreateCommand();
                 command.CommandText = "SELECT * FROM Services ORDER BY Name";
-
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
@@ -90,7 +91,6 @@ namespace CaddyVpsToolkit.Data
                 var command = connection.CreateCommand();
                 command.CommandText = "SELECT * FROM Services WHERE Type = @type ORDER BY Name";
                 command.Parameters.AddWithValue("@type", (int)type);
-
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
@@ -120,6 +120,7 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<string> AddAsync(ManagedService service)
         {
+            ArgumentNullException.ThrowIfNull(service);
             service.Validate();
             if (string.IsNullOrEmpty(service.Id))
                 service.Id = Guid.NewGuid().ToString();
@@ -161,6 +162,7 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<bool> UpdateAsync(ManagedService service)
         {
+            ArgumentNullException.ThrowIfNull(service);
             service.Validate();
             service.UpdatedAt = DateTime.UtcNow;
 
@@ -199,6 +201,8 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<bool> DeleteAsync(string id)
         {
+            if (string.IsNullOrEmpty(id))
+                throw new ArgumentException("Id cannot be null or empty", nameof(id));
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -211,6 +215,8 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<bool> ExistsAsync(string id)
         {
+            if (string.IsNullOrEmpty(id))
+                throw new ArgumentException("Id cannot be null or empty", nameof(id));
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -236,6 +242,8 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<List<ManagedService>> SearchAsync(string query)
         {
+            if (string.IsNullOrEmpty(query))
+                throw new ArgumentException("Query cannot be null or empty", nameof(query));
             var services = new List<ManagedService>();
             using (var connection = new SQLiteConnection(_connectionString))
             {
