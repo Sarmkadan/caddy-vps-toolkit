@@ -144,6 +144,7 @@ namespace CaddyVpsToolkit.Utilities
         public void Set(string key, object value, Func<object, bool>? validator)
         {
             ArgumentException.ThrowIfNullOrEmpty(key);
+    ArgumentNullException.ThrowIfNull(value);
 
             if (validator != null && !validator(value))
             {
