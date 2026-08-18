@@ -22,6 +22,9 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string GetRelativePath(string fromPath, string toPath)
         {
+            ArgumentException.ThrowIfNullOrEmpty(fromPath, nameof(fromPath));
+            ArgumentException.ThrowIfNullOrEmpty(toPath, nameof(toPath));
+
             if (string.IsNullOrEmpty(fromPath) || string.IsNullOrEmpty(toPath))
                 return toPath;
 
