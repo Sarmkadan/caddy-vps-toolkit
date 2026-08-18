@@ -29,6 +29,7 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<HealthCheckResult> GetLatestAsync(string serviceId)
         {
+            ArgumentException.ThrowIfNullOrEmpty(nameof(serviceId));
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -51,6 +52,7 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<List<HealthCheckResult>> GetRecentAsync(string serviceId, int hours)
         {
+            ArgumentException.ThrowIfNullOrEmpty(nameof(serviceId));
             var results = new List<HealthCheckResult>();
             var cutoffTime = DateTime.UtcNow.AddHours(-hours);
 
@@ -76,6 +78,7 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<List<HealthCheckResult>> GetByServiceIdAsync(string serviceId)
         {
+            ArgumentException.ThrowIfNullOrEmpty(nameof(serviceId));
             var results = new List<HealthCheckResult>();
             using (var connection = new SQLiteConnection(_connectionString))
             {
@@ -95,6 +98,7 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<string> AddAsync(HealthCheckResult result)
         {
+            ArgumentNullException.ThrowIfNull(result);
             if (string.IsNullOrEmpty(result.Id))
                 result.Id = Guid.NewGuid().ToString();
 
@@ -130,6 +134,7 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<bool> DeleteOlderThanAsync(DateTime cutoffDate)
         {
+            ArgumentNullException.ThrowIfNull(nameof(cutoffDate));
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -142,6 +147,9 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<HealthCheckStatistics> GetStatisticsAsync(string serviceId, DateTime from, DateTime to)
         {
+            ArgumentNullException.ThrowIfNull(nameof(serviceId));
+            ArgumentNullException.ThrowIfNull(nameof(from));
+            ArgumentNullException.ThrowIfNull(nameof(to));
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
