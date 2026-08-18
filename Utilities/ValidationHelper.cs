@@ -29,6 +29,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public static ValidationResult ValidateDomain(string domain)
         {
+            ArgumentException.ThrowIfNullOrEmpty(domain);
             var errors = new List<string>();
 
             if (string.IsNullOrWhiteSpace(domain))
@@ -41,6 +42,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public static ValidationResult ValidateFilePath(string path)
         {
+            ArgumentException.ThrowIfNullOrEmpty(path);
             var errors = new List<string>();
 
             if (string.IsNullOrWhiteSpace(path))
@@ -62,6 +64,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public static ValidationResult ValidateServiceName(string serviceName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(serviceName);
             var errors = new List<string>();
 
             if (string.IsNullOrWhiteSpace(serviceName))
@@ -76,6 +79,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public static ValidationResult ValidateRange(int value, int min, int max, string fieldName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(fieldName);
             var errors = new List<string>();
 
             if (value < min || value > max)
@@ -86,6 +90,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public static ValidationResult ValidateNotNull<T>(T value, string fieldName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(fieldName);
             var errors = new List<string>();
 
             if (value is null)
@@ -96,6 +101,8 @@ namespace CaddyVpsToolkit.Utilities
 
         public static ValidationResult ValidateNotEmpty(string value, string fieldName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(value);
+            ArgumentException.ThrowIfNullOrEmpty(fieldName);
             var errors = new List<string>();
 
             if (string.IsNullOrWhiteSpace(value))
@@ -106,6 +113,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public static ValidationResult Combine(params ValidationResult[] results)
         {
+            ArgumentNullException.ThrowIfNull(results);
             var allErrors = new List<string>();
 
             foreach (var result in results.Where(r => !r.IsValid))
