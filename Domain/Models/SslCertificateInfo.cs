@@ -36,11 +36,26 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <param name="Health">The health status of the certificate.</param>
     /// <param name="DaysRemaining">Number of days remaining until expiry, or negative if expired.</param>
     /// <param name="Message">Human-readable description of the certificate status.</param>
-    public readonly record struct CertificateStatusResult(
-        SslCertificateStatus Health,
-        int DaysRemaining,
-        string Message)
+    public readonly record struct CertificateStatusResult
     {
+        public SslCertificateStatus Health { get; init; }
+        public int DaysRemaining { get; init; }
+        public string Message { get; init; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CertificateStatusResult"/> struct.
+        /// </summary>
+        /// <param name="Health">The health status of the certificate.</param>
+        /// <param name="DaysRemaining">Number of days remaining until expiry, or negative if expired.</param>
+        /// <param name="Message">Human-readable description of the certificate status.</param>
+        public CertificateStatusResult(SslCertificateStatus Health, int DaysRemaining, string Message)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(Message);
+            this.Health = Health;
+            this.DaysRemaining = DaysRemaining;
+            this.Message = Message;
+        }
+
         /// <summary>
         /// Gets a value indicating whether the certificate is in a healthy state.
         /// </summary>
@@ -132,42 +147,62 @@ namespace CaddyVpsToolkit.Domain.Models
         public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>Creates a result for a healthy, non-expiring certificate.</summary>
-        public static SslCertificateCheckResult CreateValid(string domain, SslCertificateInfo cert) =>
-        new SslCertificateCheckResult
+        public static SslCertificateCheckResult CreateValid(string domain, SslCertificateInfo cert)
         {
-            Domain = domain,
-            Status = SslCertificateStatus.Valid,
-            Certificate = cert,
-            Message = $"Certificate valid for {cert.DaysUntilExpiry} day(s)."
-        };
+            ArgumentException.ThrowIfNullOrEmpty(domain);
+            ArgumentNullException.ThrowIfNull(cert);
+
+            return new SslCertificateCheckResult
+            {
+                Domain = domain,
+                Status = SslCertificateStatus.Valid,
+                Certificate = cert,
+                Message = $"Certificate valid for {cert.DaysUntilExpiry} day(s)."
+            };
+        }
 
         /// <summary>Creates a result for a certificate approaching its expiry date.</summary>
-        public static SslCertificateCheckResult CreateExpiringSoon(string domain, SslCertificateInfo cert, bool isCritical) =>
-        new SslCertificateCheckResult
+        public static SslCertificateCheckResult CreateExpiringSoon(string domain, SslCertificateInfo cert, bool isCritical)
         {
-            Domain = domain,
-            Status = isCritical ? SslCertificateStatus.Critical : SslCertificateStatus.ExpiringSoon,
-            Certificate = cert,
-            Message = $"Certificate expires in {cert.DaysUntilExpiry} day(s) on {cert.ExpiresAt:yyyy-MM-dd}."
-        };
+            ArgumentException.ThrowIfNullOrEmpty(domain);
+            ArgumentNullException.ThrowIfNull(cert);
+
+            return new SslCertificateCheckResult
+            {
+                Domain = domain,
+                Status = isCritical ? SslCertificateStatus.Critical : SslCertificateStatus.ExpiringSoon,
+                Certificate = cert,
+                Message = $"Certificate expires in {cert.DaysUntilExpiry} day(s) on {cert.ExpiresAt:yyyy-MM-dd}."
+            };
+        }
 
         /// <summary>Creates a result for a certificate that has already expired.</summary>
-        public static SslCertificateCheckResult CreateExpired(string domain, SslCertificateInfo cert) =>
-        new SslCertificateCheckResult
+        public static SslCertificateCheckResult CreateExpired(string domain, SslCertificateInfo cert)
         {
-            Domain = domain,
-            Status = SslCertificateStatus.Expired,
-            Certificate = cert,
-            Message = $"Certificate expired on {cert.ExpiresAt:yyyy-MM-dd}."
-        };
+            ArgumentException.ThrowIfNullOrEmpty(domain);
+            ArgumentNullException.ThrowIfNull(cert);
+
+            return new SslCertificateCheckResult
+            {
+                Domain = domain,
+                Status = SslCertificateStatus.Expired,
+                Certificate = cert,
+                Message = $"Certificate expired on {cert.ExpiresAt:yyyy-MM-dd}."
+            };
+        }
 
         /// <summary>Creates a result when the certificate could not be retrieved.</summary>
-        public static SslCertificateCheckResult CreateError(string domain, string error) =>
-        new SslCertificateCheckResult
+        public static SslCertificateCheckResult CreateError(string domain, string error)
         {
-            Domain = domain,
-            Status = SslCertificateStatus.Error,
-            Message = error
-        };
+            ArgumentException.ThrowIfNullOrEmpty(domain);
+            ArgumentException.ThrowIfNullOrEmpty(error);
+
+            return new SslCertificateCheckResult
+            {
+                Domain = domain,
+                Status = SslCertificateStatus.Error,
+                Message = error
+            };
+        }
     }
 }
