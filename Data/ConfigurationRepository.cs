@@ -27,6 +27,7 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<string> GetValueAsync(string key)
         {
+            ArgumentException.ThrowIfNullOrEmpty(key);
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -41,6 +42,8 @@ namespace CaddyVpsToolkit.Data
 
         public async Task SetValueAsync(string key, string value)
         {
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentException.ThrowIfNullOrEmpty(value);
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -76,6 +79,7 @@ namespace CaddyVpsToolkit.Data
 
         public async Task<bool> DeleteAsync(string key)
         {
+            ArgumentNullException.ThrowIfNull(key);
             using (var connection = new SQLiteConnection(_connectionString))
             {
                 await connection.OpenAsync();
