@@ -12,7 +12,7 @@ namespace CaddyVpsToolkit.Domain.Models
     /// <summary>
     /// Represents a maintenance window during which failing health checks should log but not trigger alerts or state transitions.
     /// </summary>
-    public sealed class MaintenanceWindow
+    public sealed class MaintenanceWindow : IEquatable<MaintenanceWindow>
     {
         /// <summary>
         /// Gets or sets the start time of the maintenance window in HH:mm format (24-hour clock).
@@ -58,7 +58,40 @@ namespace CaddyVpsToolkit.Domain.Models
             if (!TimeSpan.TryParse(StartTime, out var start) || !TimeSpan.TryParse(EndTime, out var end))
             {
                 return false;
-            }
+            public bool Equals(MaintenanceWindow? other)
+        {
+            if (other is null) return false;
+
+            return StartTime.Equals(other.StartTime, StringComparison.OrdinalIgnoreCase) &&
+                   EndTime.Equals(other.EndTime, StringComparison.OrdinalIgnoreCase) &&
+                   DaysOfWeek.Equals(other.DaysOfWeek, StringComparison.OrdinalIgnoreCase) &&
+                   IsEnabled == other.IsEnabled &&
+                   Description.Equals(other.Description, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+        public override bool Equals(object? obj) => Equals(obj as MaintenanceWindow);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(StartTime, EndTime, DaysOfWeek, IsEnabled, Description);
+        }
+    }
+
+        public static bool operator ==(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return Equals(left, right);
+        }
+    }
+
+        public static bool operator !=(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return !Equals(left, right);
+        }
+    }
+
+        }
+    }
 
             // Check if current time is within the time range
             bool isInTimeRange = currentTime >= start && currentTime <= end;
@@ -67,20 +100,119 @@ namespace CaddyVpsToolkit.Domain.Models
             if (end < start)
             {
                 isInTimeRange = currentTime >= start || currentTime <= end;
-            }
+            public bool Equals(MaintenanceWindow? other)
+        {
+            if (other is null) return false;
+
+            return StartTime.Equals(other.StartTime, StringComparison.OrdinalIgnoreCase) &&
+                   EndTime.Equals(other.EndTime, StringComparison.OrdinalIgnoreCase) &&
+                   DaysOfWeek.Equals(other.DaysOfWeek, StringComparison.OrdinalIgnoreCase) &&
+                   IsEnabled == other.IsEnabled &&
+                   Description.Equals(other.Description, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+        public override bool Equals(object? obj) => Equals(obj as MaintenanceWindow);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(StartTime, EndTime, DaysOfWeek, IsEnabled, Description);
+        }
+    }
+
+        public static bool operator ==(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return Equals(left, right);
+        }
+    }
+
+        public static bool operator !=(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return !Equals(left, right);
+        }
+    }
+
+        }
+    }
 
             // Check if current day is in the allowed days
             if (string.IsNullOrWhiteSpace(DaysOfWeek))
             {
                 return isInTimeRange;
-            }
+            public bool Equals(MaintenanceWindow? other)
+        {
+            if (other is null) return false;
+
+            return StartTime.Equals(other.StartTime, StringComparison.OrdinalIgnoreCase) &&
+                   EndTime.Equals(other.EndTime, StringComparison.OrdinalIgnoreCase) &&
+                   DaysOfWeek.Equals(other.DaysOfWeek, StringComparison.OrdinalIgnoreCase) &&
+                   IsEnabled == other.IsEnabled &&
+                   Description.Equals(other.Description, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+        public override bool Equals(object? obj) => Equals(obj as MaintenanceWindow);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(StartTime, EndTime, DaysOfWeek, IsEnabled, Description);
+        }
+    }
+
+        public static bool operator ==(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return Equals(left, right);
+        }
+    }
+
+        public static bool operator !=(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return !Equals(left, right);
+        }
+    }
+
+        }
+    }
 
             var allowedDays = DaysOfWeek.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             var currentDayName = currentDay.ToString();
             bool isAllowedDay = Array.Exists(allowedDays, day => string.Equals(day.Trim(), currentDayName, StringComparison.OrdinalIgnoreCase));
 
             return isInTimeRange && isAllowedDay && IsEnabled;
+        public bool Equals(MaintenanceWindow? other)
+        {
+            if (other is null) return false;
+
+            return StartTime.Equals(other.StartTime, StringComparison.OrdinalIgnoreCase) &&
+                   EndTime.Equals(other.EndTime, StringComparison.OrdinalIgnoreCase) &&
+                   DaysOfWeek.Equals(other.DaysOfWeek, StringComparison.OrdinalIgnoreCase) &&
+                   IsEnabled == other.IsEnabled &&
+                   Description.Equals(other.Description, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+        public override bool Equals(object? obj) => Equals(obj as MaintenanceWindow);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(StartTime, EndTime, DaysOfWeek, IsEnabled, Description);
+        }
+    }
+
+        public static bool operator ==(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return Equals(left, right);
+        }
+    }
+
+        public static bool operator !=(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return !Equals(left, right);
+        }
+    }
+
+        }
+    }
 
         /// <summary>
         /// Validates the maintenance window configuration.
@@ -91,12 +223,78 @@ namespace CaddyVpsToolkit.Domain.Models
             if (!TimeSpan.TryParse(StartTime, out _))
             {
                 throw new ValidationException($"Invalid StartTime format: {StartTime}. Expected HH:mm format (24-hour clock).");
-            }
+            public bool Equals(MaintenanceWindow? other)
+        {
+            if (other is null) return false;
+
+            return StartTime.Equals(other.StartTime, StringComparison.OrdinalIgnoreCase) &&
+                   EndTime.Equals(other.EndTime, StringComparison.OrdinalIgnoreCase) &&
+                   DaysOfWeek.Equals(other.DaysOfWeek, StringComparison.OrdinalIgnoreCase) &&
+                   IsEnabled == other.IsEnabled &&
+                   Description.Equals(other.Description, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+        public override bool Equals(object? obj) => Equals(obj as MaintenanceWindow);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(StartTime, EndTime, DaysOfWeek, IsEnabled, Description);
+        }
+    }
+
+        public static bool operator ==(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return Equals(left, right);
+        }
+    }
+
+        public static bool operator !=(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return !Equals(left, right);
+        }
+    }
+
+        }
+    }
 
             if (!TimeSpan.TryParse(EndTime, out _))
             {
                 throw new ValidationException($"Invalid EndTime format: {EndTime}. Expected HH:mm format (24-hour clock).");
-            }
+            public bool Equals(MaintenanceWindow? other)
+        {
+            if (other is null) return false;
+
+            return StartTime.Equals(other.StartTime, StringComparison.OrdinalIgnoreCase) &&
+                   EndTime.Equals(other.EndTime, StringComparison.OrdinalIgnoreCase) &&
+                   DaysOfWeek.Equals(other.DaysOfWeek, StringComparison.OrdinalIgnoreCase) &&
+                   IsEnabled == other.IsEnabled &&
+                   Description.Equals(other.Description, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+        public override bool Equals(object? obj) => Equals(obj as MaintenanceWindow);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(StartTime, EndTime, DaysOfWeek, IsEnabled, Description);
+        }
+    }
+
+        public static bool operator ==(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return Equals(left, right);
+        }
+    }
+
+        public static bool operator !=(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return !Equals(left, right);
+        }
+    }
+
+        }
+    }
 
             var start = TimeSpan.Parse(StartTime);
             var end = TimeSpan.Parse(EndTime);
@@ -105,7 +303,73 @@ namespace CaddyVpsToolkit.Domain.Models
             if (start == end)
             {
                 throw new ValidationException("StartTime and EndTime cannot be the same.");
-            }
+            public bool Equals(MaintenanceWindow? other)
+        {
+            if (other is null) return false;
+
+            return StartTime.Equals(other.StartTime, StringComparison.OrdinalIgnoreCase) &&
+                   EndTime.Equals(other.EndTime, StringComparison.OrdinalIgnoreCase) &&
+                   DaysOfWeek.Equals(other.DaysOfWeek, StringComparison.OrdinalIgnoreCase) &&
+                   IsEnabled == other.IsEnabled &&
+                   Description.Equals(other.Description, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+        public override bool Equals(object? obj) => Equals(obj as MaintenanceWindow);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(StartTime, EndTime, DaysOfWeek, IsEnabled, Description);
+        }
+    }
+
+        public static bool operator ==(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return Equals(left, right);
+        }
+    }
+
+        public static bool operator !=(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return !Equals(left, right);
+        }
+    }
+
+        }
+    }
+        public bool Equals(MaintenanceWindow? other)
+        {
+            if (other is null) return false;
+
+            return StartTime.Equals(other.StartTime, StringComparison.OrdinalIgnoreCase) &&
+                   EndTime.Equals(other.EndTime, StringComparison.OrdinalIgnoreCase) &&
+                   DaysOfWeek.Equals(other.DaysOfWeek, StringComparison.OrdinalIgnoreCase) &&
+                   IsEnabled == other.IsEnabled &&
+                   Description.Equals(other.Description, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+        public override bool Equals(object? obj) => Equals(obj as MaintenanceWindow);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(StartTime, EndTime, DaysOfWeek, IsEnabled, Description);
+        }
+    }
+
+        public static bool operator ==(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return Equals(left, right);
+        }
+    }
+
+        public static bool operator !=(MaintenanceWindow? left, MaintenanceWindow? right)
+        {
+            return !Equals(left, right);
+        }
+    }
+
+        }
+    }
     }
 }
