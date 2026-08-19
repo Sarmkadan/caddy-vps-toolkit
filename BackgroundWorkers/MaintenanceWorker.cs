@@ -40,6 +40,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
 
         public async Task StartAsync()
         {
+            await _logger.LogInfoAsync("StartAsync called");
             if (_cancellationTokenSource is not null)
                 return;
 
@@ -51,6 +52,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
 
         public async Task StopAsync()
         {
+            await _logger.LogInfoAsync("StopAsync called");
             if (_cancellationTokenSource is null)
                 return;
 
@@ -88,6 +90,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
                 }
                 catch (Exception ex)
                 {
+                    await _logger.LogErrorAsync("Maintenance worker error in RunWorkerAsync: " + ex.Message);
                     await _logger.LogErrorAsync($"Maintenance worker error: {ex.Message}");
                 }
             }
@@ -108,6 +111,7 @@ namespace CaddyVpsToolkit.BackgroundWorkers
             }
             catch (Exception ex)
             {
+                await _logger.LogErrorAsync("PerformMaintenanceAsync failed: " + ex.Message);
                 await _logger.LogErrorAsync($"Failed to clean old health records: {ex.Message}");
             }
         }
