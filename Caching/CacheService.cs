@@ -44,6 +44,8 @@ namespace CaddyVpsToolkit.Caching
 
         public ValueTask<T> GetAsync<T>(string key)
         {
+            ArgumentException.ThrowIfNullOrEmpty(key);
+
             // Ensure expired entries are purged before attempting to read.
             CleanExpiredEntries();
 
@@ -53,6 +55,8 @@ namespace CaddyVpsToolkit.Caching
 
         public ValueTask<(bool Found, T Value)> TryGetAsync<T>(string key)
         {
+            ArgumentException.ThrowIfNullOrEmpty(key);
+
             // Ensure expired entries are purged before attempting to read.
             CleanExpiredEntries();
 
@@ -88,6 +92,8 @@ namespace CaddyVpsToolkit.Caching
 
         public ValueTask SetAsync<T>(string key, T value, TimeSpan? expiration = null)
         {
+            ArgumentException.ThrowIfNullOrEmpty(key);
+
             if (string.IsNullOrEmpty(key))
                 return ValueTask.CompletedTask;
 
@@ -102,6 +108,8 @@ namespace CaddyVpsToolkit.Caching
 
         public ValueTask RemoveAsync(string key)
         {
+            ArgumentException.ThrowIfNullOrEmpty(key);
+
             if (!string.IsNullOrEmpty(key))
                 _cache.TryRemove(key, out _);
 
@@ -116,6 +124,8 @@ namespace CaddyVpsToolkit.Caching
 
         public async ValueTask<bool> ExistsAsync(string key)
         {
+            ArgumentException.ThrowIfNullOrEmpty(key);
+
             // Ensure expired entries are purged before checking existence.
             CleanExpiredEntries();
 
@@ -159,6 +169,10 @@ namespace CaddyVpsToolkit.Caching
             Func<Task<T>> factory,
             TimeSpan? expiration = null)
         {
+            ArgumentNullException.ThrowIfNull(cache);
+            ArgumentException.ThrowIfNullOrEmpty(key);
+            ArgumentNullException.ThrowIfNull(factory);
+
             // TryGetAsync distinguishes a genuine miss from a cached default value,
             // which matters for value types (a cached 0/false is a valid hit) and
             // avoids re-invoking the factory on every call for missing value types.
@@ -183,6 +197,10 @@ namespace CaddyVpsToolkit.Caching
             Func<Task<T>> factory,
             TimeSpan? expiration = null)
         {
+            ArgumentNullException.ThrowIfNull(cache);
+            ArgumentException.ThrowIfNullOrEmpty(key);
+            ArgumentNullException.ThrowIfNull(factory);
+
             // Fast path – try to get the value without taking a lock.
             var (found, cached) = await cache.TryGetAsync<T>(key);
             if (found)
@@ -222,6 +240,8 @@ namespace CaddyVpsToolkit.Caching
         /// </summary>
         public static string MakeCacheKey(params string[] parts)
         {
+            ArgumentNullException.ThrowIfNull(parts);
+
             return string.Join(":", parts);
         }
     }
