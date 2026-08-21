@@ -21,6 +21,8 @@ namespace CaddyVpsToolkit.Configuration
 
         public AppConfigurationBuilder WithJsonFile(string path)
         {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+
             if (!File.Exists(path))
                 throw new FileNotFoundException($"Configuration file not found: {path}");
 
@@ -62,12 +64,16 @@ namespace CaddyVpsToolkit.Configuration
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentException("Key required", nameof(key));
 
+            ArgumentNullException.ThrowIfNull(value);
+
             _configuration[key] = value;
             return this;
         }
 
         public AppConfigurationBuilder WithDefaults(Dictionary<string, object> defaults)
         {
+            ArgumentNullException.ThrowIfNull(defaults);
+
             foreach (var kvp in defaults)
             {
                 if (!_configuration.ContainsKey(kvp.Key))
