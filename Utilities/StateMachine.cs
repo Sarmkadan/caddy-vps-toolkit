@@ -35,22 +35,30 @@ namespace CaddyVpsToolkit.Utilities
 
         public void Configure(TState from, TTrigger trigger, TState to, Func<bool> guardClause)
         {
+            ArgumentNullException.ThrowIfNull(guardClause);
+
             _transitions[(from, trigger)] = to;
             _guardClauses[(from, trigger)] = guardClause;
         }
 
         public void OnEnter(TState state, Action callback)
         {
+            ArgumentNullException.ThrowIfNull(callback);
+
             _onEnterCallbacks[state] = callback;
         }
 
         public void OnExit(TState state, Action callback)
         {
+            ArgumentNullException.ThrowIfNull(callback);
+
             _onExitCallbacks[state] = callback;
         }
 
         public void OnTransition(Action<TState, TState, TTrigger> callback)
         {
+            ArgumentNullException.ThrowIfNull(callback);
+
             _onTransitionCallback = callback;
         }
 
