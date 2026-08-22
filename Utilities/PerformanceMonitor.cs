@@ -23,6 +23,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public PerformanceMonitor(string operationName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(operationName);
             _operationName = operationName;
             _stopwatch = Stopwatch.StartNew();
             _milestones = new List<(string, long)>();
@@ -30,6 +31,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public void MarkMilestone(string name)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
             _milestones.Add((name, _stopwatch.ElapsedMilliseconds));
         }
 
@@ -75,6 +77,7 @@ namespace CaddyVpsToolkit.Utilities
     {
         public static async Task<(T result, long elapsedMs)> TimeAsync<T>(Func<Task<T>> operation)
         {
+            ArgumentNullException.ThrowIfNull(operation);
             var stopwatch = Stopwatch.StartNew();
             var result = await operation();
             stopwatch.Stop();
@@ -83,6 +86,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public static async Task<long> TimeAsync(Func<Task> operation)
         {
+            ArgumentNullException.ThrowIfNull(operation);
             var stopwatch = Stopwatch.StartNew();
             await operation();
             stopwatch.Stop();
@@ -99,6 +103,9 @@ namespace CaddyVpsToolkit.Utilities
 
         public async Task MeasureAsync(string label, Func<Task> operation, int iterations = 1)
         {
+            ArgumentException.ThrowIfNullOrEmpty(label);
+            ArgumentNullException.ThrowIfNull(operation);
+
             if (!_results.ContainsKey(label))
                 _results[label] = new List<long>();
 
