@@ -18,8 +18,14 @@ namespace CaddyVpsToolkit.Data
     public static class PaginationHelper
     {
         /// <summary>
-        /// Paginate a collection
+        /// Paginate a collection.
         /// </summary>
+        /// <typeparam name="T">The type of items in the collection.</typeparam>
+        /// <param name="items">The collection to paginate.</param>
+        /// <param name="page">The page number (1-based). Defaults to 1.</param>
+        /// <param name="pageSize">The number of items per page. Defaults to 10.</param>
+        /// <returns>A <see cref="PaginatedResult{T}"/> containing the paginated items.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="items"/> is null.</exception>
         public static PaginatedResult<T> Paginate<T>(
             IEnumerable<T> items,
             int page = 1,
@@ -61,8 +67,15 @@ namespace CaddyVpsToolkit.Data
         }
 
         /// <summary>
-        /// Sort collection by property name
+        /// Sort collection by property name.
         /// </summary>
+        /// <typeparam name="T">The type of items in the collection.</typeparam>
+        /// <param name="items">The collection to sort.</param>
+        /// <param name="propertyName">The name of the property to sort by.</param>
+        /// <param name="ascending">Whether to sort in ascending order. Defaults to true.</param>
+        /// <returns>A <see cref="List{T}"/> containing the sorted items.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="items"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="propertyName"/> is null or empty.</exception>
         public static List<T> SortBy<T>(
             IEnumerable<T> items,
             string propertyName,
@@ -83,8 +96,15 @@ namespace CaddyVpsToolkit.Data
         }
 
         /// <summary>
-        /// Filter collection by property value
+        /// Filter collection by property value.
         /// </summary>
+        /// <typeparam name="T">The type of items in the collection.</typeparam>
+        /// <param name="items">The collection to filter.</param>
+        /// <param name="propertyName">The name of the property to filter by.</param>
+        /// <param name="value">The value to filter for.</param>
+        /// <returns>A <see cref="List{T}"/> containing the filtered items.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="items"/>, <paramref name="propertyName"/>, or <paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="propertyName"/> is null or empty.</exception>
         public static List<T> FilterBy<T>(
             IEnumerable<T> items,
             string propertyName,
@@ -104,8 +124,13 @@ namespace CaddyVpsToolkit.Data
         }
 
         /// <summary>
-        /// Filter collection with predicate
+        /// Filter collection with predicate.
         /// </summary>
+        /// <typeparam name="T">The type of items in the collection.</typeparam>
+        /// <param name="items">The collection to filter.</param>
+        /// <param name="predicate">The predicate to test each item against.</param>
+        /// <returns>A <see cref="List{T}"/> containing the filtered items.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="items"/> or <paramref name="predicate"/> is null.</exception>
         public static List<T> Filter<T>(
             IEnumerable<T> items,
             Func<T, bool> predicate)
@@ -120,8 +145,9 @@ namespace CaddyVpsToolkit.Data
     }
 
     /// <summary>
-    /// Query builder for fluent data querying
+    /// Query builder for fluent data querying.
     /// </summary>
+    /// <typeparam name="T">The type of items in the collection.</typeparam>
     public sealed class QueryBuilder<T>
     {
         private IEnumerable<T> _data;
@@ -131,23 +157,43 @@ namespace CaddyVpsToolkit.Data
         private bool _ascending = true;
         private List<Func<T, bool>> _filters = new();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryBuilder{T}"/> class.
+        /// </summary>
+        /// <param name="data">The data to query.</param>
         public QueryBuilder(IEnumerable<T> data)
         {
             _data = data ?? new List<T>();
         }
 
+        /// <summary>
+        /// Sets the page number.
+        /// </summary>
+        /// <param name="page">The page number (1-based).</param>
+        /// <returns>The same <see cref="QueryBuilder{T}"/> instance for chaining.</returns>
         public QueryBuilder<T> Page(int page)
         {
             _page = page;
             return this;
         }
 
+        /// <summary>
+        /// Sets the page size.
+        /// </summary>
+        /// <param name="size">The number of items per page.</param>
+        /// <returns>The same <see cref="QueryBuilder{T}"/> instance for chaining.</returns>
         public QueryBuilder<T> PageSize(int size)
         {
             _pageSize = size;
             return this;
         }
 
+        /// <summary>
+        /// Sets the sorting property and order.
+        /// </summary>
+        /// <param name="property">The name of the property to sort by.</param>
+        /// <param name="ascending">Whether to sort in ascending order. Defaults to true.</param>
+        /// <returns>The same <see cref="QueryBuilder{T}"/> instance for chaining.</returns>
         public QueryBuilder<T> SortBy(string property, bool ascending = true)
         {
             _sortBy = property;
@@ -155,12 +201,21 @@ namespace CaddyVpsToolkit.Data
             return this;
         }
 
+        /// <summary>
+        /// Adds a filter predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate to test each item against.</param>
+        /// <returns>The same <see cref="QueryBuilder{T}"/> instance for chaining.</returns>
         public QueryBuilder<T> Where(Func<T, bool> predicate)
         {
             _filters.Add(predicate);
             return this;
         }
 
+        /// <summary>
+        /// Executes the query and returns a paginated result.
+        /// </summary>
+        /// <returns>A <see cref="PaginatedResult{T}"/> containing the paginated items.</returns>
         public PaginatedResult<T> Execute()
         {
             var result = _data;
@@ -177,6 +232,10 @@ namespace CaddyVpsToolkit.Data
             return PaginationHelper.Paginate(result, _page, _pageSize);
         }
 
+        /// <summary>
+        /// Executes the query and returns all items as a list.
+        /// </summary>
+        /// <returns>A <see cref="List{T}"/> containing all items that match the query.</returns>
         public List<T> ExecuteUnpaged()
         {
             var result = _data;
