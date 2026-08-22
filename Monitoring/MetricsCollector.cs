@@ -13,6 +13,10 @@ namespace CaddyVpsToolkit.Monitoring
     /// <summary>
     /// Collects application metrics for monitoring and analytics.
     /// Supports counters, gauges, histograms, and timers.
+    /// <para>
+    /// This class is thread-safe and provides methods to record and retrieve
+    /// metric data. It uses an internal lock to ensure concurrent access safety.
+    /// </para>
     /// </summary>
     public sealed class MetricsCollector
     {
@@ -23,8 +27,11 @@ namespace CaddyVpsToolkit.Monitoring
         private readonly object _lockObject = new();
 
         /// <summary>
-        /// Record a counter increment
+        /// Record a counter increment.
         /// </summary>
+        /// <param name="name">The counter name.</param>
+        /// <param name="value">The amount to increment (default 1).</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public void IncrementCounter(string name, long value = 1)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -40,8 +47,11 @@ namespace CaddyVpsToolkit.Monitoring
         }
 
         /// <summary>
-        /// Record a gauge value
+        /// Record a gauge value.
         /// </summary>
+        /// <param name="name">The gauge name.</param>
+        /// <param name="value">The gauge value to set.</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public void SetGauge(string name, double value)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -57,8 +67,11 @@ namespace CaddyVpsToolkit.Monitoring
         }
 
         /// <summary>
-        /// Record histogram value
+        /// Record histogram value.
         /// </summary>
+        /// <param name="name">The histogram name.</param>
+        /// <param name="value">The value to record.</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public void RecordHistogram(string name, double value)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -74,8 +87,10 @@ namespace CaddyVpsToolkit.Monitoring
         }
 
         /// <summary>
-        /// Start a timer with the given name
+        /// Start a timer with the given name.
         /// </summary>
+        /// <param name="name">The timer name.</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public void StartTimer(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -91,8 +106,10 @@ namespace CaddyVpsToolkit.Monitoring
         }
 
         /// <summary>
-        /// Stop a timer with the given name
+        /// Stop a timer with the given name.
         /// </summary>
+        /// <param name="name">The timer name.</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public void StopTimer(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -106,8 +123,11 @@ namespace CaddyVpsToolkit.Monitoring
         }
 
         /// <summary>
-        /// Record a timing value directly
+        /// Record a timing value directly.
         /// </summary>
+        /// <param name="name">The timer name.</param>
+        /// <param name="milliseconds">The timing value in milliseconds.</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public void RecordTimer(string name, double milliseconds)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -126,6 +146,8 @@ namespace CaddyVpsToolkit.Monitoring
         /// Returns the current cumulative value of the named counter, or <c>0</c> if it has never been incremented.
         /// </summary>
         /// <param name="name">Counter name.</param>
+        /// <returns>The current cumulative value of the counter, or 0 if never incremented.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public long GetCounter(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -139,6 +161,8 @@ namespace CaddyVpsToolkit.Monitoring
         /// Returns the most recently recorded value for the named gauge, or <c>0</c> if it has never been set.
         /// </summary>
         /// <param name="name">Gauge name.</param>
+        /// <returns>The most recently recorded value for the named gauge, or 0 if never set.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public double GetGauge(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -152,6 +176,8 @@ namespace CaddyVpsToolkit.Monitoring
         /// Returns computed statistics for the named histogram, or <c>null</c> if no values have been recorded.
         /// </summary>
         /// <param name="name">Histogram name.</param>
+        /// <returns>Computed statistics for the named histogram, or null if no values have been recorded.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public HistogramStats GetHistogramStats(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -165,6 +191,8 @@ namespace CaddyVpsToolkit.Monitoring
         /// Returns computed statistics for the named timer, or <c>null</c> if no values have been recorded.
         /// </summary>
         /// <param name="name">Timer name.</param>
+        /// <returns>Computed statistics for the named timer, or null if no values have been recorded.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="name"/> is null or empty.</exception>
         public HistogramStats GetTimerStats(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -177,6 +205,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// <summary>
         /// Generates a human-readable text report of all counters, gauges, histograms, and timers.
         /// </summary>
+        /// <returns>A human-readable text report of all metrics.</returns>
         public string GenerateReport()
         {
             var lines = new List<string> { "=== Metrics Report ===", "" };
@@ -228,6 +257,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// Creates a point-in-time snapshot of all metrics (counters, gauges, histograms, and timers).
         /// The snapshot is immutable and safe to use outside the lock.
         /// </summary>
+        /// <returns>A point-in-time snapshot of all metrics.</returns>
         public SnapshotReport SnapshotReport()
         {
             lock (_lockObject)
@@ -265,13 +295,21 @@ namespace CaddyVpsToolkit.Monitoring
     public sealed class Counter
     {
         private long _value;
+        /// <summary>Gets the current counter value.</summary>
         public long Value => _value;
 
+        /// <summary>
+        /// Increments the counter by the specified amount.
+        /// </summary>
+        /// <param name="amount">The amount to increment (default 1).</param>
         public void Increment(long amount = 1)
         {
             _value += amount;
         }
 
+        /// <summary>
+        /// Resets the counter to zero.
+        /// </summary>
         public void Reset()
         {
             _value = 0;
@@ -285,8 +323,13 @@ namespace CaddyVpsToolkit.Monitoring
     public sealed class Gauge
     {
         private double _value;
+        /// <summary>Gets the current gauge value.</summary>
         public double Value => _value;
 
+        /// <summary>
+        /// Sets the gauge to the specified value.
+        /// </summary>
+        /// <param name="value">The value to set.</param>
         public void Set(double value)
         {
             _value = value;
@@ -302,6 +345,9 @@ namespace CaddyVpsToolkit.Monitoring
         private readonly Histogram _histogram = new();
         private DateTime? _startTime;
 
+        /// <summary>
+        /// Starts the timer.
+        /// </summary>
         public void Start()
         {
             lock (_histogram)
@@ -310,6 +356,9 @@ namespace CaddyVpsToolkit.Monitoring
             }
         }
 
+        /// <summary>
+        /// Stops the timer and records the elapsed time.
+        /// </summary>
         public void Stop()
         {
             lock (_histogram)
@@ -323,8 +372,16 @@ namespace CaddyVpsToolkit.Monitoring
             }
         }
 
+        /// <summary>
+        /// Gets the statistics for the timer.
+        /// </summary>
+        /// <returns>The histogram statistics representing the timer's recorded values.</returns>
         public HistogramStats GetStats() => _histogram.GetStats();
 
+        /// <summary>
+        /// Records a timing value directly.
+        /// </summary>
+        /// <param name="milliseconds">The timing value in milliseconds to record.</param>
         public void Record(double milliseconds)
         {
             lock (_histogram)
@@ -342,6 +399,10 @@ namespace CaddyVpsToolkit.Monitoring
     {
         private readonly List<double> _values = new();
 
+        /// <summary>
+        /// Records a value in the histogram.
+        /// </summary>
+        /// <param name="value">The value to record.</param>
         public void Record(double value)
         {
             lock (_values)
@@ -350,6 +411,10 @@ namespace CaddyVpsToolkit.Monitoring
             }
         }
 
+        /// <summary>
+        /// Computes summary statistics for the recorded values.
+        /// </summary>
+        /// <returns>The histogram statistics, or an empty statistics object if no values have been recorded.</returns>
         public HistogramStats GetStats()
         {
             lock (_values)
@@ -436,6 +501,7 @@ namespace CaddyVpsToolkit.Monitoring
         /// <summary>
         /// Generates a human-readable text report from the snapshot data.
         /// </summary>
+        /// <returns>A human-readable text report of the snapshot metrics.</returns>
         public string ToTextReport()
         {
             var lines = new List<string>();
