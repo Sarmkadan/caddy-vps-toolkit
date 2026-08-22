@@ -24,15 +24,28 @@ namespace CaddyVpsToolkit.Services
     public interface IBackupService
     {
         /// <summary>Creates a backup of all services and configuration, returning the output file path.</summary>
+        /// <param name="outputPath">Optional full path where the backup file should be written. When null, a timestamped file is created in the config directory.</param>
+        /// <param name="description">Optional human-readable description stored in the backup manifest.</param>
+        /// <returns>The full path of the created backup file.</returns>
         Task<string> CreateBackupAsync(string? outputPath = null, string description = "");
 
         /// <summary>Restores services and configuration from a previously created backup file.</summary>
+        /// <param name="backupFilePath">Path to the backup file to restore.</param>
+        /// <returns>The manifest describing the restored backup.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="backupFilePath"/> is null or whitespace.</exception>
+        /// <exception cref="CaddyVpsException">Thrown when the backup file is missing, cannot be read, or contains invalid JSON.</exception>
         Task<BackupManifest> RestoreBackupAsync(string backupFilePath);
 
         /// <summary>Verifies the integrity of a backup file by comparing its SHA-256 checksum.</summary>
+        /// <param name="backupFilePath">Path to the backup file to verify.</param>
+        /// <returns>The integrity result, including whether the checksum matched.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="backupFilePath"/> is null or whitespace.</exception>
+        /// <exception cref="CaddyVpsException">Thrown when the backup file is missing, cannot be read, or contains invalid JSON.</exception>
         Task<BackupManifest.BackupIntegrityResult> VerifyBackupAsync(string backupFilePath);
 
         /// <summary>Lists all backup files found in the given directory (defaults to the config directory).</summary>
+        /// <param name="backupDirectory">Optional directory to search for backup files. When null, the config directory is used.</param>
+        /// <returns>A sorted list of backup file paths. Empty if the directory does not exist or contains no backups.</returns>
         Task<IReadOnlyList<string>> ListBackupsAsync(string? backupDirectory = null);
     }
 
@@ -51,13 +64,21 @@ namespace CaddyVpsToolkit.Services
         /// <summary>
         /// Initializes a new instance of <see cref="BackupService"/>.
         /// </summary>
+        /// <param name="serviceRepository">Repository used to read and write managed services.</param>
+        /// <param name="configRepository">Repository used to read and write application configuration.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="serviceRepository"/> or <paramref name="configRepository"/> is null.</exception>
         public BackupService(IServiceRepository serviceRepository, IConfigurationRepository configRepository)
         {
             _serviceRepository = serviceRepository ?? throw new ArgumentNullException(nameof(serviceRepository));
             _configRepository = configRepository ?? throw new ArgumentNullException(nameof(configRepository));
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Creates a backup of all services and configuration, returning the output file path.
+        /// </summary>
+        /// <param name="outputPath">Optional full path where the backup file should be written. When null, a timestamped file is created in the config directory.</param>
+        /// <param name="description">Optional human-readable description stored in the backup manifest.</param>
+        /// <returns>The full path of the created backup file.</returns>
         public async Task<string> CreateBackupAsync(string? outputPath = null, string description = "")
         {
             var services = await _serviceRepository.GetAllAsync();
