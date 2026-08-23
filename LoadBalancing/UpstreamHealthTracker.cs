@@ -26,11 +26,24 @@ namespace CaddyVpsToolkit.LoadBalancing
             return (await _poolRepository.GetAllAsync()).AsReadOnly();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UpstreamHealthTracker"/> class.
+        /// </summary>
+        /// <param name="poolRepository">The <see cref="IUpstreamPoolRepository"/> to use for persisting health state.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="poolRepository"/> is null.</exception>
         public UpstreamHealthTracker(IUpstreamPoolRepository poolRepository)
         {
             _poolRepository = poolRepository ?? throw new ArgumentNullException(nameof(poolRepository));
         }
 
+        /// <summary>
+        /// Records the result of a health probe for a specific server within an upstream pool.
+        /// </summary>
+        /// <param name="upstreamId">The unique identifier of the upstream server.</param>
+        /// <param name="poolId">The unique identifier of the upstream pool.</param>
+        /// <param name="probeSucceeded">A value indicating whether the probe succeeded.</param>
+        /// <param name="responseTimeMs">The response time of the probe in milliseconds.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task RecordProbeResultAsync(string upstreamId, string poolId, bool probeSucceeded, int responseTimeMs = 0)
         {
             var pool = await _poolRepository.GetByIdAsync(poolId);
@@ -58,6 +71,11 @@ namespace CaddyVpsToolkit.LoadBalancing
             await _poolRepository.UpdateAsync(pool);
         }
 
+        /// <summary>
+        /// Retrieves a snapshot of the health status for a specific upstream server.
+        /// </summary>
+        /// <param name="upstreamId">The unique identifier of the upstream server.</param>
+        /// <returns>A <see cref="UpstreamHealthSnapshot"/> if the server exists; otherwise, null.</returns>
         public async Task<UpstreamHealthSnapshot?> GetSnapshotAsync(string upstreamId)
         {
             // We need to find the server across all pools since we only have upstreamId.
@@ -82,6 +100,13 @@ namespace CaddyVpsToolkit.LoadBalancing
             return null;
         }
 
+        /// <summary>
+        /// Drains active connections from an upstream server before disabling it.
+        /// </summary>
+        /// <param name="upstreamId">The unique identifier of the upstream server.</param>
+        /// <param name="drainTimeout">The maximum time to wait for connections to drain.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for drainage.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task DrainAsync(string upstreamId, TimeSpan drainTimeout, CancellationToken cancellationToken = default)
         {
             var pools = await _poolRepository.GetAllAsync();
