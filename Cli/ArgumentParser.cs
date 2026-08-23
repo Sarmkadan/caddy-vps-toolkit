@@ -35,6 +35,12 @@ namespace CaddyVpsToolkit.Cli
         // Maximum allowed argument count to prevent memory exhaustion attacks
         private const int MaxArgumentCount = 100000; // 100k arguments
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ArgumentParser"/> class with the specified command-line arguments.
+        /// The arguments are validated and sanitized to prevent denial-of-service attacks.
+        /// </summary>
+        /// <param name="args">The command-line arguments to parse.</param>
+        /// <exception cref="ArgumentException">Thrown if the arguments exceed safe limits.</exception>
         public ArgumentParser(string[] args)
         {
             _args = ValidateAndSanitizeArguments(args ?? []);
