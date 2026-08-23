@@ -83,7 +83,10 @@ namespace CaddyVpsToolkit.LoadBalancing
     /// dissolves linearly over <see cref="UpstreamManagementOptions.PenaltyDecaySeconds"/>.
     /// </para>
     /// </summary>
-    public sealed class AdaptiveLoadBalancer : IAdaptiveLoadBalancer
+    /// <summary>Adaptive load balancer implementation.</summary>
+        /// <summary>Adaptive load balancer implementation.</summary>
+        /// <summary>Adaptive load balancer implementation.</summary>
+        public sealed class AdaptiveLoadBalancer : IAdaptiveLoadBalancer
     {
         private readonly UpstreamManagerService _upstreamManager;
         private readonly IMetricsAggregator _metrics;

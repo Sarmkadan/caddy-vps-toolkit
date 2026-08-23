@@ -78,7 +78,9 @@ namespace CaddyVpsToolkit.LoadBalancing
     /// The scorer maintains an exponential moving average of each upstream's performance and applies
     /// time-decaying penalties to servers that recently experienced failures.
     /// </summary>
-    public interface IAdaptiveLoadBalancer
+    /// <summary>Interface for adaptive load balancer implementations.</summary>
+        /// <summary>Interface for adaptive load balancer implementations.</summary>
+        public interface IAdaptiveLoadBalancer
     {
         /// <summary>
         /// Evaluates all candidates in the specified pool and returns a scored ranking with the
