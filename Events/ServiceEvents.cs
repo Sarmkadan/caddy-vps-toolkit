@@ -18,6 +18,7 @@ namespace CaddyVpsToolkit.Events
         public ServiceType ServiceType { get; set; }
         public int Port { get; set; }
         public string ExecutablePath { get; set; }
+        public override string ToString() => $"ServiceCreatedEvent {{ ServiceName = {ServiceName}, ServiceType = {ServiceType}, Port = {Port}, ExecutablePath = {ExecutablePath} }}";
     }
 
     /// <summary>
