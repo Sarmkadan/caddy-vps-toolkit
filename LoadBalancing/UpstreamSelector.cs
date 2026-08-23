@@ -15,12 +15,13 @@ using CaddyVpsToolkit.Domain.Models;
 namespace CaddyVpsToolkit.LoadBalancing
 {
     /// <summary>
-    /// Stateless implementation of <see cref="IUpstreamSelector"/> that supports round-robin
-    /// and IP-hash load-balancing strategies.
+    /// Stateless implementation of <see cref="IUpstreamSelector"/> that supports round-robin,
+    /// least-connections, random, weighted-random and IP-hash load-balancing strategies.
     /// <para>
-    /// When <see cref="UpstreamSelectionContext.ClientIp"/> is set the selector hashes the IP to
-    /// produce a stable, deterministic upstream assignment. Otherwise a per-pool atomic round-robin
-    /// cursor distributes requests evenly across all candidates.
+    /// When <see cref="UpstreamSelectionContext.ClientIp"/> is set and the effective strategy is
+    /// <see cref="LoadBalancingStrategy.IpHash"/>, the selector hashes the IP to produce a stable,
+    /// deterministic upstream assignment. Otherwise a per-pool atomic round-robin cursor
+    /// distributes requests evenly across all candidates.
     /// </para>
     /// </summary>
     public sealed class UpstreamSelector : IUpstreamSelector
@@ -28,6 +29,14 @@ namespace CaddyVpsToolkit.LoadBalancing
         private readonly ConcurrentDictionary<string, int> _rrCursors = new();
 
         /// <inheritdoc/>
+        /// <remarks>
+        /// Returns <see langword="null"/> when <paramref name="servers"/> is empty and short-circuits
+        /// to the single element when the pool contains exactly one server. When no explicit
+        /// strategy is provided through <see cref="UpstreamSelectionContext.Strategy"/>,
+        /// <see cref="LoadBalancingStrategy.RoundRobin"/> is used. An
+        /// <see cref="LoadBalancingStrategy.IpHash"/> selection without a client IP falls back to
+        /// round-robin for the supplied pool.
+        /// </remarks>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="servers"/> or <paramref name="context"/> is null.</exception>
         /// <exception cref="ArgumentException">Thrown if <paramref name="servers"/> contains null entries.</exception>
         public UpstreamServer? Select(IReadOnlyList<UpstreamServer> servers, UpstreamSelectionContext context)
