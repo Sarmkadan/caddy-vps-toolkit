@@ -10,15 +10,29 @@ using System.Threading.Tasks;
 namespace CaddyVpsToolkit.Utilities
 {
     /// <summary>
-    /// Retry policies for handling transient failures.
-    /// Implements exponential backoff and jitter to prevent thundering herd.
+    /// Defines a retry policy for handling transient failures.
     /// </summary>
     public interface IRetryPolicy
     {
+        /// <summary>
+        /// Executes an asynchronous operation with the retry policy applied.
+        /// </summary>
+        /// <typeparam name="T">The return type of the operation.</typeparam>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the result of type <typeparamref name="T"/>.</returns>
         Task<T> ExecuteAsync<T>(Func<Task<T>> operation);
+
+        /// <summary>
+        /// Executes an asynchronous operation with the retry policy applied.
+        /// </summary>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         Task ExecuteAsync(Func<Task> operation);
     }
 
+    /// <summary>
+    /// Implements a retry policy using exponential backoff with jitter to prevent the thundering herd problem.
+    /// </summary>
     public sealed class ExponentialBackoffRetryPolicy : IRetryPolicy
     {
         private readonly int _maxRetries;
@@ -27,6 +41,13 @@ namespace CaddyVpsToolkit.Utilities
         private readonly int _maxDelayMs;
         private readonly Random _random;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ExponentialBackoffRetryPolicy"/> class.
+        /// </summary>
+        /// <param name="maxRetries">The maximum number of retries to attempt. Defaults to 3.</param>
+        /// <param name="initialDelayMs">The initial delay in milliseconds. Defaults to 100.</param>
+        /// <param name="backoffMultiplier">The multiplier for the backoff interval. Defaults to 2.0.</param>
+        /// <param name="maxDelayMs">The maximum allowed delay in milliseconds. Defaults to 10000.</param>
         public ExponentialBackoffRetryPolicy(
             int maxRetries = 3,
             int initialDelayMs = 100,
@@ -40,13 +61,20 @@ namespace CaddyVpsToolkit.Utilities
             _random = new Random();
         }
 
+        /// <summary>
+        /// Executes an asynchronous operation with exponential backoff retry.
+        /// </summary>
+        /// <typeparam name="T">The return type of the operation.</typeparam>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the result of type <typeparamref name="T"/>.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="operation"/> is null.</exception>
         public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
         {
             if (operation is null)
                 throw new ArgumentNullException(nameof(operation));
 
             int delayMs = _initialDelayMs;
-            Exception lastException = null;
+            Exception? lastException = null;
 
             for (int attempt = 0; attempt <= _maxRetries; attempt++)
             {
@@ -70,9 +98,15 @@ namespace CaddyVpsToolkit.Utilities
                 }
             }
 
-            throw lastException;
+            throw lastException!;
         }
 
+        /// <summary>
+        /// Executes an asynchronous operation with exponential backoff retry.
+        /// </summary>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="operation"/> is null.</exception>
         public async Task ExecuteAsync(Func<Task> operation)
         {
             if (operation is null)
@@ -81,25 +115,37 @@ namespace CaddyVpsToolkit.Utilities
             await ExecuteAsync(async () =>
             {
                 await operation();
-                return (object)null;
+                return (object)null!;
             });
         }
     }
 
     /// <summary>
-    /// Linear backoff retry policy - increases delay by fixed amount
+    /// Implements a retry policy using linear backoff, increasing delay by a fixed amount between retries.
     /// </summary>
     public sealed class LinearBackoffRetryPolicy : IRetryPolicy
     {
         private readonly int _maxRetries;
         private readonly int _delayIncrement;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LinearBackoffRetryPolicy"/> class.
+        /// </summary>
+        /// <param name="maxRetries">The maximum number of retries to attempt. Defaults to 3.</param>
+        /// <param name="delayIncrementMs">The delay increment in milliseconds. Defaults to 500.</param>
         public LinearBackoffRetryPolicy(int maxRetries = 3, int delayIncrementMs = 500)
         {
             _maxRetries = maxRetries;
             _delayIncrement = delayIncrementMs;
         }
 
+        /// <summary>
+        /// Executes an asynchronous operation with linear backoff retry.
+        /// </summary>
+        /// <typeparam name="T">The return type of the operation.</typeparam>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the result of type <typeparamref name="T"/>.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when retry attempts are exhausted.</exception>
         public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
         {
             for (int attempt = 0; attempt <= _maxRetries; attempt++)
@@ -118,26 +164,42 @@ namespace CaddyVpsToolkit.Utilities
             throw new InvalidOperationException("Retry policy exhausted");
         }
 
+        /// <summary>
+        /// Executes an asynchronous operation with linear backoff retry.
+        /// </summary>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         public async Task ExecuteAsync(Func<Task> operation)
         {
             await ExecuteAsync(async () =>
             {
                 await operation();
-                return (object)null;
+                return (object)null!;
             });
         }
     }
 
     /// <summary>
-    /// No retry policy - execute once only
+    /// Implements a no-retry policy that executes an operation only once.
     /// </summary>
     public sealed class NoRetryPolicy : IRetryPolicy
     {
+        /// <summary>
+        /// Executes an asynchronous operation exactly once without retry.
+        /// </summary>
+        /// <typeparam name="T">The return type of the operation.</typeparam>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the result of type <typeparamref name="T"/>.</returns>
         public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
         {
             return await operation();
         }
 
+        /// <summary>
+        /// Executes an asynchronous operation exactly once without retry.
+        /// </summary>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         public async Task ExecuteAsync(Func<Task> operation)
         {
             await operation();
