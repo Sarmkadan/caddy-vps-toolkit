@@ -98,6 +98,9 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public bool StrictMode { get; set; } = true;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TemplateEngine"/> class with default settings.
+        /// </summary>
         public TemplateEngine()
             : this(new Dictionary<string, object>(), strictMode: true)
         {
