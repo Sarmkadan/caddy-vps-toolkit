@@ -287,6 +287,39 @@ namespace CaddyVpsToolkit.Monitoring
                 );
             }
         }
+
+        /// <summary>
+        /// Returns a concise summary of all recorded histogram and timer observations,
+        /// including the total observation count and basic distribution statistics
+        /// (min, max, average, and median).
+        /// </summary>
+        /// <returns>A concise string representation of the collected metrics.</returns>
+        public override string ToString()
+        {
+            lock (_lockObject)
+            {
+                var allStats = new List<HistogramStats>();
+                foreach (var kvp in _histograms)
+                    allStats.Add(kvp.Value.GetStats());
+                foreach (var kvp in _timers)
+                    allStats.Add(kvp.Value.GetStats());
+
+                var nonEmpty = allStats.Where(s => s.Count > 0).ToList();
+                if (nonEmpty.Count == 0)
+                {
+                    return "MetricsCollector { Count = 0, Min = 0, Max = 0, Average = 0, Median = 0 }";
+                }
+
+                long count = nonEmpty.Sum(s => (long)s.Count);
+                double min = nonEmpty.Min(s => s.Min);
+                double max = nonEmpty.Max(s => s.Max);
+                double average = nonEmpty.Sum(s => s.Average * s.Count) / count;
+                var medians = nonEmpty.Select(s => s.Median).OrderBy(m => m).ToList();
+                double median = medians[medians.Count / 2];
+
+                return $"MetricsCollector {{ Count = {count}, Min = {min}, Max = {max}, Average = {average:F2}, Median = {median:F2} }}";
+            }
+        }
     }
 
     /// <summary>
