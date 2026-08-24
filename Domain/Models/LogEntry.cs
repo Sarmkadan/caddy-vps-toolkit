@@ -27,6 +27,8 @@ namespace CaddyVpsToolkit.Domain.Models
 
         /// <summary>Optional service ID when the entry originated from a service-scoped log.</summary>
         public string? ServiceId { get; set; }
+
+        public override string ToString() => $"LogEntry {{ Timestamp = {Timestamp}, Level = {Level}, Message = {Message}, Source = {Source}, ServiceId = {ServiceId} }}";
     }
 
     /// <summary>
