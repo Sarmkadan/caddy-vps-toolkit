@@ -23,6 +23,8 @@ namespace CaddyVpsToolkit.Tests.Data
     /// </summary>
     public sealed class PaginationHelperTests
     {
+        public override string ToString() => $"PaginationHelperTests {{ }}";
+
         // ── Paginate ─────────────────────────────────────────────────────────
 
         /// <summary>
