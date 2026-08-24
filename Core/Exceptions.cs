@@ -28,6 +28,8 @@ namespace CaddyVpsToolkit.Core
             ErrorCode = errorCode;
             Details = details;
         }
+
+        public override string ToString() => $"CaddyVpsException {{ ErrorCode = {ErrorCode}, Details = {Details} }}";
     }
 
     /// <summary>
