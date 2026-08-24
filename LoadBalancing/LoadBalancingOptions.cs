@@ -146,5 +146,12 @@ namespace CaddyVpsToolkit.LoadBalancing
         /// Defaults to <c>30</c> seconds.
         /// </summary>
         public int ConnectionDrainTimeoutSeconds { get; set; } = 30;
+
+        /// <summary>
+        /// Returns a concise, informative representation of these options, covering the default
+        /// strategy, active/passive health-probe configuration, and global enablement flags.
+        /// </summary>
+        public override string ToString() =>
+            $"LoadBalancingOptions {{ DefaultStrategy = {DefaultStrategy}, HealthCheckIntervalSeconds = {HealthCheckIntervalSeconds}, HealthProbeTimeoutMs = {HealthProbeTimeoutMs}, HealthProbePath = {HealthProbePath}, ActiveHealthEnabled = {ActiveHealthEnabled}, PassiveHealthEnabled = {PassiveHealthEnabled} }}";
     }
 }
