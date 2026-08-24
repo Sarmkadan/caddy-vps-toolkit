@@ -103,5 +103,8 @@ namespace CaddyVpsToolkit.Notifications
         /// Defaults to true.
         /// </summary>
         public bool EscalationDetectionEnabled { get; set; } = true;
+
+        public override string ToString() =>
+            $"NotificationSuppressionOptions {{ Enabled = {Enabled}, SuppressionWindowSeconds = {SuppressionWindowSeconds}, MaxTrackedNotifications = {MaxTrackedNotifications} }}";
     }
 }
