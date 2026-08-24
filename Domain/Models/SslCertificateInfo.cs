@@ -123,6 +123,8 @@ namespace CaddyVpsToolkit.Domain.Models
                 return nowUtc >= issuedAtUtc && nowUtc < expiresAtUtc;
             }
         }
+
+        public override string ToString() => $"SslCertificateInfo {{ Domain = {Domain}, Subject = {Subject}, Issuer = {Issuer}, IssuedAt = {IssuedAt}, ExpiresAt = {ExpiresAt}, Domain = {Domain} }}";
     }
 
     /// <summary>
