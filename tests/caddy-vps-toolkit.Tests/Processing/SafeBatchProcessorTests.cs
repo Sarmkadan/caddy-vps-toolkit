@@ -7,8 +7,17 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Processing
 {
+    /// <summary>
+    /// Tests for the SafeBatchProcessor class.
+    /// </summary>
     public class SafeBatchProcessorTests
     {
+        /// <summary>
+        /// Verifies that when the total number of items is an exact multiple of the batch size, all items are processed in complete batches.
+        /// </summary>
+        /// <summary>
+        /// Verifies that when the total number of items is an exact multiple of the batch size, all items are processed in complete batches.
+        /// </summary>
         [Fact]
         public async Task ProcessAsync_WithExactBatchSize_ProcessesAllItemsInCompleteBatches()
         {
@@ -42,6 +51,12 @@ namespace CaddyVpsToolkit.Tests.Processing
             result.AllSucceeded.Should().BeTrue();
         }
 
+        /// <summary>
+        /// Verifies that when the total number of items is not a multiple of the batch size, the remaining items are processed in a final partial batch.
+        /// </summary>
+        /// <summary>
+        /// Verifies that when the total number of items is not a multiple of the batch size, the remaining items are processed in a final partial batch.
+        /// </summary>
         [Fact]
         public async Task ProcessAsync_WithPartialFinalBatch_ProcessesRemainingItemsInFinalBatch()
         {
@@ -71,6 +86,9 @@ namespace CaddyVpsToolkit.Tests.Processing
             processedItems.Should().BeEquivalentTo(new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
         }
 
+        /// <summary>
+        /// Verifies that when an item throws an exception, the processing stops and the failed item is tracked.
+        /// </summary>
         [Fact]
         public async Task ProcessAsync_WithErrorInOneItem_ContinuesProcessingAndTracksFailure()
         {
@@ -110,6 +128,9 @@ namespace CaddyVpsToolkit.Tests.Processing
             result.FailedItems[0].error.Should().BeOfType<InvalidOperationException>();
         }
 
+        /// <summary>
+        /// Verifies that when an item throws an exception and continueOnError is false, the processing stops and the failed item is tracked.
+        /// </summary>
         [Fact]
         public async Task ProcessAsync_WithErrorInOneItemAndContinueOnErrorFalse_StopsProcessingAndThrows()
         {
@@ -142,6 +163,9 @@ namespace CaddyVpsToolkit.Tests.Processing
             processedItems.Should().BeEquivalentTo(new[] { 1, 2, 3, 4 });
         }
 
+        /// <summary>
+        /// Verifies that when multiple items throw exceptions, all failed items are tracked and processing continues for successful items.
+        /// </summary>
         [Fact]
         public async Task ProcessAsync_WithMultipleErrors_TracksAllFailures()
         {
@@ -180,6 +204,9 @@ namespace CaddyVpsToolkit.Tests.Processing
             result.FailedItems[2].item.Should().Be(11);
         }
 
+        /// <summary>
+        /// Verifies that when an empty collection is processed, the result contains zero processed items and empty success/failure lists.
+        /// </summary>
         [Fact]
         public async Task ProcessAsync_WithEmptyCollection_ReturnsEmptyResult()
         {
@@ -203,6 +230,9 @@ namespace CaddyVpsToolkit.Tests.Processing
             result.FailedItems.Should().BeEmpty();
         }
 
+        /// <summary>
+        /// Verifies that when a single item is processed, the result contains one processed item and the item is in the successful list.
+        /// </summary>
         [Fact]
         public async Task ProcessAsync_WithSingleItem_ReturnsSingleItemResult()
         {
@@ -224,6 +254,9 @@ namespace CaddyVpsToolkit.Tests.Processing
             result.SuccessfulItems.Should().BeEquivalentTo(new[] { "single" });
         }
 
+        /// <summary>
+        /// Verifies that when the batch size is zero, an ArgumentException is thrown.
+        /// </summary>
         [Fact]
         public void Constructor_WithZeroBatchSize_ThrowsArgumentException()
         {
