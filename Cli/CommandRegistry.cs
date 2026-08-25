@@ -97,5 +97,7 @@ namespace CaddyVpsToolkit.Cli
             OptionalFlags.Add(flagName);
             return this;
         }
+
+        public override string ToString() => $"CommandDescriptor {{ Name = {Name}, Description = {Description}, Usage = {Usage}, RequiredArguments = {RequiredArguments}, OptionalFlags = {OptionalFlags} }}";
     }
 }
