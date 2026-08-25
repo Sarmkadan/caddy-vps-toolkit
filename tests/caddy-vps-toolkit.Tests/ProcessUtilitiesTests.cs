@@ -7,8 +7,18 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests
 {
+    /// <summary>
+    /// Unit tests for <see cref="ProcessUtilities"/>, covering asynchronous process execution,
+    /// timeout handling, and the output resolution behavior of
+    /// <see cref="ProcessUtilities.ProcessResult.GetOutput"/>.
+    /// </summary>
     public class ProcessUtilitiesTests
     {
+        /// <summary>
+        /// Verifies that executing a simple cross-platform echo command succeeds, exits with code 0,
+        /// captures the echoed text in the standard output, and that
+        /// <see cref="ProcessUtilities.ProcessResult.GetOutput"/> returns the standard output when no error occurred.
+        /// </summary>
         [Fact]
         public async Task ExecuteAsync_ShouldReturnSuccessAndCaptureOutput()
         {
@@ -37,6 +47,11 @@ namespace CaddyVpsToolkit.Tests
             Assert.Equal(result.Output.Trim(), result.GetOutput().Trim());
         }
 
+        /// <summary>
+        /// Verifies that invoking a command which exits with a non-zero code ("dotnet invalidcommand")
+        /// reports IsSuccess as false, a non-zero exit code, a non-empty error stream, and that
+        /// <see cref="ProcessUtilities.ProcessResult.GetOutput"/> falls back to the error text.
+        /// </summary>
         [Fact]
         public async Task ExecuteAsync_WhenCommandFails_ShouldReturnErrorAndIsSuccessFalse()
         {
@@ -52,6 +67,12 @@ namespace CaddyVpsToolkit.Tests
             Assert.Equal(result.Error, result.GetOutput());
         }
 
+        /// <summary>
+        /// Verifies that a command exceeding its configured timeout ("sleep 1" with a 10 ms limit)
+        /// fails with exit code -1 and the "Process timeout" error message, which
+        /// <see cref="ProcessUtilities.ProcessResult.GetOutput"/> then reports.
+        /// Skipped on platforms where the 'sleep' executable is unavailable (e.g. Windows).
+        /// </summary>
         [Fact]
         public async Task ExecuteAsync_WhenTimeoutOccurs_ShouldReturnTimeoutResult()
         {
@@ -73,6 +94,10 @@ namespace CaddyVpsToolkit.Tests
             Assert.Equal("Process timeout", result.GetOutput());
         }
 
+        /// <summary>
+        /// Verifies that <see cref="ProcessUtilities.ProcessResult.GetOutput"/> returns the error text
+        /// when a result carries both standard output and a non-empty error.
+        /// </summary>
         [Fact]
         public void ProcessResult_GetOutput_ReturnsErrorWhenErrorIsPresent()
         {
@@ -87,6 +112,10 @@ namespace CaddyVpsToolkit.Tests
             Assert.Equal(procResult.Error, procResult.GetOutput());
         }
 
+        /// <summary>
+        /// Verifies that <see cref="ProcessUtilities.ProcessResult.GetOutput"/> returns the standard output
+        /// when a result completed successfully with no error text.
+        /// </summary>
         [Fact]
         public void ProcessResult_GetOutput_ReturnsOutputWhenNoError()
         {
