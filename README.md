@@ -376,3 +376,42 @@ class Program
     }
 }
 ```
+
+## UpstreamSelectorTests
+
+`UpstreamSelectorTests` is an xUnit test suite that validates the upstream selection strategies implemented by `UpstreamSelector`, covering weighted random, least-connections, uniform random, round-robin, and IP-hash (client affinity) algorithms. The tests verify correct behavior under normal conditions—respecting configured weights, choosing the server with the fewest active connections, cycling through servers evenly, and pinning a client IP to the same server—as well as edge cases such as empty server lists, single-server pools, and zero total weight falling back to uniform selection.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Tests.Services;
+
+class Program
+{
+    static void Main()
+    {
+        // Exercise the upstream selection strategy tests directly.
+        var tests = new UpstreamSelectorTests();
+
+        // Weighted random strategy
+        tests.Select_WeightedRandom_RespectsWeights();
+        tests.Select_WeightedRandom_WithZeroTotalWeight_FallsBackToUniform();
+        tests.Select_WeightedRandom_WithSingleServer_ReturnsThatServer();
+        tests.Select_WeightedRandom_WithEmptyList_ReturnsNull();
+
+        // Least-connections strategy
+        tests.Select_LeastConnections_SelectsServerWithFewestConnections();
+
+        // Uniform random strategy
+        tests.Select_Random_SelectsUniformly();
+
+        // Round-robin strategy
+        tests.Select_RoundRobin_CyclesThroughServers();
+
+        // IP-hash (client affinity) strategy
+        tests.Select_IpHash_PinsClientToSameServer();
+
+        Console.WriteLine("All upstream selector strategies verified.");
+    }
+}
+```
