@@ -27,6 +27,16 @@ namespace CaddyVpsToolkit.Tests.Data
             public DateTime Created { get; set; } = DateTime.Now;
         }
 
+        /// <summary>
+        /// Returns a concise, informative representation of this test fixture,
+        /// including a representative <see cref="TestItem"/> with its Name, Value, and Created values.
+        /// </summary>
+        public override string ToString()
+        {
+            var item = new TestItem();
+            return $"PaginationHelperUnitTests {{ Name = {item.Name}, Value = {item.Value}, Created = {item.Created} }}";
+        }
+
         // ====================================================================
         // Paginate Tests
         // ====================================================================
