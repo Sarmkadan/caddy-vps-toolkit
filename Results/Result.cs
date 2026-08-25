@@ -14,6 +14,8 @@ namespace CaddyVpsToolkit.Results
         public string ErrorMessage { get; set; }
         public string ErrorCode { get; set; }
 
+        public override string ToString() => $"{nameof(Result)} {{ IsSuccess = {IsSuccess}, Data = {Data}, ErrorMessage = {ErrorMessage}, ErrorCode = {ErrorCode} }}";
+
         public static Result<T> Success(T data = default)
         {
             return new Result<T> { IsSuccess = true, Data = data };
