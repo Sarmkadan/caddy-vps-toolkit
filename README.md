@@ -448,3 +448,41 @@ class Program
     }
 }
 ```
+
+## IBackupService
+
+`IBackupService` defines the contract for backing up services hosted on the VPS: it allows you to create new backups, enumerate the backups that exist, verify a backup's integrity before relying on it, and restore service state from a chosen backup. The built-in `BackupService` implementation exposes these operations asynchronously and reports outcomes through `BackupManifest` objects, whose nested `BackupIntegrityResult` type captures the outcome of an integrity check.
+
+Example usage:
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Services;
+
+class Program
+{
+    static async Task Main()
+    {
+        var backupService = new BackupService();
+
+        // Create a new backup and remember its identifier
+        string backupId = await backupService.CreateBackupAsync();
+        Console.WriteLine($"Created backup: {backupId}");
+
+        // List every backup that is currently available
+        IReadOnlyList<string> backups = await backupService.ListBackupsAsync();
+        Console.WriteLine($"Available backups: {backups.Count}");
+
+        // Verify the integrity of the backup before restoring it
+        BackupManifest.BackupIntegrityResult integrity =
+            await backupService.VerifyBackupAsync(backupId);
+        Console.WriteLine($"Integrity check result: {integrity}");
+
+        // Restore service state from the verified backup
+        BackupManifest manifest = await backupService.RestoreBackupAsync(backupId);
+        Console.WriteLine($"Restore completed: {manifest}");
+    }
+}
+```
