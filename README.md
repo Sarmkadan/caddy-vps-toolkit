@@ -751,3 +751,54 @@ class Program
     }
 }
 ```
+
+## AdaptiveLoadBalancerTests
+
+`AdaptiveLoadBalancerTests` is an xUnit test suite that validates the adaptive load balancing evaluation logic, ensuring pools are scored and ranked according to server health, enabled state, latency, and effective weights. The tests confirm that empty or fully unhealthy pools yield empty evaluations or null selections, that unhealthy and disabled servers are marked ineligible, and that recording successful or failed request outcomes keeps per-server metrics up to date. They also verify that recalibrating a pool resets metrics for all servers, that lower-latency servers are prioritized, and that equal scores fall back to effective weight when selecting a server.
+
+Example usage:
+```csharp
+using System;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Tests.LoadBalancing;
+
+class Program
+{
+    static async Task Main()
+    {
+        // Exercise the adaptive load balancer tests directly.
+        var tests = new AdaptiveLoadBalancerTests();
+
+        // Empty pools yield an empty evaluation.
+        await tests.EvaluatePoolAsync_WithEmptyPool_ReturnsEmptyEvaluation();
+        await tests.EvaluatePoolAsync_WithNoServers_ReturnsEmptyEvaluation();
+
+        // A single-server pool selects that server; multiple servers get ranked scores.
+        await tests.EvaluatePoolAsync_WithSingleServer_ReturnsThatServerAsSelected();
+        await tests.EvaluatePoolAsync_WithMultipleServers_ReturnsRankedScores();
+
+        // Unhealthy and disabled servers are marked ineligible.
+        await tests.EvaluatePoolAsync_WithUnhealthyServer_MarksAsIneligible();
+        await tests.EvaluatePoolAsync_WithDisabledServer_MarksAsIneligible();
+
+        // A pool where every server is unhealthy produces a null selection.
+        await tests.EvaluatePoolAsync_WithAllUnhealthyServers_ReturnsNullSelection();
+
+        // Recording outcomes updates per-server metrics.
+        tests.RecordOutcomeAsync_WithSuccessfulRequest_UpdatesMetrics();
+        tests.RecordOutcomeAsync_WithFailedRequest_UpdatesMetrics();
+
+        // Effective weight falls back to the base weight when none is adaptive.
+        await tests.GetEffectiveWeightAsync_WithNoAdaptiveWeight_ReturnsBaseWeight();
+
+        // Recalibration resets metrics for every server in the pool.
+        await tests.RecalibratePoolAsync_ResetsMetricsForAllServers();
+
+        // Lower-latency servers are prioritized; equal scores fall back to weight.
+        await tests.EvaluatePoolAsync_PrioritizesLowerLatencyServers();
+        await tests.EvaluatePoolAsync_WithEqualScores_FallsBackToEffectiveWeight();
+
+        Console.WriteLine("All adaptive load balancer behaviors verified.");
+    }
+}
+```
