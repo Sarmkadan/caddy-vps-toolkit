@@ -291,13 +291,13 @@ certificate.GetStatus();
 
 // Good: Using Result<T> for expected failure  
 var serviceResult = ConfigurationServiceJsonExtensions.FromJson(invalidJson);
-if (serviceResult.IsSuccess)
+if (result.IsSuccess)
 {
-    var service = serviceResult.Data;
+    var service = result.Data;
 }
 else
 {
-    Console.WriteLine($"Failed to deserialize: {serviceResult.ErrorMessage}");
+    Console.WriteLine($"Failed to deserialize: {result.ErrorMessage}");
 }
 ```
 
@@ -754,7 +754,7 @@ class Program
 
 ## AdaptiveLoadBalancerTests
 
-`AdaptiveLoadBalancerTests` is an xUnit test suite that validates the adaptive load balancing evaluation logic, ensuring pools are scored and ranked according to server health, enabled state, latency, and effective weights. The tests confirm that empty or fully unhealthy pools yield empty evaluations or null selections, that unhealthy and disabled servers are marked ineligible, and that recording successful or failed request outcomes keeps per-server metrics up to date. They also verify that recalibrating a pool resets metrics for all servers, that lower-latency servers are prioritized, and that equal scores fall back to effective weight when selecting a server.
+`AdaptiveLoadBalancerTests` is an xUnit test suite that validates the adaptive load balancing evaluation logic, ensuring pools are scored and ranked according to server health, enabled state, latency, and effective weights. The tests confirm that empty or fully unhealthy pools yield empty evaluations or null selections, that unhealthy and disabled servers are marked ineligible, and that recording successful or failed request outcome keeps per-server metrics up to date. They also verify that recalibrating a pool resets metrics for all servers, that lower-latency servers are prioritized, and that equal scores fall back to effective weight when selecting a server.
 
 Example usage:
 ```csharp
@@ -830,6 +830,55 @@ class Program
         await tests.GetSnapshotAsync_WithExistingUpstream_ReturnsCorrectSnapshot();
 
         Console.WriteLine("All upstream health tracker tests verified.");
+    }
+}
+```
+
+## ArgumentParserTests
+
+`ArgumentParserTests` is an xUnit test suite that validates the argument parsing logic, covering boolean flag detection, value extraction for both `=` and space-separated formats, case-insensitive matching, handling of repeated arguments, and edge cases like unknown flags or missing values. The tests confirm correct behavior for typical command-line inputs as well as documented edge-case scenarios.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Tests.Cli;
+
+class Program
+{
+    static void Main()
+    {
+        // Exercise the argument parser tests directly.
+        var tests = new ArgumentParserTests();
+
+        // Boolean flag detection
+        tests.HasFlag_SingleBooleanFlag_ReturnsTrue();
+        tests.HasFlag_MultipleBooleanFlags_ReturnsTrueForEach();
+        tests.HasFlag_FlagNotPresent_ReturnsFalse();
+        tests.HasFlag_CaseInsensitiveMatching_ReturnsTrue();
+        tests.HasFlag_RepeatedBooleanFlags_ReturnsTrue();
+        tests.HasFlag_UnknownFlag_ReturnsFalse();
+
+        // Value extraction with equals format
+        tests.GetFlagValue_BooleanFlag_ReturnsEmptyString();
+        tests.GetFlagValue_EqualsFormat_SingleValue_ReturnsValue();
+        tests.GetFlagValue_EqualsFormat_MultipleValues_ReturnsCorrectValues();
+        tests.GetFlagValue_EqualsFormat_WithSpecialCharacters_ReturnsValue();
+        tests.GetFlagValue_EqualsFormat_FlagNotPresent_ReturnsNull();
+        tests.GetFlagValue_EqualsFormat_CaseInsensitiveMatching_ReturnsValue();
+        tests.GetFlagValue_RepeatedEqualsFormat_LastValueWins();
+
+        // Value extraction with space format
+        tests.GetFlagValue_SpaceFormat_SingleValue_ReturnsValue();
+        tests.GetFlagValue_SpaceFormat_MultipleValues_ReturnsCorrectValues();
+        tests.GetFlagValue_SpaceFormat_ValueFollowedByFlag_ReturnsEmptyString();
+        tests.GetFlagValue_SpaceFormat_ValueAtEndOfArgs_ReturnsEmptyString();
+        tests.GetFlagValue_RepeatedArgs_LastValueWins();
+        tests.GetFlagValue_MixedFormats_LastValueWins();
+
+        // Unknown flag handling
+        tests.GetFlagValue_UnknownFlag_ReturnsNull();
+
+        Console.WriteLine("All argument parser behaviors verified.");
     }
 }
 ```
