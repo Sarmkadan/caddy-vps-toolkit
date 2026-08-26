@@ -802,3 +802,34 @@ class Program
     }
 }
 ```
+
+## UpstreamHealthTrackerUnitTests
+
+`UpstreamHealthTrackerUnitTests` is an xUnit test suite that validates the behavior of the `UpstreamHealthTracker` class, which manages the health state of upstream servers in a load balancing pool. The tests cover recording probe results (success/failure), updating counters and thresholds, marking servers as unhealthy or healthy, updating average response times, retrieving snapshots, and draining connections.
+
+Example usage:
+```csharp
+using System;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Tests.LoadBalancing;
+
+class Program
+{
+    static async Task Main()
+    {
+        // Exercise the upstream health tracker tests directly.
+        var tests = new UpstreamHealthTrackerUnitTests();
+
+        // Test recording a successful probe increments the success counter.
+        await tests.RecordProbeResultAsync_WithSuccessfulProbe_IncrementsSuccessCounter();
+
+        // Test recording a failed probe increments the failure counter.
+        await tests.RecordProbeResultAsync_WithFailedProbe_IncrementsFailureCounter();
+
+        // Test getting a snapshot for an existing upstream returns the correct data.
+        await tests.GetSnapshotAsync_WithExistingUpstream_ReturnsCorrectSnapshot();
+
+        Console.WriteLine("All upstream health tracker tests verified.");
+    }
+}
+```
