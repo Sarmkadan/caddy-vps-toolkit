@@ -14,6 +14,11 @@ namespace CaddyVpsToolkit.Tests.Utilities
     /// </summary>
     public sealed class SerializationHelperUnitTests
     {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+
+        public override string ToString() => $"SerializationHelperUnitTests {{ Id = {Id}, Name = {Name} }}";
+
         private sealed class SampleDto
         {
             public int Id { get; set; }
