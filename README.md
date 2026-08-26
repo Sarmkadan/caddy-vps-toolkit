@@ -713,3 +713,41 @@ class Program
     }
 }
 ```
+
+## BatchProcessorTests
+
+`BatchProcessorTests` is an xUnit test suite that validates the batch processing logic, ensuring items are correctly divided into complete batches, partial final batches, single-item batches, and empty collections are handled gracefully. It also verifies that custom object types are processed correctly and that the constructor properly enforces validation rules for batch size and process function arguments.
+
+Example usage:
+```csharp
+using System;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Tests.Processing;
+
+class Program
+{
+    static async Task Main()
+    {
+        // Exercise the batch processor tests directly.
+        var tests = new BatchProcessorTests();
+
+        // Verify batch size validation
+        tests.Constructor_WithZeroBatchSize_ThrowsArgumentException();
+        tests.Constructor_WithNegativeBatchSize_ThrowsArgumentException();
+        tests.Constructor_WithNullProcessFunction_ThrowsArgumentNullException();
+
+        // Test processing scenarios
+        await tests.ProcessAsync_WithExactBatchSize_ProcessesAllItemsInCompleteBatches();
+        await tests.ProcessAsync_WithPartialFinalBatch_ProcessesRemainingItemsInFinalBatch();
+        await tests.ProcessAsync_WithSingleItem_CreatesSingleItemBatch();
+        await tests.ProcessAsync_WithEmptyCollection_DoesNotThrow();
+        await tests.ProcessAsync_WithCustomObjectType_ProcessesCorrectly();
+
+        // Access test metadata
+        Console.WriteLine($"Test Suite ID: {tests.Id}");
+        Console.WriteLine($"Test Suite Name: {tests.Name}");
+
+        Console.WriteLine("All batch processor behaviors verified.");
+    }
+}
+```
