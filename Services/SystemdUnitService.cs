@@ -371,5 +371,7 @@ namespace CaddyVpsToolkit.Services
         public string Type { get; set; }
         public int MainPid { get; set; }
         public ulong TimeoutStartUsec { get; set; }
+
+        public override string ToString() => $"{nameof(SystemdUnitStatus)} {{ UnitName = {UnitName}, ActiveState = {ActiveState}, Type = {Type}, MainPid = {MainPid}, TimeoutStartUsec = {TimeoutStartUsec} }}";
     }
 }
