@@ -22,5 +22,7 @@ namespace CaddyVpsToolkit.Services
         /// Default matches the historic hard‑coded value of 7 days.
         /// </summary>
         public int CriticalDays { get; set; } = 7;
+
+        public override string ToString() => $"SslCertificateMonitoringOptions {{ WarnDays = {WarnDays}, CriticalDays = {CriticalDays} }}";
     }
 }
