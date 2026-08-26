@@ -633,3 +633,38 @@ class Program
     }
 }
 ```
+
+## ProcessUtilitiesTests
+
+`ProcessUtilitiesTests` is an xUnit test suite that validates the process-execution helpers provided by `ProcessUtilities`. It confirms that `ExecuteAsync` runs commands successfully while capturing their output, returns an error result with `IsSuccess` set to false when a command fails, and produces a timeout result when a command exceeds its allowed duration. It also verifies that `ProcessResult.GetOutput()` prefers captured error output when one is present and falls back to standard output otherwise.
+
+Example usage:
+```csharp
+using System;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Tests;
+
+class Program
+{
+    static async Task Main()
+    {
+        // Exercise the process utilities tests directly.
+        var tests = new ProcessUtilitiesTests();
+
+        // ExecuteAsync runs a command and captures its output on success.
+        await tests.ExecuteAsync_ShouldReturnSuccessAndCaptureOutput();
+
+        // A failing command produces an error result with IsSuccess == false.
+        await tests.ExecuteAsync_WhenCommandFails_ShouldReturnErrorAndIsSuccessFalse();
+
+        // A command that exceeds its timeout yields a timeout result.
+        await tests.ExecuteAsync_WhenTimeoutOccurs_ShouldReturnTimeoutResult();
+
+        // GetOutput prefers error output when present, otherwise standard output.
+        tests.ProcessResult_GetOutput_ReturnsErrorWhenErrorIsPresent();
+        tests.ProcessResult_GetOutput_ReturnsOutputWhenNoError();
+
+        Console.WriteLine("All process utilities behaviors verified.");
+    }
+}
+```
