@@ -440,7 +440,7 @@ namespace CaddyVpsToolkit.Utilities
         /// Kill process by name
         /// </summary>
         /// <param name="processName">Name of the process to kill</param>
-        /// <returns>True if process was killed successfully, false otherwise</exception>
+        /// <returns>True if process was killed successfully, false otherwise</returns>
         /// <exception cref="ArgumentException">Thrown when processName is null or empty</exception>
         public static bool KillProcess(string processName)
         {
@@ -527,6 +527,8 @@ namespace CaddyVpsToolkit.Utilities
             {
                 return !string.IsNullOrEmpty(Error) ? Error : Output;
             }
+
+            public override string ToString() => $"ProcessResult {{ ExitCode = {ExitCode}, Output = {Output}, Error = {Error}, IsSuccess = {IsSuccess} }}";
         }
     }
 }
