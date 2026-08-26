@@ -882,3 +882,31 @@ class Program
     }
 }
 ```
+
+## DateTimeExtensionsUnitTests
+
+`DateTimeExtensionsUnitTests` is an xUnit test suite that validates the date and time helper extension methods, covering relative time formatting, ISO 8601 serialization, day calculations, and duration string generation. The tests verify correct behavior for typical inputs and edge cases such as dates in the past, present, and future, as well as accurate working day calculations.
+
+Example usage:
+```csharp
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        var now = DateTime.UtcNow;
+        var pastDate = now.AddDays(-2);
+        var futureDate = now.AddDays(5);
+
+        Console.WriteLine($"Relative time: {pastDate.ToRelativeTime()}");
+        Console.WriteLine($"ISO 8601 format: {now.ToIso8601()}");
+        Console.WriteLine($"Start of day: {now.StartOfDay()}");
+        Console.WriteLine($"Is past: {pastDate.IsPast()}");
+        Console.WriteLine($"Is today: {now.IsToday()}");
+        Console.WriteLine($"Is future: {futureDate.IsFuture()}");
+        Console.WriteLine($"Working days between: {pastDate.WorkingDaysBetween(futureDate)}");
+        Console.WriteLine($"Duration string: {now.Subtract(pastDate).ToDurationString()}");
+    }
+}
+```
