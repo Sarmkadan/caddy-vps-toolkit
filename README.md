@@ -486,3 +486,45 @@ class Program
     }
 }
 ```
+
+## ILogAggregationService
+
+`ILogAggregationService` defines the contract for aggregating and reading application logs across one or more log sources. The built-in `LogAggregationService` implementation discovers the available sources from the configured logs directory (by default `AppConstants.LogsDirectory`, with a constructor overload that accepts a custom directory), retrieves complete log listings asynchronously, and supports tailing the most recent entries. Results are returned as `LogEntry` objects, so callers can work with structured records instead of parsing raw log files themselves.
+
+Example usage:
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Services;
+
+class Program
+{
+    static async Task Main()
+    {
+        // Uses the default logs directory (AppConstants.LogsDirectory)
+        var logService = new LogAggregationService();
+
+        // Discover the available log sources
+        IReadOnlyList<string> sources = logService.GetLogSources();
+        Console.WriteLine($"Discovered {sources.Count} log sources");
+
+        if (sources.Count > 0)
+        {
+            string source = sources[0];
+
+            // Retrieve the log entries recorded for the source
+            IReadOnlyList<LogEntry> logs = await logService.GetLogsAsync(source);
+            Console.WriteLine($"Retrieved {logs.Count} log entries from {source}");
+
+            // Tail the most recent entries
+            IReadOnlyList<LogEntry> recent = await logService.TailAsync(source);
+            foreach (LogEntry entry in recent)
+            {
+                Console.WriteLine(entry);
+            }
+        }
+    }
+}
+```
