@@ -528,3 +528,55 @@ class Program
     }
 }
 ```
+
+## CollectionExtensionsUnitTests
+
+`CollectionExtensionsUnitTests` is an xUnit test suite that validates the collection helper extension methods exposed by `CollectionExtensions`, covering safe element access (`SafeGet`), null/empty detection (`IsNullOrEmpty`), first-element retrieval (`FirstOrDefault`), chunking (`Batch`), and predicate-based splitting (`Partition`). The tests confirm correct results for typical inputs and verify the documented edge-case behavior—returning defaults for missing data and throwing `ArgumentNullException`/`ArgumentException` when invalid arguments such as null collections or non-positive batch sizes are supplied.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Tests;
+
+class Program
+{
+    static void Main()
+    {
+        // Exercise the collection extension tests directly.
+        var tests = new CollectionExtensionsUnitTests();
+
+        // SafeGet returns the element at a valid index and the default value otherwise.
+        tests.SafeGet_WithValidIndex_ReturnsCorrectElement();
+        tests.SafeGet_WithNegativeIndex_ReturnsDefault();
+        tests.SafeGet_WithOutOfRangeIndex_ReturnsDefault();
+        tests.SafeGet_WithNullList_ReturnsDefault();
+
+        // IsNullOrEmpty distinguishes populated, empty, and null collections.
+        tests.IsNullOrEmpty_WithNonEmptyCollection_ReturnsFalse();
+        tests.IsNullOrEmpty_WithEmptyCollection_ReturnsTrue();
+        tests.IsNullOrEmpty_WithNullCollection_ReturnsTrue();
+
+        // FirstOrDefault returns the first element, the default for empty input,
+        // and throws ArgumentNullException for a null collection.
+        tests.FirstOrDefault_WithNonEmptyCollection_ReturnsFirstElement();
+        tests.FirstOrDefault_WithEmptyCollection_ReturnsDefault();
+        tests.FirstOrDefault_WithNullCollection_ThrowsArgumentNullException();
+
+        // Batch splits a collection into fixed-size chunks and validates arguments.
+        tests.Batch_WithValidBatchSize_CreatesCorrectNumberOfBatches();
+        tests.Batch_WithBatchSizeOne_CreatesSingleElementBatches();
+        tests.Batch_WithBatchSizeEqualToCount_CreatesSingleBatch();
+        tests.Batch_WithBatchSizeLargerThanCount_CreatesSingleBatch();
+        tests.Batch_WithNullCollection_ThrowsArgumentNullException();
+        tests.Batch_WithNonPositiveBatchSize_ThrowsArgumentException();
+
+        // Partition splits a collection into matching and non-matching lists.
+        tests.Partition_WithMatchingPredicate_SplitsCorrectly();
+        tests.Partition_WithAllMatchingPredicate_ReturnsAllInMatching();
+        tests.Partition_WithNoMatchingPredicate_ReturnsAllInNotMatching();
+        tests.Partition_WithNullCollection_ReturnsTwoEmptyLists();
+
+        Console.WriteLine("All collection extension behaviors verified.");
+    }
+}
+```
