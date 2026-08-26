@@ -580,3 +580,56 @@ class Program
     }
 }
 ```
+
+## StringExtensionsUnitTests
+
+`StringExtensionsUnitTests` is an xUnit test suite that validates the string helper extension methods exposed by `StringExtensions`, covering whitespace detection (`IsNullOrWhiteSpace`), title casing (`ToTitleCase`), kebab-case conversion (`ToKebabCase`), camel-case conversion (`ToCamelCase`), and length-limited truncation (`Truncate`). The tests confirm correct results for typical inputs—such as converting camel-case text to kebab-case or truncating over-long strings—and verify the documented edge-case behavior of returning null or empty input unchanged.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Tests;
+
+class Program
+{
+    static void Main()
+    {
+        // Exercise the string extension tests directly.
+        var tests = new StringExtensionsUnitTests();
+
+        // IsNullOrWhiteSpace distinguishes null, empty, whitespace-only,
+        // and populated strings.
+        tests.IsNullOrWhiteSpace_NullInput_ReturnsTrue();
+        tests.IsNullOrWhiteSpace_EmptyString_ReturnsTrue();
+        tests.IsNullOrWhiteSpace_WhitespaceOnly_ReturnsTrue();
+        tests.IsNullOrWhiteSpace_NonWhitespaceString_ReturnsFalse();
+
+        // ToTitleCase converts words to title case and passes through
+        // null/empty input unchanged.
+        tests.ToTitleCase_NullInput_ReturnsNull();
+        tests.ToTitleCase_EmptyString_ReturnsEmpty();
+        tests.ToTitleCase_SingleCharacter_ReturnsUppercase();
+        tests.ToTitleCase_MultipleWords_ReturnsTitleCased();
+
+        // ToKebabCase converts identifiers to kebab-case.
+        tests.ToKebabCase_NullInput_ReturnsNull();
+        tests.ToKebabCase_EmptyString_ReturnsEmpty();
+        tests.ToKebabCase_SingleWord_ReturnsLowercase();
+        tests.ToKebabCase_CamelCase_ReturnsKebabCase();
+        tests.ToKebabCase_AlreadyKebabCase_ReturnsSame();
+
+        // ToCamelCase converts kebab-case identifiers to camelCase.
+        tests.ToCamelCase_NullInput_ReturnsNull();
+        tests.ToCamelCase_EmptyString_ReturnsEmpty();
+        tests.ToCamelCase_SingleWord_ReturnsLowercase();
+        tests.ToCamelCase_KebabCase_ReturnsCamelCase();
+
+        // Truncate shortens long strings while leaving shorter ones intact.
+        tests.Truncate_NullInput_ReturnsNull();
+        tests.Truncate_EmptyString_ReturnsEmpty();
+        tests.Truncate_StringShorterThanMaxLength_ReturnsOriginal();
+
+        Console.WriteLine("All string extension behaviors verified.");
+    }
+}
+```
