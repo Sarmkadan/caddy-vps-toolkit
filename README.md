@@ -415,3 +415,36 @@ class Program
     }
 }
 ```
+
+## MaintenanceWindow
+
+`MaintenanceWindow` represents a recurring time frame during which maintenance operations may be performed on a service or server. It stores the daily start and end times (`StartTime`, `EndTime`), the days on which the window applies (`DaysOfWeek`), an optional human-readable `Description`, and an `IsEnabled` flag to activate or deactivate the schedule. Call `Validate()` to confirm the configuration is well-formed, and read `IsInWindow` to determine whether the current moment falls inside the active maintenance period.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Domain.Models;
+
+class Program
+{
+    static void Main()
+    {
+        var window = new MaintenanceWindow
+        {
+            StartTime = "02:00",
+            EndTime = "04:00",
+            DaysOfWeek = "Saturday,Sunday",
+            Description = "Weekly database maintenance",
+            IsEnabled = true
+        };
+
+        // Ensure the configured window is valid before relying on it.
+        window.Validate();
+
+        Console.WriteLine($"Maintenance enabled: {window.IsEnabled}");
+        Console.WriteLine($"Currently in window: {window.IsInWindow}");
+        Console.WriteLine($"Schedule: {window.StartTime} - {window.EndTime} on {window.DaysOfWeek}");
+        Console.WriteLine($"Description: {window.Description}");
+    }
+}
+```
