@@ -184,5 +184,10 @@ public List<Domain.Models.MaintenanceWindow> MaintenanceWindows { get; set; } = 
 
         return MaintenanceWindows.Any(window => window.IsInWindow());
     }
+
+    public override string ToString()
+    {
+        return $"UpstreamManagementOptions {{ LatencyWeight = {LatencyWeight}, ErrorRateWeight = {ErrorRateWeight}, ConnectionWeight = {ConnectionWeight}, TargetLatencyMs = {TargetLatencyMs}, MaxExpectedConnections = {MaxExpectedConnections}, WeightAdaptationAlpha = {WeightAdaptationAlpha} }}";
+    }
 }
 }
