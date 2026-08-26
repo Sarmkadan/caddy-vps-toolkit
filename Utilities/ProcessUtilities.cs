@@ -440,7 +440,7 @@ namespace CaddyVpsToolkit.Utilities
         /// Kill process by name
         /// </summary>
         /// <param name="processName">Name of the process to kill</param>
-        /// <returns>True if process was killed successfully, false otherwise</returns>
+        /// <returns>True if process was killed successfully, false otherwise</exception>
         /// <exception cref="ArgumentException">Thrown when processName is null or empty</exception>
         public static bool KillProcess(string processName)
         {
