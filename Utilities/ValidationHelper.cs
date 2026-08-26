@@ -136,6 +136,11 @@ namespace CaddyVpsToolkit.Utilities
             return string.Join("; ", Errors);
         }
 
+        public override string ToString()
+        {
+            return $"ValidationResult {{ IsValid = {IsValid}, Errors = [{string.Join(", ", Errors)}] }}";
+        }
+
         public static ValidationResult Success() => new() { IsValid = true };
         public static ValidationResult Failure(params string[] errors)
             => new() { IsValid = false, Errors = errors.ToList() };
