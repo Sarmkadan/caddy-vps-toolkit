@@ -910,3 +910,43 @@ class Program
     }
 }
 ```
+
+## TemplateEngineEdgeTests
+
+`TemplateEngineEdgeTests` is an xUnit test suite that validates the edge-case behavior of the template engine's placeholder rendering logic. It ensures that templates containing missing, nested, empty, or whitespace-only placeholders are handled gracefully, while correctly substituting known variables, preserving special characters, and supporting various data types like numbers and booleans.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Tests.Utilities;
+
+class Program
+{
+    static void Main()
+    {
+        // Exercise the template engine edge-case tests directly.
+        var tests = new TemplateEngineEdgeTests();
+
+        tests.Render_OnlyMissingPlaceholders_ReturnsTemplateUnchanged();
+        tests.Render_MixedKnownAndUnknownPlaceholders_SubstitutesKnownOnly();
+        tests.Render_NestedBraces_LeavesNestedBracesIntact();
+        tests.Render_EmptyBraces_LeavesEmptyBracesIntact();
+        tests.Render_BracesWithWhitespace_LeavesWhitespaceBracesIntact();
+        tests.Render_RepeatedTokens_AllSubstituted();
+        tests.Render_SpecialCharactersInValues_Preserved();
+        tests.Render_NumericValues_ConvertedToString();
+        tests.Render_BooleanValues_ConvertedToString();
+        tests.Render_VeryLargeTemplate_AllPlaceholdersSubstituted();
+        tests.Render_WhitespaceAroundPlaceholders_Preserved();
+        tests.Render_PlaceholdersAtStartAndEnd_HandledCorrectly();
+        tests.Render_ConsecutivePlaceholders_HandledCorrectly();
+        tests.Render_PlaceholdersWithUnderscoresAndNumbers_WorkCorrectly();
+        tests.Render_StaticMethod_MissingPlaceholdersHandled();
+        tests.Render_StaticMethod_NullVariables_CreatesEmptyDictionary();
+        tests.Render_WhitespaceOnlyTemplate_ReturnsWhitespace();
+        tests.Render_OnlyNewlines_ReturnsNewlines();
+
+        Console.WriteLine("All template engine edge-case behaviors verified.");
+    }
+}
+```
