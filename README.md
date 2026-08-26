@@ -668,3 +668,48 @@ class Program
     }
 }
 ```
+
+## PerformanceMonitorUnitTests
+
+`PerformanceMonitorUnitTests` is an xUnit test suite that validates the performance monitoring capabilities, ensuring accurate timer initialization, milestone tracking, report generation, and proper resource disposal. The tests verify that elapsed times increase correctly over time, null or empty milestone names are handled gracefully, and large numbers of milestones produce complete reports. It also confirms that the monitor integrates correctly with C# `using` statements for automatic disposal.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Tests;
+
+class Program
+{
+    static void Main()
+    {
+        // Exercise the performance monitor tests directly.
+        var tests = new PerformanceMonitorUnitTests();
+
+        // Verify that the constructor initializes the operation name and starts the timer.
+        tests.Constructor_ShouldInitializeOperationNameAndStartTimer();
+
+        // Check that milestones record correct elapsed times.
+        tests.MarkMilestone_ShouldRecordCorrectElapsedTimes();
+
+        // Ensure the generated report contains the expected header and milestone formatting.
+        tests.GetReport_ShouldContainHeaderAndMilestonesFormatting();
+
+        // Confirm that disposal stops the timer without throwing exceptions.
+        tests.Dispose_ShouldStopTimerWithoutThrowing();
+
+        // Verify graceful handling of null or empty milestone names.
+        tests.MarkMilestone_WithNullOrEmptyName_ShouldHandleGracefully();
+
+        // Check that elapsed milliseconds increase over time.
+        tests.GetElapsedMs_ShouldIncreaseOverTime();
+
+        // Ensure the monitor works correctly within a using statement for automatic disposal.
+        tests.UsingStatement_ShouldDisposeAutomatically();
+
+        // Validate that a large number of milestones produces a report with all entries.
+        tests.LargeNumberOfMilestones_ShouldProduceReportWithAllEntries();
+
+        Console.WriteLine("All performance monitor behaviors verified.");
+    }
+}
+```
