@@ -9,6 +9,10 @@ namespace CaddyVpsToolkit.Tests.Processing
 {
     public class BatchProcessorTests
     {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+
+        public override string ToString() => $"BatchProcessorTests {{ Id = {Id}, Name = {Name} }}";
         [Fact]
         public async Task ProcessAsync_WithExactBatchSize_ProcessesAllItemsInCompleteBatches()
         {
