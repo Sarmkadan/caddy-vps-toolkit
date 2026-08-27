@@ -950,3 +950,57 @@ class Program
     }
 }
 ```
+
+## PathUtilitiesTests
+
+`PathUtilitiesTests` is an xUnit test suite that validates the path utility helpers provided by `PathUtilities`. It covers relative path resolution, safe path combination, path normalization, directory size calculation, human-readable file size formatting, executability checks, unique file path generation, directory creation, and file name sanitization. Filesystem tests run inside a temporary root directory that is removed when the instance is disposed.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Tests;
+
+class Program
+{
+    static void Main()
+    {
+        // Exercise the path utilities tests directly.
+        var tests = new PathUtilitiesTests();
+
+        // GetRelativePath returns expected relative path for valid inputs.
+        tests.GetRelativePath_ValidInputs_ReturnsExpected("C:\\Folder\\Sub", "C:\\Folder\\Sub\\File.txt", "File.txt");
+        tests.GetRelativePath_ValidInputs_ReturnsExpected("/usr/local/bin", "/usr/local/bin/script.sh", "script.sh");
+
+        // SafeCombine combines parts safely and throws on path traversal.
+        tests.SafeCombine_ValidParts_ReturnsCombinedPath();
+        tests.SafeCombine_PathTraversal_Throws();
+
+        // NormalizePath normalizes mixed separators.
+        tests.NormalizePath_ValidInputs_ReturnsNormalized("folder\\subfolder/file.txt", "folder\\subfolder\\file.txt");
+
+        // GetDirectorySize returns zero for non-existent directory and sum for existing files.
+        tests.GetDirectorySize_NonExistent_ReturnsZero();
+        tests.GetDirectorySize_WithFiles_ReturnsSum();
+
+        // FormatFileSize formats bytes to human-readable string.
+        tests.FormatFileSize_Values_ReturnsHumanReadable(1024, "1 KB");
+        tests.FormatFileSize_Values_ReturnsHumanReadable(1536, "1.5 KB");
+
+        // IsExecutable checks for .exe on Windows.
+        tests.IsExecutable_NonExistent_ReturnsFalse();
+        // Note: Windows-specific tests are skipped on non-Windows platforms.
+
+        // GetUniqueFilePath returns a different name if file exists, same if not.
+        tests.GetUniqueFilePath_FileExists_ReturnsDifferentName();
+        tests.GetUniqueFilePath_FileDoesNotExist_ReturnsSamePath();
+
+        // EnsureDirectoryExists creates a directory if it doesn't exist.
+        tests.EnsureDirectoryExists_NewDirectory_CreatesIt();
+
+        // SanitizeFileName removes invalid characters.
+        tests.SanitizeFileName_RemovesInvalidChars("invalid<name>.txt", "invalidname.txt");
+
+        Console.WriteLine("All path utilities behaviors verified.");
+    }
+}
+```
