@@ -5,8 +5,14 @@ using CaddyVpsToolkit.Utilities;
 
 namespace CaddyVpsToolkit.Tests.Utilities
 {
+    /// <summary>
+    /// Unit tests for the DateTimeExtensions class.
+    /// </summary>
     public class DateTimeExtensionsUnitTests
     {
+        /// <summary>
+        /// Tests that ToRelativeTime returns "just now" for times less than a minute ago.
+        /// </summary>
         [Fact]
         public void ToRelativeTime_ShouldReturnJustNow_WhenLessThanMinute()
         {
@@ -14,6 +20,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.ToRelativeTime().Should().Be("just now");
         }
 
+        /// <summary>
+        /// Tests that ToRelativeTime returns minutes ago format for times less than an hour ago.
+        /// </summary>
         [Fact]
         public void ToRelativeTime_ShouldReturnMinutesAgo_WhenLessThanHour()
         {
@@ -21,6 +30,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.ToRelativeTime().Should().Be("10 minutes ago");
         }
 
+        /// <summary>
+        /// Tests that ToRelativeTime returns hours ago format for times less than a day ago.
+        /// </summary>
         [Fact]
         public void ToRelativeTime_ShouldReturnHoursAgo_WhenLessThanDay()
         {
@@ -28,6 +40,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.ToRelativeTime().Should().Be("5 hours ago");
         }
 
+        /// <summary>
+        /// Tests that ToIso8601 returns the correct ISO 8601 format string.
+        /// </summary>
         [Fact]
         public void ToIso8601_ShouldReturnCorrectFormat()
         {
@@ -35,6 +50,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.ToIso8601().Should().Contain("2026-06-26T12:00:00.0000000Z");
         }
 
+        /// <summary>
+        /// Tests that StartOfDay returns the start of the day (00:00:00) for a given DateTime.
+        /// </summary>
         [Fact]
         public void StartOfDay_ShouldReturnCorrectTime()
         {
@@ -42,6 +60,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.StartOfDay().Should().Be(new DateTime(2026, 6, 26, 0, 0, 0));
         }
 
+        /// <summary>
+        /// Tests that IsPast returns true for dates that are in the past.
+        /// </summary>
         [Fact]
         public void IsPast_ShouldReturnTrue_WhenDateIsInPast()
         {
@@ -49,6 +70,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.IsPast().Should().BeTrue();
         }
 
+        /// <summary>
+        /// Tests that WorkingDaysBetween returns the correct count of working days between two dates.
+        /// </summary>
         [Fact]
         public void WorkingDaysBetween_ShouldReturnCorrectCount()
         {
@@ -58,6 +82,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             start.WorkingDaysBetween(end).Should().Be(5);
         }
 
+        /// <summary>
+        /// Tests that IsToday returns true for dates that are today.
+        /// </summary>
         [Fact]
         public void IsToday_ShouldReturnTrue_WhenDateIsToday()
         {
@@ -65,6 +92,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.IsToday().Should().BeTrue();
         }
 
+        /// <summary>
+        /// Tests that IsToday returns false for dates that are not today.
+        /// </summary>
         [Fact]
         public void IsToday_ShouldReturnFalse_WhenDateIsNotToday()
         {
@@ -72,6 +102,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.IsToday().Should().BeFalse();
         }
 
+        /// <summary>
+        /// Tests that IsFuture returns true for dates that are in the future.
+        /// </summary>
         [Fact]
         public void IsFuture_ShouldReturnTrue_WhenDateIsInFuture()
         {
@@ -79,6 +112,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.IsFuture().Should().BeTrue();
         }
 
+        /// <summary>
+        /// Tests that IsFuture returns false for dates that are not in the future.
+        /// </summary>
         [Fact]
         public void IsFuture_ShouldReturnFalse_WhenDateIsNotInFuture()
         {
@@ -86,6 +122,9 @@ namespace CaddyVpsToolkit.Tests.Utilities
             dateTime.IsFuture().Should().BeFalse();
         }
 
+        /// <summary>
+        /// Tests that ToDurationString returns the correct format string for various TimeSpan values.
+        /// </summary>
         [Fact]
         public void ToDurationString_ShouldReturnCorrectFormat()
         {
