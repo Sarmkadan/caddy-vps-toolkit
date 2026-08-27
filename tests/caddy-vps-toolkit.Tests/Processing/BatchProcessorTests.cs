@@ -7,11 +7,24 @@ using Xunit;
 
 namespace CaddyVpsToolkit.Tests.Processing
 {
+    /// <summary>
+    /// Contains unit tests for the BatchProcessor class.
+    /// </summary>
     public class BatchProcessorTests
     {
+        /// <summary>
+        /// Gets or sets the test instance identifier.
+        /// </summary>
         public int Id { get; set; }
+        /// <summary>
+        /// Gets or sets the test instance name.
+        /// </summary>
         public string? Name { get; set; }
 
+        /// <summary>
+        /// Returns a string representation of the test instance, including its Id and Name.
+        /// </summary>
+        /// <returns>A string in the format "BatchProcessorTests { Id = X, Name = Y }".</returns>
         public override string ToString() => $"BatchProcessorTests {{ Id = {Id}, Name = {Name} }}";
         [Fact]
         public async Task ProcessAsync_WithExactBatchSize_ProcessesAllItemsInCompleteBatches()
