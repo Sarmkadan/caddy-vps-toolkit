@@ -1004,3 +1004,47 @@ class Program
     }
 }
 ```
+
+## NotificationServiceTests
+
+`NotificationServiceTests` is an xUnit test suite that validates the duplicate suppression functionality of the `NotificationService` class. It tests constructor validation, duplicate detection and suppression logic, behavior with multiple providers, concurrent scenarios, and notification extension methods.
+
+Example usage:
+```csharp
+using System;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Tests.Notifications;
+
+class Program
+{
+    static async Task Main()
+    {
+        // Exercise the notification service tests directly.
+        var tests = new NotificationServiceTests();
+
+        // Test constructor validation
+        tests.Constructor_WithNullLogger_ThrowsArgumentNullException();
+        tests.Constructor_WithNullOptions_UsesDefaultOptions();
+
+        // Test duplicate suppression behavior
+        await tests.SendAsync_WithNullNotification_ThrowsArgumentNullException();
+        await tests.SendAsync_WithDuplicateNotificationWithinWindow_SuppressesDuplicate();
+        await tests.SendAsync_WithDifferentNotifications_DoesNotSuppress();
+        await tests.SendAsync_WithSameTitleDifferentMessage_DoesNotSuppress();
+        await tests.SendAsync_WithSuppressionDisabled_DoesNotSuppress();
+        await tests.SendAsync_AfterSuppressionWindow_AllowsNotification();
+        await tests.SendAsync_WithStringConstructor_DoesNotSuppress();
+
+        // Test multiple providers and concurrent scenarios
+        await tests.SendAsync_WithMultipleProviders_SuppressesAcrossAllProviders();
+        await tests.SendAsync_WithConcurrentNotifications_NoRaceConditions();
+        await tests.SendAsync_WithMaxNotifications_RemovesOldEntries();
+
+        // Test notification suppression options
+        tests.NotificationSuppressionOptions_DefaultValues();
+        tests.NotificationSuppressionOptions_CustomValues();
+
+        Console.WriteLine("All notification service tests passed.");
+    }
+}
+```
