@@ -1048,3 +1048,63 @@ class Program
     }
 }
 ```
+
+## SerializationHelperUnitTests
+
+`SerializationHelperUnitTests` is an xUnit test suite that validates the serialization and deserialization functionality of the `SerializationHelper` class. It tests JSON and XML serialization, null handling, dictionary conversion, and deep cloning operations.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Tests;
+
+class Program
+{
+    static void Main()
+    {
+        // Exercise the serialization helper tests directly.
+        var tests = new SerializationHelperUnitTests();
+
+        // Test JSON serialization with indentation
+        tests.ToJson_ShouldSerializeObject_WithIndentation();
+
+        // Test deserialization of valid JSON
+        tests.FromJson_ShouldDeserializeValidJson();
+
+        // Test that invalid JSON throws an exception
+        tests.FromJson_InvalidJson_ShouldThrowInvalidOperationException();
+
+        // Test that invalid JSON in TryFromJson returns the default
+        tests.TryFromJson_InvalidJson_ShouldReturnDefault();
+
+        // Test XML serialization
+        tests.ToXml_ShouldSerializeObject();
+
+        // Test deserialization of valid XML
+        tests.FromXml_ShouldDeserializeValidXml();
+
+        // Test that invalid XML throws an exception
+        tests.FromXml_InvalidXml_ShouldThrowInvalidOperationException();
+
+        // Test dictionary conversion for null object
+        tests.ToDictionary_NullObject_ShouldReturnEmptyDictionary();
+
+        // Test dictionary conversion contains all public properties
+        tests.ToDictionary_ShouldContainAllPublicProperties();
+
+        // Test deep cloning creates an equal but distinct instance
+        tests.DeepClone_ShouldCreateEqualButDistinctInstance();
+
+        // Test deep cloning of null object returns null
+        tests.DeepClone_NullObject_ShouldReturnNull();
+
+        // Test JSON serialization of null object returns literal null
+        tests.ToJson_NullObject_ShouldReturnLiteralNull();
+
+        // Test XML serialization of null object throws an exception
+        tests.ToXml_NullObject_ShouldThrowInvalidOperationException();
+
+        Console.WriteLine("All serialization helper tests passed.");
+    }
+}
+```
