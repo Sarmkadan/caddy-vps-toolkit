@@ -1146,3 +1146,33 @@ class Program
     }
 }
 ```
+
+## PaginationHelperUnitTests
+
+`PaginationHelperUnitTests` is an xUnit test suite that validates the pagination, sorting, and filtering helper methods exposed by `PaginationHelper`. It tests happy-path scenarios, edge cases like null or empty collections, invalid page/page size values, and ensures correct behavior for sorting and filtering operations.
+
+Example usage:
+```csharp
+using System;
+using CaddyVpsToolkit.Tests.Data;
+
+class Program
+{
+    static void Main()
+    {
+        // Exercise the pagination helper tests directly.
+        var tests = new PaginationHelperUnitTests();
+
+        // Test pagination with valid input
+        tests.Paginate_WithValidInput_ReturnsCorrectPage();
+
+        // Test sorting in ascending order
+        tests.SortBy_Ascending_SortsCorrectly();
+
+        // Test filtering with null collection
+        tests.FilterBy_WithNullCollection_ReturnsEmptyList();
+
+        Console.WriteLine("All pagination helper tests verified.");
+    }
+}
+```
