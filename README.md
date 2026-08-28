@@ -1108,3 +1108,41 @@ class Program
     }
 }
 ```
+
+## SafeBatchProcessorTests
+
+`SafeBatchProcessorTests` is an xUnit test suite that validates the safe batch processing logic, ensuring items are processed in batches, errors are handled appropriately, and the batch processor behaves correctly under various conditions such as empty collections, single items, and various batch sizes.
+
+Example usage:
+```csharp
+using System;
+using System.Threading.Tasks;
+using CaddyVpsToolkit.Tests.Processing;
+
+class Program
+{
+    static async Task Main()
+    {
+        // Exercise the safe batch processor tests directly.
+        var tests = new SafeBatchProcessorTests();
+
+        // Verify batch size validation
+        tests.Constructor_WithZeroBatchSize_ThrowsArgumentException();
+        tests.Constructor_WithNegativeBatchSize_ThrowsArgumentException();
+        tests.Constructor_WithNullProcessFunction_ThrowsArgumentNullException();
+
+        // Test processing scenarios
+        await tests.ProcessAsync_WithExactBatchSize_ProcessesAllItemsInCompleteBatches();
+        await tests.ProcessAsync_WithPartialFinalBatch_ProcessesRemainingItemsInFinalBatch();
+        await tests.ProcessAsync_WithErrorInOneItem_ContinuesProcessingAndTracksFailure();
+        await tests.ProcessAsync_WithErrorInOneItemAndContinueOnErrorFalse_StopsProcessingAndThrows();
+        await tests.ProcessAsync_WithMultipleErrors_TracksAllFailures();
+        await tests.ProcessAsync_WithEmptyCollection_ReturnsEmptyResult();
+        await tests.ProcessAsync_WithSingleItem_ReturnsSingleItemResult();
+        await tests.GetReport_ReturnsCorrectSummary();
+        await tests.BatchResult_Properties_WorkCorrectly();
+
+        Console.WriteLine("All safe batch processor behaviors verified.");
+    }
+}
+```
