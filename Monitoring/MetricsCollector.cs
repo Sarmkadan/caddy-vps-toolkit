@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace CaddyVpsToolkit.Monitoring
@@ -319,6 +320,78 @@ namespace CaddyVpsToolkit.Monitoring
 
                 return $"MetricsCollector {{ Count = {count}, Min = {min}, Max = {max}, Average = {average:F2}, Median = {median:F2} }}";
             }
+        }
+
+        /// <summary>
+        /// Exports all metrics in Prometheus text format.
+        /// </summary>
+        /// <returns>Prometheus formatted text of all metrics.</returns>
+        public string ExportPrometheus()
+        {
+            lock (_lockObject)
+            {
+                var lines = new List<string>();
+
+                // Counters
+                foreach (var kvp in _counters.OrderBy(kvp => kvp.Key))
+                {
+                    string sanitized = SanitizeMetricName(kvp.Key);
+                    lines.Add($"# TYPE {sanitized}_total counter");
+                    lines.Add($"{sanitized}_total {kvp.Value.Value.ToString(CultureInfo.InvariantCulture)}");
+                }
+
+                // Gauges
+                foreach (var kvp in _gauges.OrderBy(kvp => kvp.Key))
+                {
+                    string sanitized = SanitizeMetricName(kvp.Key);
+                    lines.Add($"# TYPE {sanitized} gauge");
+                    lines.Add($"{sanitized} {kvp.Value.Value.ToString(CultureInfo.InvariantCulture)}");
+                }
+
+                // Histograms
+                foreach (var kvp in _histograms.OrderBy(kvp => kvp.Key))
+                {
+                    string sanitized = SanitizeMetricName(kvp.Key);
+                    var stats = kvp.Value.GetStats();
+                    lines.Add($"# TYPE {sanitized}_count counter");
+                    lines.Add($"{sanitized}_count {stats.Count.ToString(CultureInfo.InvariantCulture)}");
+                    lines.Add($"# TYPE {sanitized}_sum counter");
+                    lines.Add($"{sanitized}_sum {(stats.Average * stats.Count).ToString(CultureInfo.InvariantCulture)}");
+                    lines.Add($"# TYPE {sanitized}_min gauge");
+                    lines.Add($"{sanitized}_min {stats.Min.ToString(CultureInfo.InvariantCulture)}");
+                    lines.Add($"# TYPE {sanitized}_max gauge");
+                    lines.Add($"{sanitized}_max {stats.Max.ToString(CultureInfo.InvariantCulture)}");
+                    lines.Add($"# TYPE {sanitized}_avg gauge");
+                    lines.Add($"{sanitized}_avg {stats.Average.ToString(CultureInfo.InvariantCulture)}");
+                }
+
+                // Timers
+                foreach (var kvp in _timers.OrderBy(kvp => kvp.Key))
+                {
+                    string sanitized = SanitizeMetricName(kvp.Key);
+                    var stats = kvp.Value.GetStats();
+                    lines.Add($"# TYPE {sanitized}_count counter");
+                    lines.Add($"{sanitized}_count {stats.Count.ToString(CultureInfo.InvariantCulture)}");
+                    lines.Add($"# TYPE {sanitized}_sum counter");
+                    lines.Add($"{sanitized}_sum {(stats.Average * stats.Count).ToString(CultureInfo.InvariantCulture)}");
+                    lines.Add($"# TYPE {sanitized}_min gauge");
+                    lines.Add($"{sanitized}_min {stats.Min.ToString(CultureInfo.InvariantCulture)}");
+                    lines.Add($"# TYPE {sanitized}_max gauge");
+                    lines.Add($"{sanitized}_max {stats.Max.ToString(CultureInfo.InvariantCulture)}");
+                    lines.Add($"# TYPE {sanitized}_avg gauge");
+                    lines.Add($"{sanitized}_avg {stats.Average.ToString(CultureInfo.InvariantCulture)}");
+                }
+
+                return string.Join(Environment.NewLine, lines);
+            }
+        }
+
+        private static string SanitizeMetricName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return "_";
+            // Replace any non-alphanumeric characters with underscores
+            return System.Text.RegularExpressions.Regex.Replace(name, "[^a-zA-Z0-9]+", "_");
         }
     }
 
