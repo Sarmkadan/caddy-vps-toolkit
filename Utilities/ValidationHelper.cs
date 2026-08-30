@@ -17,12 +17,18 @@ namespace CaddyVpsToolkit.Utilities
     /// </summary>
     public sealed class ValidationHelper
     {
+        private const int MinPort = 1;
+        private const int MaxPort = 65535;
+        private const string DomainPattern = @"^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$";
+        private const int MinServiceNameLength = 3;
+        private const string ServiceNamePattern = @"^[a-z0-9][a-z0-9-]*[a-z0-9]$";
+
         public static ValidationResult ValidatePort(int port)
         {
             var errors = new List<string>();
 
-            if (port <= 0 || port > 65535)
-                errors.Add($"Port must be between 1 and 65535, got: {port}");
+            if (port < MinPort || port > MaxPort)
+                errors.Add($"Port must be between {MinPort} and {MaxPort}, got: {port}");
 
             return new ValidationResult { IsValid = errors.Count == 0, Errors = errors };
         }
@@ -34,7 +40,7 @@ namespace CaddyVpsToolkit.Utilities
 
             if (string.IsNullOrWhiteSpace(domain))
                 errors.Add("Domain cannot be empty");
-            else if (!Regex.IsMatch(domain, @"^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$", RegexOptions.IgnoreCase))
+            else if (!Regex.IsMatch(domain, DomainPattern, RegexOptions.IgnoreCase))
                 errors.Add($"Invalid domain format: {domain}");
 
             return new ValidationResult { IsValid = errors.Count == 0, Errors = errors };
@@ -69,9 +75,9 @@ namespace CaddyVpsToolkit.Utilities
 
             if (string.IsNullOrWhiteSpace(serviceName))
                 errors.Add("Service name cannot be empty");
-            else if (serviceName.Length < 3)
-                errors.Add("Service name must be at least 3 characters");
-            else if (!Regex.IsMatch(serviceName, @"^[a-z0-9][a-z0-9-]*[a-z0-9]$", RegexOptions.IgnoreCase))
+            else if (serviceName.Length < MinServiceNameLength)
+                errors.Add($"Service name must be at least {MinServiceNameLength} characters");
+            else if (!Regex.IsMatch(serviceName, ServiceNamePattern, RegexOptions.IgnoreCase))
                 errors.Add("Service name can only contain alphanumeric characters and hyphens");
 
             return new ValidationResult { IsValid = errors.Count == 0, Errors = errors };
