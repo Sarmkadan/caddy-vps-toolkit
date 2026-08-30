@@ -32,6 +32,8 @@ namespace CaddyVpsToolkit.Caching
     /// </summary>
     public sealed class MemoryCache : ICacheService
     {
+        private const int CleanupInterval = 128;
+
         private sealed class CacheEntry
         {
             public object Value { get; init; }
@@ -41,13 +43,13 @@ namespace CaddyVpsToolkit.Caching
         // ConcurrentDictionary eliminates the explicit lock; individual bucket-level
         // locking gives better throughput under concurrent reads than a single lock.
         private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
+        private int _operationCount;
 
         public ValueTask<T> GetAsync<T>(string key)
         {
             ArgumentException.ThrowIfNullOrEmpty(key);
 
-            // Ensure expired entries are purged before attempting to read.
-            CleanExpiredEntries();
+            CleanExpiredEntriesOccasionally();
 
             var (found, value) = TryGet<T>(key);
             return ValueTask.FromResult(found ? value : default);
@@ -57,17 +59,13 @@ namespace CaddyVpsToolkit.Caching
         {
             ArgumentException.ThrowIfNullOrEmpty(key);
 
-            // Ensure expired entries are purged before attempting to read.
-            CleanExpiredEntries();
+            CleanExpiredEntriesOccasionally();
 
             return ValueTask.FromResult(TryGet<T>(key));
         }
 
         private (bool Found, T Value) TryGet<T>(string key)
         {
-            if (string.IsNullOrEmpty(key))
-                return (false, default);
-
             if (_cache.TryGetValue(key, out var entry))
             {
                 if (entry.ExpiresAt.HasValue && DateTime.UtcNow > entry.ExpiresAt)
@@ -94,14 +92,13 @@ namespace CaddyVpsToolkit.Caching
         {
             ArgumentException.ThrowIfNullOrEmpty(key);
 
-            if (string.IsNullOrEmpty(key))
-                return ValueTask.CompletedTask;
-
             _cache[key] = new CacheEntry
             {
                 Value = value,
                 ExpiresAt = expiration.HasValue ? DateTime.UtcNow.Add(expiration.Value) : null,
             };
+
+            CleanExpiredEntriesOccasionally();
 
             return ValueTask.CompletedTask;
         }
@@ -110,8 +107,7 @@ namespace CaddyVpsToolkit.Caching
         {
             ArgumentException.ThrowIfNullOrEmpty(key);
 
-            if (!string.IsNullOrEmpty(key))
-                _cache.TryRemove(key, out _);
+            _cache.TryRemove(key, out _);
 
             return ValueTask.CompletedTask;
         }
@@ -122,15 +118,20 @@ namespace CaddyVpsToolkit.Caching
             return ValueTask.CompletedTask;
         }
 
-        public async ValueTask<bool> ExistsAsync(string key)
+        public ValueTask<bool> ExistsAsync(string key)
         {
             ArgumentException.ThrowIfNullOrEmpty(key);
 
-            // Ensure expired entries are purged before checking existence.
-            CleanExpiredEntries();
+            CleanExpiredEntriesOccasionally();
 
-            var (found, _) = await TryGetAsync<object>(key);
-            return found;
+            var (found, _) = TryGet<object>(key);
+            return ValueTask.FromResult(found);
+        }
+
+        private void CleanExpiredEntriesOccasionally()
+        {
+            if ((Interlocked.Increment(ref _operationCount) & (CleanupInterval - 1)) == 0)
+                CleanExpiredEntries();
         }
 
         /// <summary>
