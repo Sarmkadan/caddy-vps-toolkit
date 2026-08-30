@@ -75,8 +75,26 @@ namespace CaddyVpsToolkit.Tests.Utilities
                 throw new InvalidOperationException($"attempt {callCount}");
             });
 
-            await act.Should().ThrowAsync<InvalidOperationException>();
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("attempt 3");
             callCount.Should().Be(3); // initial + 2 retries
+        }
+
+        /// <summary>
+        /// Verifies that the non-generic ExecuteAsync overload executes the operation.
+        /// </summary>
+        [Fact]
+        public async Task ExecuteAsync_VoidOverload_ExecutesOperation()
+        {
+            var policy = new ExponentialBackoffRetryPolicy(maxRetries: 1, initialDelayMs: 1);
+            int callCount = 0;
+
+            await policy.ExecuteAsync(() =>
+            {
+                callCount++;
+                return Task.CompletedTask;
+            });
+
+            callCount.Should().Be(1);
         }
 
         /// <summary>
@@ -146,15 +164,19 @@ namespace CaddyVpsToolkit.Tests.Utilities
         [Fact]
         public async Task LinearBackoffRetryPolicy_ExceedsMaxRetries_Throws()
         {
-            var policy = new LinearBackoffRetryPolicy(maxRetries: 2, delayIncrementMs: 1);
+            const int maxRetries = 2;
+            var policy = new LinearBackoffRetryPolicy(maxRetries, delayIncrementMs: 0);
+            int callCount = 0;
 
             Func<Task<string>> act = () => policy.ExecuteAsync<string>(async () =>
             {
+                callCount++;
                 await Task.CompletedTask;
                 throw new Exception("always fails");
             });
 
             await act.Should().ThrowAsync<Exception>().WithMessage("always fails");
+            callCount.Should().Be(maxRetries + 1);
         }
 
         /// <summary>
