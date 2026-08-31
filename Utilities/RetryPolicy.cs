@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CaddyVpsToolkit.Utilities
@@ -25,9 +26,26 @@ namespace CaddyVpsToolkit.Utilities
         /// <summary>
         /// Executes an asynchronous operation with the retry policy applied.
         /// </summary>
+        /// <typeparam name="T">The return type of the operation.</typeparam>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the result of type <typeparamref name="T"/>.</returns>
+        Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Executes an asynchronous operation with the retry policy applied.
+        /// </summary>
         /// <param name="operation">The asynchronous operation to execute.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
         Task ExecuteAsync(Func<Task> operation);
+
+        /// <summary>
+        /// Executes an asynchronous operation with the retry policy applied.
+        /// </summary>
+        /// <param name="operation">The asynchronous operation to execute.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        Task ExecuteAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -39,7 +57,6 @@ namespace CaddyVpsToolkit.Utilities
         private readonly int _initialDelayMs;
         private readonly double _backoffMultiplier;
         private readonly int _maxDelayMs;
-        private readonly Random _random;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ExponentialBackoffRetryPolicy"/> class.
@@ -67,7 +84,6 @@ namespace CaddyVpsToolkit.Utilities
             _initialDelayMs = initialDelayMs;
             _backoffMultiplier = backoffMultiplier;
             _maxDelayMs = maxDelayMs;
-            _random = new Random();
         }
 
         /// <summary>
@@ -77,7 +93,16 @@ namespace CaddyVpsToolkit.Utilities
         /// <param name="operation">The asynchronous operation to execute.</param>
         /// <returns>A task that represents the asynchronous operation, containing the result of type <typeparamref name="T"/>.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="operation"/> is null.</exception>
-        public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
+        public Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
+        {
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
+            return ExecuteAsync(_ => operation(), CancellationToken.None);
+        }
+
+        /// <inheritdoc />
+        public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken)
         {
             if (operation is null)
                 throw new ArgumentNullException(nameof(operation));
@@ -87,9 +112,15 @@ namespace CaddyVpsToolkit.Utilities
 
             for (int attempt = 0; attempt <= _maxRetries; attempt++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 try
                 {
-                    return await operation();
+                    return await operation(cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -99,8 +130,8 @@ namespace CaddyVpsToolkit.Utilities
                         throw;
 
                     // Add jitter to prevent thundering herd
-                    int jitter = _random.Next((int)(delayMs * 0.1), (int)(delayMs * 1.1));
-                    await Task.Delay(jitter);
+                    int jitter = Random.Shared.Next((int)(delayMs * 0.1), (int)(delayMs * 1.1));
+                    await Task.Delay(jitter, cancellationToken);
 
                     // Calculate next delay
                     delayMs = (int)Math.Min(_maxDelayMs, delayMs * _backoffMultiplier);
@@ -116,16 +147,25 @@ namespace CaddyVpsToolkit.Utilities
         /// <param name="operation">The asynchronous operation to execute.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="operation"/> is null.</exception>
-        public async Task ExecuteAsync(Func<Task> operation)
+        public Task ExecuteAsync(Func<Task> operation)
         {
             if (operation is null)
                 throw new ArgumentNullException(nameof(operation));
 
-            await ExecuteAsync(async () =>
+            return ExecuteAsync(_ => operation(), CancellationToken.None);
+        }
+
+        /// <inheritdoc />
+        public async Task ExecuteAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken)
+        {
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
+            await ExecuteAsync(async token =>
             {
-                await operation();
+                await operation(token);
                 return (object)null!;
-            });
+            }, cancellationToken);
         }
     }
 
@@ -160,17 +200,35 @@ namespace CaddyVpsToolkit.Utilities
         /// <param name="operation">The asynchronous operation to execute.</param>
         /// <returns>A task that represents the asynchronous operation, containing the result of type <typeparamref name="T"/>.</returns>
         /// <exception cref="InvalidOperationException">Thrown when retry attempts are exhausted.</exception>
-        public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
+        public Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
         {
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
+            return ExecuteAsync(_ => operation(), CancellationToken.None);
+        }
+
+        /// <inheritdoc />
+        public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken)
+        {
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
             for (int attempt = 0; attempt <= _maxRetries; attempt++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 try
                 {
-                    return await operation();
+                    return await operation(cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception) when (attempt < _maxRetries)
                 {
-                    await Task.Delay(_delayIncrement * (attempt + 1));
+                    await Task.Delay(_delayIncrement * (attempt + 1), cancellationToken);
                 }
             }
 
@@ -183,13 +241,25 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         /// <param name="operation">The asynchronous operation to execute.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
-        public async Task ExecuteAsync(Func<Task> operation)
+        public Task ExecuteAsync(Func<Task> operation)
         {
-            await ExecuteAsync(async () =>
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
+            return ExecuteAsync(_ => operation(), CancellationToken.None);
+        }
+
+        /// <inheritdoc />
+        public async Task ExecuteAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken)
+        {
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
+            await ExecuteAsync(async token =>
             {
-                await operation();
+                await operation(token);
                 return (object)null!;
-            });
+            }, cancellationToken);
         }
     }
 
@@ -204,9 +274,22 @@ namespace CaddyVpsToolkit.Utilities
         /// <typeparam name="T">The return type of the operation.</typeparam>
         /// <param name="operation">The asynchronous operation to execute.</param>
         /// <returns>A task that represents the asynchronous operation, containing the result of type <typeparamref name="T"/>.</returns>
-        public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
+        public Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
         {
-            return await operation();
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
+            return ExecuteAsync(_ => operation(), CancellationToken.None);
+        }
+
+        /// <inheritdoc />
+        public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken)
+        {
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return await operation(cancellationToken);
         }
 
         /// <summary>
@@ -214,9 +297,22 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         /// <param name="operation">The asynchronous operation to execute.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
-        public async Task ExecuteAsync(Func<Task> operation)
+        public Task ExecuteAsync(Func<Task> operation)
         {
-            await operation();
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
+            return ExecuteAsync(_ => operation(), CancellationToken.None);
+        }
+
+        /// <inheritdoc />
+        public async Task ExecuteAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken)
+        {
+            if (operation is null)
+                throw new ArgumentNullException(nameof(operation));
+
+            cancellationToken.ThrowIfCancellationRequested();
+            await operation(cancellationToken);
         }
     }
 }
