@@ -155,9 +155,51 @@ namespace CaddyVpsToolkit.Caching
     /// </summary>
     public static class CacheExtensions
     {
-        // Holds a per‑key semaphore to guarantee that only one factory execution
-        // runs for a given cache key at a time.
-        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _keyLocks = new();
+        private sealed class KeyLockEntry
+        {
+            public SemaphoreSlim Semaphore { get; } = new(1, 1);
+            public int ReferenceCount { get; set; }
+        }
+
+        // Holds a reference-counted per-key semaphore to guarantee that only one
+        // factory execution runs for a given cache key at a time.
+        private static readonly ConcurrentDictionary<string, KeyLockEntry> _keyLocks = new();
+
+        private static KeyLockEntry AcquireKeyLockEntry(string key)
+        {
+            while (true)
+            {
+                var entry = _keyLocks.GetOrAdd(key, _ => new KeyLockEntry());
+                lock (entry)
+                {
+                    // The entry may have been removed after GetOrAdd returned but
+                    // before this lock was acquired. Retry rather than using a
+                    // semaphore that is no longer the canonical lock for the key.
+                    if (!_keyLocks.TryGetValue(key, out var current) ||
+                        !ReferenceEquals(current, entry))
+                    {
+                        continue;
+                    }
+
+                    entry.ReferenceCount++;
+                    return entry;
+                }
+            }
+        }
+
+        private static void ReleaseKeyLockEntry(string key, KeyLockEntry entry)
+        {
+            lock (entry)
+            {
+                entry.ReferenceCount--;
+                if (entry.ReferenceCount == 0 &&
+                    _keyLocks.TryGetValue(key, out var current) &&
+                    ReferenceEquals(current, entry))
+                {
+                    _keyLocks.TryRemove(key, out _);
+                }
+            }
+        }
 
         /// <summary>
         /// Get or set cache value using factory function.
@@ -207,9 +249,10 @@ namespace CaddyVpsToolkit.Caching
             if (found)
                 return cached;
 
-            // Acquire a semaphore specific to the key.
-            var semaphore = _keyLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
-            await semaphore.WaitAsync();
+            // Register this caller before waiting so the entry cannot be removed
+            // while any caller still holds or is about to wait on its semaphore.
+            var lockEntry = AcquireKeyLockEntry(key);
+            await lockEntry.Semaphore.WaitAsync();
             try
             {
                 // Re‑check after acquiring the lock – another thread may have
@@ -225,14 +268,8 @@ namespace CaddyVpsToolkit.Caching
             }
             finally
             {
-                semaphore.Release();
-
-                // Optional cleanup: remove the semaphore when no one is waiting.
-                // This prevents unbounded growth of the dictionary.
-                if (semaphore.CurrentCount == 1)
-                {
-                    _keyLocks.TryRemove(key, out _);
-                }
+                lockEntry.Semaphore.Release();
+                ReleaseKeyLockEntry(key, lockEntry);
             }
         }
 
