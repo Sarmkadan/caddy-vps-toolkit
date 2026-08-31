@@ -48,12 +48,21 @@ namespace CaddyVpsToolkit.Utilities
         /// <param name="initialDelayMs">The initial delay in milliseconds. Defaults to 100.</param>
         /// <param name="backoffMultiplier">The multiplier for the backoff interval. Defaults to 2.0.</param>
         /// <param name="maxDelayMs">The maximum allowed delay in milliseconds. Defaults to 10000.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxRetries"/> is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="initialDelayMs"/> is less than or equal to zero.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="backoffMultiplier"/> is less than 1.0.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxDelayMs"/> is less than <paramref name="initialDelayMs"/>.</exception>
         public ExponentialBackoffRetryPolicy(
             int maxRetries = 3,
             int initialDelayMs = 100,
             double backoffMultiplier = 2.0,
             int maxDelayMs = 10000)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(maxRetries);
+            ArgumentOutOfRangeException.ThrowIfLessThan(initialDelayMs, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(backoffMultiplier, 1.0);
+            ArgumentOutOfRangeException.ThrowIfLessThan(maxDelayMs, initialDelayMs);
+
             _maxRetries = maxRetries;
             _initialDelayMs = initialDelayMs;
             _backoffMultiplier = backoffMultiplier;
@@ -133,8 +142,13 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         /// <param name="maxRetries">The maximum number of retries to attempt. Defaults to 3.</param>
         /// <param name="delayIncrementMs">The delay increment in milliseconds. Defaults to 500.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxRetries"/> is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="delayIncrementMs"/> is less than or equal to zero.</exception>
         public LinearBackoffRetryPolicy(int maxRetries = 3, int delayIncrementMs = 500)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(maxRetries);
+            ArgumentOutOfRangeException.ThrowIfLessThan(delayIncrementMs, 1);
+
             _maxRetries = maxRetries;
             _delayIncrement = delayIncrementMs;
         }
