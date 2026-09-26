@@ -317,6 +317,29 @@ namespace CaddyVpsToolkit.Services
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Marks the specified upstream server as draining (no new traffic) without marking it unhealthy.
+        /// The server is identified by its upstreamId across all pools.
+        /// </summary>
+        /// <param name="serverId">The unique identifier of the upstream server to drain.</param>
+        /// <exception cref="ServiceConfigurationException">If the server is not found in any pool.</exception>
+        public async Task DrainAsync(string serverId)
+        {
+            // Search all pools for the server with the given ID
+            foreach (var pool in _pools.Values)
+            {
+                var server = pool.Servers.FirstOrDefault(s => s.Id == serverId);
+                if (server != null)
+                {
+                    // Found the server; drain it using the existing method
+                    await DrainUpstreamAsync(pool.Id, serverId);
+                    return;
+                }
+            }
+
+            throw new ServiceConfigurationException($"Upstream server '{serverId}' not found in any pool.");
+        }
+
         // ─── Caddy Config Generation ──────────────────────────────────────────
 
         /// <summary>
