@@ -20,7 +20,7 @@ namespace CaddyVpsToolkit.Services
     /// <summary>
     /// Service for generating and managing Caddy reverse proxy configurations.
     /// </summary>
-    public sealed class CaddyConfigurationService
+    public class CaddyConfigurationService
     {
         private readonly ServiceManagementService _serviceManager;
 
@@ -28,6 +28,7 @@ namespace CaddyVpsToolkit.Services
         /// Initializes a new instance of the <see cref="CaddyConfigurationService"/> class.
         /// </summary>
         /// <param name="serviceManager">The service manager.</param>
+        protected CaddyConfigurationService() { }
         public CaddyConfigurationService(ServiceManagementService serviceManager)
         {
             _serviceManager = serviceManager ?? throw new ArgumentNullException(nameof(serviceManager));

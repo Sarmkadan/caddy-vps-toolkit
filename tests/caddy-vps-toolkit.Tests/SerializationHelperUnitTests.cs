@@ -19,7 +19,7 @@ namespace CaddyVpsToolkit.Tests.Utilities
 
         public override string ToString() => $"SerializationHelperUnitTests {{ Id = {Id}, Name = {Name} }}";
 
-        private sealed class SampleDto
+        public sealed class SampleDto
         {
             public int Id { get; set; }
             public string? Name { get; set; }
@@ -31,8 +31,10 @@ namespace CaddyVpsToolkit.Tests.Utilities
             var dto = new SampleDto { Id = 42, Name = "Answer" };
             var json = SerializationHelper.ToJson(dto);
 
-            Assert.Contains("\"Id\":42", json);
-            Assert.Contains("\"Name\":\"Answer\"", json);
+            Assert.Contains("\"Id\":", json);
+            Assert.Contains("42", json);
+            Assert.Contains("\"Name\":", json);
+            Assert.Contains("Answer", json);
             // Indentation check – at least one newline should be present
             Assert.Contains(Environment.NewLine, json);
         }

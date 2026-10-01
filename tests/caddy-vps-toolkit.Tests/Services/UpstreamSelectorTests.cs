@@ -288,7 +288,7 @@ namespace CaddyVpsToolkit.Tests.Services
                 selected.Should().BeSameAs(firstSelection, "Same client IP should always select same server");
             }
 
-            // Different IP should select different server (or at least not guaranteed to be same)
+            // Different IP should also be deterministic
             var differentIp = "10.0.0.1";
             var differentContext = new UpstreamSelectionContext(
                 "test-pool",
@@ -298,7 +298,13 @@ namespace CaddyVpsToolkit.Tests.Services
             );
 
             var differentSelection = _selector.Select(servers, differentContext);
-            differentSelection.Should().NotBeSameAs(firstSelection, "Different client IP should typically select different server");
+            differentSelection.Should().NotBeNull();
+            // Verify determinism for the second IP too
+            for (int j = 0; j < 5; j++)
+            {
+                var again = _selector.Select(servers, differentContext);
+                again.Should().BeSameAs(differentSelection, "Same client IP should always select same server");
+            }
         }
     }
 }

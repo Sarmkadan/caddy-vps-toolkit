@@ -31,7 +31,7 @@ namespace CaddyVpsToolkit.Data
             int page = 1,
             int pageSize = 10)
         {
-            ArgumentNullException.ThrowIfNull(items);
+            items ??= Enumerable.Empty<T>();
 
             // Normalise paging parameters
             if (page < 1) page = 1;
@@ -81,8 +81,8 @@ namespace CaddyVpsToolkit.Data
             string propertyName,
             bool ascending = true)
         {
-            ArgumentNullException.ThrowIfNull(items);
-            ArgumentException.ThrowIfNullOrEmpty(propertyName);
+            if (items is null) return new List<T>();
+            if (string.IsNullOrEmpty(propertyName)) return items.ToList();
 
             var list = items.ToList();
 
@@ -110,9 +110,8 @@ namespace CaddyVpsToolkit.Data
             string propertyName,
             object value)
         {
-            ArgumentNullException.ThrowIfNull(items);
-            ArgumentException.ThrowIfNullOrEmpty(propertyName);
-            ArgumentNullException.ThrowIfNull(value);
+            if (items is null) return new List<T>();
+            if (string.IsNullOrEmpty(propertyName) || value is null) return items.ToList();
 
             var property = typeof(T).GetProperty(propertyName);
             if (property is null)
@@ -135,7 +134,7 @@ namespace CaddyVpsToolkit.Data
             IEnumerable<T> items,
             Func<T, bool> predicate)
         {
-            ArgumentNullException.ThrowIfNull(items);
+            if (items is null) return new List<T>();
             ArgumentNullException.ThrowIfNull(predicate);
 
             return items

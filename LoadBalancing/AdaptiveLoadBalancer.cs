@@ -132,8 +132,13 @@ namespace CaddyVpsToolkit.LoadBalancing
 
             var pool = await _upstreamManager.GetPoolAsync(context.PoolId);
             if (pool is null)
-                throw new ServiceConfigurationException(
-                    $"Upstream pool '{context.PoolId}' is not registered");
+            {
+                return new PoolRoutingEvaluation(
+                    PoolId: context.PoolId,
+                    Scores: [],
+                    SelectedUpstreamId: null,
+                    EvaluatedAt: DateTime.UtcNow);
+            }
 
             cancellationToken.ThrowIfCancellationRequested();
 

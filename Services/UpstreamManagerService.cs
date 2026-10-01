@@ -28,7 +28,7 @@ namespace CaddyVpsToolkit.Services
     /// <see cref="CaddyConfigurationService"/> to slot into the v1.x infrastructure without
     /// requiring changes to those services.
     /// </summary>
-    public sealed class UpstreamManagerService
+    public class UpstreamManagerService
     {
         private readonly ServiceManagementService _serviceManager;
         private readonly HealthMonitoringService _healthMonitor;
@@ -53,6 +53,7 @@ namespace CaddyVpsToolkit.Services
         /// <param name="healthMonitor">Health monitoring integration for cross-service correlation.</param>
         /// <param name="caddyConfig">Caddy config service used when writing generated configurations to disk.</param>
         /// <param name="options">Runtime load-balancing and health-check configuration.</param>
+        protected UpstreamManagerService() { }
         public UpstreamManagerService(
             ServiceManagementService serviceManager,
             HealthMonitoringService healthMonitor,
@@ -102,7 +103,7 @@ namespace CaddyVpsToolkit.Services
         /// Retrieves a registered pool by its identifier, or <c>null</c> when not found.
         /// </summary>
         /// <param name="poolId">The unique pool identifier.</param>
-        public Task<UpstreamPool?> GetPoolAsync(string poolId)
+        public virtual Task<UpstreamPool?> GetPoolAsync(string poolId)
         {
             _pools.TryGetValue(poolId, out var pool);
             return Task.FromResult(pool);

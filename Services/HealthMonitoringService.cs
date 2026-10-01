@@ -21,7 +21,7 @@ namespace CaddyVpsToolkit.Services
     /// <summary>
     /// Service for monitoring health of managed services.
     /// </summary>
-    public sealed class HealthMonitoringService
+    public class HealthMonitoringService
     {
         private readonly IHealthCheckRepository _repository;
         private readonly ServiceManagementService _serviceManager;
@@ -34,6 +34,7 @@ namespace CaddyVpsToolkit.Services
         /// <param name="repository">The health check repository.</param>
         /// <param name="serviceManager">The service management service.</param>
         /// <param name="upstreamOptions">The upstream management options containing maintenance window configuration.</param>
+        protected HealthMonitoringService() { }
         public HealthMonitoringService(IHealthCheckRepository repository, ServiceManagementService serviceManager, UpstreamManagementOptions upstreamOptions)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));

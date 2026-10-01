@@ -311,14 +311,7 @@ namespace CaddyVpsToolkit.Processing
 
                     if (!_continueOnError)
                     {
-                        throw new CollectionValidationException<T>(
-                            $"Batch processing failed for item at index {{index}}: {{error}}",
-                            new List<(T Item, Exception Error, int? Index)>
-                            {
-                                (item, ex, null) // Index not tracked at item level in batch
-                            },
-                            result.TotalProcessed + 1,
-                            result.SuccessCount);
+                        throw;
                     }
                 }
             }

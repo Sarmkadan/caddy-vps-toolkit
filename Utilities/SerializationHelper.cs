@@ -24,7 +24,6 @@ namespace CaddyVpsToolkit.Utilities
             new(JsonSerializerDefaults.General)
             {
                 WriteIndented = true,
-                ReferenceHandler = ReferenceHandler.IgnoreCycles,
                 MaxDepth = 64
             };
 
@@ -32,7 +31,6 @@ namespace CaddyVpsToolkit.Utilities
             new(JsonSerializerDefaults.General)
             {
                 WriteIndented = false,
-                ReferenceHandler = ReferenceHandler.IgnoreCycles,
                 MaxDepth = 64
             };
 
@@ -88,6 +86,9 @@ namespace CaddyVpsToolkit.Utilities
         {
             try
             {
+                if (obj is null)
+                    throw new ArgumentNullException(nameof(obj), "Cannot serialize null to XML");
+
                 var serializer = new XmlSerializer(typeof(T));
                 using (var writer = new StringWriter())
                 {
@@ -95,7 +96,7 @@ namespace CaddyVpsToolkit.Utilities
                     return writer.ToString();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not InvalidOperationException)
             {
                 throw new InvalidOperationException($"Failed to serialize to XML: {ex.Message}", ex);
             }

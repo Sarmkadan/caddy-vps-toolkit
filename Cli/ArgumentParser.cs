@@ -159,11 +159,9 @@ namespace CaddyVpsToolkit.Cli
         public string GetFlagValue(string flagName)
         {
             ArgumentNullException.ThrowIfNull(flagName);
-
             if (string.IsNullOrWhiteSpace(flagName))
-            {
                 throw new ArgumentException("Flag name cannot be empty or whitespace.", nameof(flagName));
-            }
+
 
             // Known boolean flags never carry a value — avoid scanning for a trailing argument.
             if (_booleanFlags.Contains(flagName))
@@ -210,11 +208,9 @@ namespace CaddyVpsToolkit.Cli
         public bool HasFlag(string flagName)
         {
             ArgumentNullException.ThrowIfNull(flagName);
-
             if (string.IsNullOrWhiteSpace(flagName))
-            {
                 throw new ArgumentException("Flag name cannot be empty or whitespace.", nameof(flagName));
-            }
+
             var fnSpan = flagName.AsSpan();
 
             foreach (var arg in _args)

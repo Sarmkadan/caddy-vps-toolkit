@@ -5,6 +5,7 @@
 // =====================================================================
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -22,13 +23,17 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string GetRelativePath(string fromPath, string toPath)
         {
-            ArgumentException.ThrowIfNullOrEmpty(fromPath, nameof(fromPath));
+            ArgumentNullException.ThrowIfNull(fromPath, nameof(fromPath));
             ArgumentException.ThrowIfNullOrEmpty(toPath, nameof(toPath));
 
-            if (string.IsNullOrEmpty(fromPath) || string.IsNullOrEmpty(toPath))
+            if (string.IsNullOrEmpty(fromPath))
                 return toPath;
 
-            var fromUri = new Uri(Path.GetFullPath(fromPath));
+            var fromFull = Path.GetFullPath(fromPath);
+            // Ensure the from path is treated as a directory for correct relative resolution
+            if (!fromFull.EndsWith(Path.DirectorySeparatorChar))
+                fromFull += Path.DirectorySeparatorChar;
+            var fromUri = new Uri(fromFull);
             var toUri = new Uri(Path.GetFullPath(toPath));
 
             return Uri.UnescapeDataString(
@@ -55,71 +60,56 @@ namespace CaddyVpsToolkit.Utilities
         {
             ArgumentException.ThrowIfNullOrEmpty(basePath, nameof(basePath));
 
-            // Normalize base path - resolve any symlinks to get the real physical path
-            basePath = Path.GetFullPath(basePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (string.IsNullOrWhiteSpace(basePath))
+                throw new ArgumentException("Base path cannot be whitespace only.", nameof(basePath));
+
+            var originalBasePath = basePath;
+            // Resolve for security comparisons only
+            string baseFullPath = Path.GetFullPath(basePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
             // Resolve symlinks in base path to prevent symlink-based escapes
             if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD())
             {
                 try
                 {
-                    var baseDirInfo = new DirectoryInfo(basePath);
+                    var baseDirInfo = new DirectoryInfo(baseFullPath);
                     if (baseDirInfo.LinkTarget != null)
-                    {
-                        // Base path itself is a symlink - resolve it
-                        basePath = baseDirInfo.ResolveLinkTarget(true)?.FullName ?? basePath;
-                    }
-                    else
-                    {
-                        // Check if base path contains symlinks that could be traversed
-                        var parent = baseDirInfo.Parent;
-                        while (parent != null)
-                        {
-                            if (parent.LinkTarget != null)
-                            {
-                                // Parent directory is a symlink - resolve to real path
-                                var resolvedParent = parent.ResolveLinkTarget(true)?.FullName ?? parent.FullName;
-                                basePath = basePath.Replace(parent.FullName, resolvedParent);
-                                break;
-                            }
-                            parent = parent.Parent;
-                        }
-                    }
+                        baseFullPath = baseDirInfo.ResolveLinkTarget(true)?.FullName ?? baseFullPath;
                 }
-                catch
-                {
-                    // If resolution fails, continue with the original path
-                    // This maintains backward compatibility
-                }
+                catch { }
             }
 
-            // Ensure base path is not rooted (should be relative to a known safe root)
-            if (Path.IsPathRooted(basePath))
-            {
-                // For Windows-style rooted paths (e.g., "C:\\"), ensure they're within a safe root
-                // This prevents absolute paths like "C:\\Windows\\System32" when basePath is "C:\\safe"
-                throw new ArgumentException("Base path must be a relative path, absolute paths are not allowed", nameof(basePath));
-            }
-
-            string combined = basePath;
+            string combined = originalBasePath;
+            if (parts is null)
+                throw new ArgumentException("Parts array cannot be null.", nameof(parts));
             foreach (var part in parts)
             {
-                ArgumentException.ThrowIfNullOrEmpty(part, nameof(parts));
+                if (part is null)
+                    throw new ArgumentException("Path part cannot be null.", nameof(parts));
+                if (string.IsNullOrEmpty(part))
+                    throw new ArgumentException("Path part cannot be empty.", nameof(parts));
+
+                // URL-decode the part to detect encoded traversal sequences
+                string decodedPart;
+                try { decodedPart = Uri.UnescapeDataString(part); }
+                catch { decodedPart = part; }
+
+                // Normalize path separators
+                string normalizedPart = decodedPart.Replace('\\', Path.DirectorySeparatorChar);
 
                 // Reject any part that is rooted (starts with / or drive letter)
-                if (Path.IsPathRooted(part))
+                bool isRooted = Path.IsPathRooted(part) || Path.IsPathRooted(decodedPart);
+                // Also detect Windows-style drive letters on non-Windows platforms
+                if (!isRooted && part.Length >= 2 && char.IsLetter(part[0]) && part[1] == ':')
+                    isRooted = true;
+                if (isRooted)
                 {
                     throw new ArgumentException(
                         $"Path part '{part}' is rooted and cannot be safely combined. Use relative paths only.",
-                        nameof(parts)
-                    );
+                        nameof(parts));
                 }
 
-                // Normalize path separators
-                string normalizedPart = part.Replace('\\', Path.DirectorySeparatorChar);
-
                 // Reject reserved Windows device names (case-insensitive)
-                // These cannot be used as file or directory names on Windows
                 var reservedNames = new[] { "CON", "PRN", "AUX", "NUL" };
                 var nameWithoutExt = Path.GetFileNameWithoutExtension(normalizedPart);
 
@@ -127,19 +117,18 @@ namespace CaddyVpsToolkit.Utilities
                 {
                     throw new ArgumentException(
                         $"Path part '{part}' contains reserved Windows device name '{nameWithoutExt}' and cannot be safely combined.",
-                        nameof(parts)
-                    );
+                        nameof(parts));
                 }
 
-                // Reject COM/LPT ports (COM1-COM9, LPT1-LPT9)
-                if ((nameWithoutExt.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
+                // Reject COM/LPT ports
+                if (nameWithoutExt.Length > 3 &&
+                    (nameWithoutExt.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
                      nameWithoutExt.StartsWith("LPT", StringComparison.OrdinalIgnoreCase)) &&
                     int.TryParse(nameWithoutExt[3..], out _))
                 {
                     throw new ArgumentException(
                         $"Path part '{part}' contains reserved Windows port name '{nameWithoutExt}' and cannot be safely combined.",
-                        nameof(parts)
-                    );
+                        nameof(parts));
                 }
 
                 // Reject parts with trailing dots or spaces (Windows limitation)
@@ -148,27 +137,23 @@ namespace CaddyVpsToolkit.Utilities
                 {
                     throw new ArgumentException(
                         $"Path part '{part}' contains trailing dots or spaces which are not allowed on Windows.",
-                        nameof(parts)
-                    );
+                        nameof(parts));
                 }
 
-                // Reject parts that contain path traversal sequences
+                // Reject parts that contain path traversal sequences (check both original and decoded)
                 if (normalizedPart.Contains("..") ||
                     normalizedPart.Contains("~" + Path.DirectorySeparatorChar) ||
                     normalizedPart.Contains("~" + Path.AltDirectorySeparatorChar))
                 {
-                    throw new ArgumentException(
-                        $"Path part '{part}' contains path traversal sequences and cannot be safely combined.",
-                        nameof(parts)
-                    );
+                    throw new InvalidOperationException(
+                        "Path traversal attempt detected: combined path escapes base directory");
                 }
 
-                combined = Path.Combine(combined, part);
+                // Use the normalized part (platform separators) for combining
+                combined = Path.Combine(combined, normalizedPart);
 
                 // Final security check: ensure the combined path doesn't escape basePath
-                // Use GetFullPath to normalize, then resolve symlinks on Unix-like systems
                 string combinedFullPath = Path.GetFullPath(combined);
-                string baseFullPath = Path.GetFullPath(basePath);
 
                 // Resolve symlinks in the combined path to detect symlink-based escapes
                 if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD())
@@ -177,13 +162,8 @@ namespace CaddyVpsToolkit.Utilities
                     {
                         var combinedFileInfo = new FileInfo(combinedFullPath);
                         if (combinedFileInfo.LinkTarget != null)
-                        {
-                            // The combined path is a symlink - resolve it
-                            var resolvedCombined = combinedFileInfo.ResolveLinkTarget(true)?.FullName ?? combinedFullPath;
-                            combinedFullPath = resolvedCombined;
-                        }
+                            combinedFullPath = combinedFileInfo.ResolveLinkTarget(true)?.FullName ?? combinedFullPath;
 
-                        // Also resolve parent directories that might be symlinks
                         var parent = combinedFileInfo.Directory;
                         while (parent != null)
                         {
@@ -196,10 +176,7 @@ namespace CaddyVpsToolkit.Utilities
                             parent = parent.Parent;
                         }
                     }
-                    catch
-                    {
-                        // If resolution fails, continue with the original path
-                    }
+                    catch { }
                 }
 
                 if (!combinedFullPath.StartsWith(baseFullPath, StringComparison.OrdinalIgnoreCase))
@@ -331,8 +308,14 @@ namespace CaddyVpsToolkit.Utilities
         /// </summary>
         public static string SanitizeFileName(string fileName)
         {
-            var invalidChars = Path.GetInvalidFileNameChars();
-            return string.Concat(fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+            // Combine platform-specific invalid chars with a universal set to ensure
+            // consistent behavior across operating systems
+            var platformChars = Path.GetInvalidFileNameChars();
+            var universalInvalid = new[] { '<', '>', ':', '"', '|', '?', '*' };
+            var invalidChars = new HashSet<char>(platformChars);
+            foreach (var c in universalInvalid)
+                invalidChars.Add(c);
+            return string.Concat(fileName.Where(c => !invalidChars.Contains(c)));
         }
     }
 }

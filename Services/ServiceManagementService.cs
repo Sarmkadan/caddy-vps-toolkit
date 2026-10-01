@@ -16,7 +16,7 @@ namespace CaddyVpsToolkit.Services
     /// <summary>
     /// Service for managing VPS services (CRUD + status operations).
     /// </summary>
-    public sealed class ServiceManagementService
+    public class ServiceManagementService
     {
         private readonly IServiceRepository _repository;
 
@@ -24,6 +24,11 @@ namespace CaddyVpsToolkit.Services
         /// Initializes a new instance of the <see cref="ServiceManagementService"/> class.
         /// </summary>
         /// <param name="repository">The service repository.</param>
+        /// <summary>
+        /// Protected parameterless constructor for testing/proxy generation.
+        /// </summary>
+        protected ServiceManagementService() { }
+
         public ServiceManagementService(IServiceRepository repository)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));

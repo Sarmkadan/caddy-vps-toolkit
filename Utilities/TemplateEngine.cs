@@ -147,7 +147,6 @@ namespace CaddyVpsToolkit.Utilities
         public void Set(string key, object value, Func<object, bool>? validator)
         {
             ArgumentException.ThrowIfNullOrEmpty(key);
-    ArgumentNullException.ThrowIfNull(value);
 
             if (validator != null && !validator(value))
             {
@@ -207,8 +206,9 @@ namespace CaddyVpsToolkit.Utilities
                 var nameEnd = remaining.IndexOf('}');
                 if (nameEnd < 0)
                 {
-                    segments.Add(new LiteralSegment("{{"));
-                    continue;
+                    // Unclosed placeholder - treat as unresolved variable in strict mode
+                    segments.Add(new VariableSegment(remaining.ToString(), "{{" + remaining.ToString()));
+                    break;
                 }
 
                 var variableName = remaining[..nameEnd].ToString();
@@ -300,6 +300,7 @@ namespace CaddyVpsToolkit.Utilities
         /// </exception>
         public static string Render(string template, Dictionary<string, object> variables)
         {
+            ArgumentNullException.ThrowIfNull(variables);
             var engine = new TemplateEngine(variables, strictMode: true);
             return engine.Render(template);
         }

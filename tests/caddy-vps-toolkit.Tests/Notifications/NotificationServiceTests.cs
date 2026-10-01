@@ -655,8 +655,9 @@ namespace CaddyVpsToolkit.Tests.Notifications
         /// </summary>
         private class TestNotificationProvider : INotificationProvider
         {
+            private static int _counter;
             public int SendCount { get; private set; }
-            public string ProviderName => "TestProvider";
+            public string ProviderName { get; } = $"TestProvider_{System.Threading.Interlocked.Increment(ref _counter)}";
 
             public async Task<bool> SendAsync(Notification notification)
             {
@@ -676,8 +677,9 @@ namespace CaddyVpsToolkit.Tests.Notifications
         /// </summary>
         private class FailingNotificationProvider : INotificationProvider
         {
+            private static int _counter;
             public int SendCount { get; private set; }
-            public string ProviderName => "FailingProvider";
+            public string ProviderName { get; } = $"FailingProvider_{System.Threading.Interlocked.Increment(ref _counter)}";
 
             public async Task<bool> SendAsync(Notification notification)
             {

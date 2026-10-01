@@ -59,7 +59,7 @@ namespace CaddyVpsToolkit.Tests
                 // Split on "total:" and take the part after it
                 var parts = line.Split(new[] { "total:" }, StringSplitOptions.None);
                 if (parts.Length < 2) return 0;
-                var numberPart = parts[1].Trim();
+                var numberPart = parts[1].Trim().TrimEnd(')');
                 // Remove trailing "ms" if present
                 if (numberPart.EndsWith("ms", StringComparison.OrdinalIgnoreCase))
                     numberPart = numberPart.Substring(0, numberPart.Length - 2);

@@ -22,6 +22,7 @@ namespace CaddyVpsToolkit.Utilities
         private readonly Dictionary<TState, Action> _onEnterCallbacks = new();
         private readonly Dictionary<TState, Action> _onExitCallbacks = new();
         private Action<TState, TState, TTrigger>? _onTransitionCallback;
+        private bool _isFiring;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StateMachine{TState, TTrigger}"/> class.
@@ -121,26 +122,37 @@ namespace CaddyVpsToolkit.Utilities
         /// <returns>True if the transition was successful; otherwise, false.</returns>
         public bool Fire(TTrigger trigger)
         {
+            if (_isFiring)
+                throw new InvalidOperationException("Reentrant transition detected. Cannot fire a trigger while another transition is in progress.");
+
             if (!CanFire(trigger))
                 return false;
 
-            var nextState = _transitions[(_currentState, trigger)];
+            _isFiring = true;
+            try
+            {
+                var nextState = _transitions[(_currentState, trigger)];
 
-            // Call exit callback
-            if (_onExitCallbacks.TryGetValue(_currentState, out var exitCallback))
-                exitCallback?.Invoke();
+                // Call exit callback
+                if (_onExitCallbacks.TryGetValue(_currentState, out var exitCallback))
+                    exitCallback?.Invoke();
 
-            var previousState = _currentState;
-            _currentState = nextState;
+                var previousState = _currentState;
+                _currentState = nextState;
 
-            // Call transition callback
-            _onTransitionCallback?.Invoke(previousState, _currentState, trigger);
+                // Call transition callback
+                _onTransitionCallback?.Invoke(previousState, _currentState, trigger);
 
-            // Call enter callback
-            if (_onEnterCallbacks.TryGetValue(_currentState, out var enterCallback))
-                enterCallback?.Invoke();
+                // Call enter callback
+                if (_onEnterCallbacks.TryGetValue(_currentState, out var enterCallback))
+                    enterCallback?.Invoke();
 
-            return true;
+                return true;
+            }
+            finally
+            {
+                _isFiring = false;
+            }
         }
 
         /// <summary>

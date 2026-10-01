@@ -44,8 +44,7 @@ namespace CaddyVpsToolkit.Utilities
             ArgumentException.ThrowIfNullOrEmpty(arguments);
             ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeoutMs, 0);
 
-            using var timeoutCts = new CancellationTokenSource(timeoutMs);
-            return await ExecuteAsync(command, arguments, timeoutCts.Token);
+            return await ExecuteAsync(command, arguments, DefaultMaxOutputSize, DefaultMaxErrorSize, timeoutMs: timeoutMs, cancellationToken: CancellationToken.None);
         }
 
         /// <summary>

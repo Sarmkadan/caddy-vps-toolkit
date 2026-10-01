@@ -54,19 +54,21 @@ public sealed class ArgumentParserEdgeCaseTests
     }
 
     [Fact]
-    public void GetFlagValue_NullFlagName_ReturnsNull()
+    public void GetFlagValue_NullFlagName_ThrowsArgumentNullException()
     {
         var parser = new ArgumentParser(["cmd", "--verbose"]);
 
-        parser.GetFlagValue(null!).Should().BeNull();
+        var act = () => parser.GetFlagValue(null!);
+        act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
-    public void HasFlag_NullFlagName_ReturnsFalse()
+    public void HasFlag_NullFlagName_ThrowsArgumentNullException()
     {
         var parser = new ArgumentParser(["cmd", "--verbose"]);
 
-        parser.HasFlag(null!).Should().BeFalse();
+        var act = () => parser.HasFlag(null!);
+        act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]

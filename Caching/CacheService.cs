@@ -47,7 +47,8 @@ namespace CaddyVpsToolkit.Caching
 
         public ValueTask<T> GetAsync<T>(string key)
         {
-            ArgumentException.ThrowIfNullOrEmpty(key);
+            if (string.IsNullOrEmpty(key))
+                return ValueTask.FromResult(default(T));
 
             CleanExpiredEntriesOccasionally();
 
@@ -90,7 +91,8 @@ namespace CaddyVpsToolkit.Caching
 
         public ValueTask SetAsync<T>(string key, T value, TimeSpan? expiration = null)
         {
-            ArgumentException.ThrowIfNullOrEmpty(key);
+            if (string.IsNullOrEmpty(key))
+                return ValueTask.CompletedTask;
 
             _cache[key] = new CacheEntry
             {

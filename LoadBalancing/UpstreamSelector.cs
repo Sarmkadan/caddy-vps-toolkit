@@ -41,7 +41,7 @@ namespace CaddyVpsToolkit.LoadBalancing
         /// <exception cref="ArgumentException">Thrown if <paramref name="servers"/> contains null entries.</exception>
         public UpstreamServer? Select(IReadOnlyList<UpstreamServer> servers, UpstreamSelectionContext context)
         {
-            ArgumentNullException.ThrowIfNull(servers);
+            if (servers is null) return null;
             ArgumentNullException.ThrowIfNull(context);
 
             if (servers.Count == 0)
@@ -89,8 +89,14 @@ namespace CaddyVpsToolkit.LoadBalancing
         private UpstreamServer SelectByIpHash(IReadOnlyList<UpstreamServer> servers, string clientIp)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(clientIp);
-            var hash = Math.Abs(clientIp.GetHashCode(StringComparison.Ordinal));
-            return servers[hash % servers.Count];
+            // Use a deterministic hash (FNV-1a) instead of string.GetHashCode which is randomized per process
+            uint hash = 2166136261;
+            foreach (var c in clientIp)
+            {
+                hash ^= c;
+                hash *= 16777619;
+            }
+            return servers[(int)(hash % (uint)servers.Count)];
         }
 
         private UpstreamServer SelectLeastConnections(IReadOnlyList<UpstreamServer> servers)

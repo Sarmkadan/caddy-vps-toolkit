@@ -187,7 +187,7 @@ namespace CaddyVpsToolkit.Utilities
         public LinearBackoffRetryPolicy(int maxRetries = 3, int delayIncrementMs = 500)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(maxRetries);
-            ArgumentOutOfRangeException.ThrowIfLessThan(delayIncrementMs, 1);
+            ArgumentOutOfRangeException.ThrowIfNegative(delayIncrementMs);
 
             _maxRetries = maxRetries;
             _delayIncrement = delayIncrementMs;

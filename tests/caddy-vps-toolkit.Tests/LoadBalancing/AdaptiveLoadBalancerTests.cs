@@ -211,7 +211,7 @@ namespace CaddyVpsToolkit.Tests.LoadBalancing
             // Assert
             result.PoolId.Should().Be(poolId);
             result.Scores.Should().HaveCount(3);
-            result.SelectedUpstreamId.Should().BeNull();
+            result.SelectedUpstreamId.Should().NotBeNull();
             result.HasEligibleUpstream.Should().BeTrue();
 
             // Scores should be ordered by NormalizedScore descending

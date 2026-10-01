@@ -31,8 +31,7 @@ namespace CaddyVpsToolkit.Utilities
 
         public void MarkMilestone(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-            _milestones.Add((name, _stopwatch.ElapsedMilliseconds));
+            _milestones.Add((name ?? string.Empty, _stopwatch.ElapsedMilliseconds));
         }
 
         public long GetElapsedMs()

@@ -62,9 +62,7 @@ namespace CaddyVpsToolkit.LoadBalancing
                 }
                 else if (probeSucceeded && server.ConsecutiveSuccesses >= pool.HealthyThreshold && server.Status == UpstreamServerStatus.Unhealthy)
                 {
-                    // Start half-open recovery state instead of immediately promoting to Active
-            server.Status = UpstreamServerStatus.HalfOpen;
-            server.HalfOpenSuccesses = 0; // Reset counter for half-open state
+                    server.Status = UpstreamServerStatus.Active;
                 }
             }
 

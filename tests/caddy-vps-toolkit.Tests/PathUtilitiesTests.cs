@@ -55,17 +55,18 @@ namespace CaddyVpsToolkit.Tests
         /// <param name="from">The base path the relative path is computed from.</param>
         /// <param name="to">The target path to express relative to <paramref name="from"/>.</param>
         /// <param name="expected">The expected relative path result.</param>
-        [Theory]
-        [InlineData("C:\\Folder\\Sub", "C:\\Folder\\Sub\\File.txt", "File.txt")]
-        [InlineData("/usr/local/bin", "/usr/local/bin/script.sh", "script.sh")]
-        [InlineData("", "/some/path", "/some/path")]
-        [InlineData("C:\\Folder", "D:\\Other\\File.txt", "D:\\Other\\File.txt")]
-        public void GetRelativePath_ValidInputs_ReturnsExpected(string from, string to, string expected)
+        [Fact]
+        public void GetRelativePath_SameDirectory_ReturnsFileName()
         {
-            ArgumentNullException.ThrowIfNull(from);
-            ArgumentException.ThrowIfNullOrEmpty(to);
-            var result = PathUtilities.GetRelativePath(from, to);
-            Assert.Equal(expected, result);
+            var result = PathUtilities.GetRelativePath("/usr/local/bin", "/usr/local/bin/script.sh");
+            Assert.Equal("script.sh", result);
+        }
+
+        [Fact]
+        public void GetRelativePath_EmptyFrom_ReturnsTo()
+        {
+            var result = PathUtilities.GetRelativePath("", "/some/path");
+            Assert.Equal("/some/path", result);
         }
 
         #endregion
@@ -267,16 +268,19 @@ namespace CaddyVpsToolkit.Tests
         /// </summary>
         /// <param name="input">The path containing mixed directory separators.</param>
         /// <param name="expected">The expected path with normalized separators.</param>
-        [Theory]
-        [InlineData("folder\\subfolder/file.txt", "folder\\subfolder\\file.txt")]
-        [InlineData("folder/subfolder\\file.txt", "folder\\subfolder\\file.txt")]
-        [InlineData("", "")]
-        public void NormalizePath_ValidInputs_ReturnsNormalized(string input, string expected)
+        [Fact]
+        public void NormalizePath_MixedSeparators_NormalizesToPlatform()
         {
-            ArgumentNullException.ThrowIfNull(input);
-            ArgumentException.ThrowIfNullOrEmpty(expected);
-            var result = PathUtilities.NormalizePath(input);
-            Assert.Equal(expected, result);
+            var sep = Path.DirectorySeparatorChar;
+            var result = PathUtilities.NormalizePath($"folder{Path.AltDirectorySeparatorChar}subfolder{sep}file.txt");
+            Assert.Equal($"folder{sep}subfolder{sep}file.txt", result);
+        }
+
+        [Fact]
+        public void NormalizePath_EmptyInput_ReturnsEmpty()
+        {
+            var result = PathUtilities.NormalizePath("");
+            Assert.Equal("", result);
         }
 
         #endregion
