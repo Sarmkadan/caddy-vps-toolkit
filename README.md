@@ -1404,6 +1404,56 @@ if (single.RequiresAttention)
 
 `CheckAllAsync` returns one result per registered domain, in the order they were added. The `CertificateAlert` event fires for every result that is not `Valid`, including `Error`. It is raised only by `CheckAllAsync`, not by `CheckDomainAsync`.
 
+## Configuration and startup validation
+
+`AddCaddyVpsToolkit(services, configuration)` binds the `CaddyClient` and `CertificateMonitor` sections and validates them when the host starts. A bad value stops startup with an `OptionsValidationException`. Its `Failures` list names every property that failed, so you see all problems at once instead of on first use.
+
+| Section | Property | Rule |
+| --- | --- | --- |
+| `CaddyClient` | `AdminEndpoint` | Absolute `http` or `https` URI. Default `http://localhost:2019`. |
+| `CaddyClient` | `Timeout` | Greater than zero and at most 5 minutes. Default `00:00:30`. |
+| `CertificateMonitor` | `WarningThresholdDays` | 1 to 365. Default `30`. |
+| `CertificateMonitor` | `CheckInterval` | At least 1 minute. Default `01:00:00`. |
+| `CertificateMonitor` | `Hosts` | Required: at least one host, with no empty entries and no duplicates (case-insensitive). |
+| `CertificateMonitor` | `Port` | 1 to 65535. Default `443`. |
+
+Sample `appsettings.json` section:
+
+```json
+{
+  "CaddyClient": {
+    "AdminEndpoint": "http://localhost:2019",
+    "Timeout": "00:00:30"
+  },
+  "CertificateMonitor": {
+    "WarningThresholdDays": 30,
+    "CheckInterval": "01:00:00",
+    "Port": 443,
+    "Hosts": [ "app.example.com", "api.example.com" ]
+  }
+}
+```
+
+Register the options in a host. Validation runs in `StartAsync`:
+
+```csharp
+using CaddyVpsToolkit.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+
+IConfiguration configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
+
+using IHost host = new HostBuilder()
+    .ConfigureServices(services => services.AddCaddyVpsToolkit(configuration))
+    .Build();
+
+await host.StartAsync(); // throws OptionsValidationException on invalid settings
+```
+
+The `caddy-vps-toolkit` CLI does not start a host, so these checks do not run there. `CaddyClient` and `CertificateMonitor` also do not read these values yet. They keep their own constructor arguments.
+
 ## Common errors
 
 | Message or symptom | Raised by | What it means | What to do |
