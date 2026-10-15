@@ -1,3 +1,68 @@
+## Getting Started
+
+The toolkit includes `CaddyVpsToolkit.Integration.CaddyClient`, a typed client for the Caddy admin API. The snippets below use it from a plain .NET console app.
+
+### Prerequisites
+
+- **Caddy 2.x** with the admin API enabled. It listens on `localhost:2019` by default, so don't set `admin off` in your Caddy config.
+- **.NET 10 SDK**. The package targets `net10.0`.
+
+### Installation
+
+```bash
+dotnet new console -n CaddyDemo
+cd CaddyDemo
+dotnet add package Zaiets.caddy.vps.toolkit
+```
+
+### Load and print the current config
+
+Replace `Program.cs` with:
+
+```csharp
+using System;
+using System.Text.Json;
+using CaddyVpsToolkit.Integration;
+
+var http = new HttpClientWrapper(new HttpClientWrapperOptions());
+using var client = new CaddyClient(http, "localhost", 2019);
+
+var config = await client.GetConfigAsync();
+Console.WriteLine(JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
+```
+
+Run it with `dotnet run`.
+
+### Push a reverse proxy route for example.com
+
+Replace `Program.cs` with:
+
+```csharp
+using System;
+using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Integration;
+
+var http = new HttpClientWrapper(new HttpClientWrapperOptions());
+using var client = new CaddyClient(http, "localhost", 2019);
+
+var route = new CaddyRoute
+{
+    ServiceId = "example-com",
+    Domain = "example.com",
+    UpstreamUrl = "http://localhost:5000"
+};
+
+var ok = await client.UpsertRouteAsync(route);
+Console.WriteLine(ok ? "Route pushed." : "Caddy rejected the route.");
+```
+
+Run it with `dotnet run`.
+
+### Known limitations
+
+- `GetConfigAsync` deserializes Caddy's JSON into the toolkit's `CaddyConfig` model, which uses different property names. The printed output shows the model's default values, not your live Caddy config.
+- `UpsertRouteAsync` sends the `CaddyRoute` object with its C# property names (`Domain`, `UpstreamUrl`, ...), not Caddy's JSON route format. It sends `PUT /id/<Id>`, and the route's `Id` defaults to a new GUID. Expect a `false` result until this is fixed.
+
 ## SslCertificateInfoExtensions
 
 The `SslCertificateInfoExtensions` class provides a set of extension methods for working with `SslCertificateInfo` objects. These methods simplify common certificate operations, such as determining the certificate's status, formatting its validity period, and checking its issuer.
