@@ -5,17 +5,23 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>CaddyVpsToolkit</RootNamespace>
     <AssemblyName>caddy-vps-toolkit</AssemblyName>
-    <PackageId>Zaiets.caddy.vps.toolkit</PackageId>
+    <PackageId>CaddyVpsToolkit</PackageId>
     <Version>1.0.0</Version>
     <Authors>Vladyslav Zaiets</Authors>
-    <Description>A .NET CLI tool for managing multiple services on a single Linux VPS including Caddy configuration, systemd units, and health monitoring.</Description>
-    <PackageTags>cli caddy vps service-management systemd health-monitoring reverse-proxy devops</PackageTags>
+    <Description>A .NET client for the Caddy 2 admin API with domain management, reverse-proxy configuration, and certificate monitoring.</Description>
+    <PackageTags>caddy;reverse-proxy;tls;certificates;vps;devops</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/sarmkadan/caddy-vps-toolkit</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sarmkadan/caddy-vps-toolkit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' Or '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,6 +43,7 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
   <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.402" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
