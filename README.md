@@ -1241,3 +1241,177 @@ class Program
     }
 }
 ```
+
+## Managing domains
+
+`DomainManager` (namespace `CaddyVpsToolkit.Services`) maps a domain to an upstream through the Caddy admin API. `AddDomainAsync` creates a route with the ID `route-<domain>` (dots replaced by dashes) and HTTPS enabled. `RemoveDomainAsync` deletes that route by the same ID.
+
+Two limits apply:
+
+- **Mappings are held in memory.** `ListDomains()` and `IsDomainRegistered()` only see domains added through the same `DomainManager` instance in the current process. Routes that already exist in Caddy from another source are not listed.
+- **Route bodies use the toolkit's C# property names.** `DomainManager` sends the same `CaddyRoute` body as `UpsertRouteAsync`, so the known limitation under *Getting Started* applies. Caddy may reject routes until it is fixed.
+
+### Wiring
+
+`DomainManager` needs an `ICaddyClient` and a `CaddyConfigurationService`, which in turn needs a `ServiceManagementService` built on a repository. Constructing `ServiceRepository` creates and initializes the SQLite database at `AppConstants.DatabasePath`.
+
+```csharp
+using System;
+using CaddyVpsToolkit.Data;
+using CaddyVpsToolkit.Integration;
+using CaddyVpsToolkit.Services;
+
+var http = new HttpClientWrapper(new HttpClientWrapperOptions());
+using var caddy = new CaddyClient(http, "localhost", 2019);
+
+var repository = new ServiceRepository();
+var configService = new CaddyConfigurationService(new ServiceManagementService(repository));
+var domains = new DomainManager(caddy, configService);
+```
+
+The snippets below continue from this setup.
+
+### Add a domain with an upstream
+
+```csharp
+var added = await domains.AddDomainAsync("app.example.com", "localhost:8080");
+Console.WriteLine(added.IsSuccess
+    ? "Domain added."
+    : $"Failed: {added.ErrorMessage}");
+```
+
+`AddDomainAsync` returns a non-generic `Result`. Check `IsSuccess` and read `ErrorMessage` on failure. Domains are normalized (trimmed, lowercased, trailing dot removed), so `App.Example.com.` and `app.example.com` are the same domain.
+
+### List domains
+
+```csharp
+foreach (DomainMapping mapping in domains.ListDomains())
+{
+    Console.WriteLine($"{mapping.Domain} -> {mapping.Upstream} (added {mapping.CreatedAtUtc:u})");
+}
+
+Console.WriteLine(domains.IsDomainRegistered("app.example.com")
+    ? "app.example.com is registered."
+    : "app.example.com is not registered.");
+```
+
+### Remove a domain
+
+```csharp
+var removed = await domains.RemoveDomainAsync("app.example.com");
+Console.WriteLine(removed.IsSuccess
+    ? "Domain removed."
+    : $"Failed: {removed.ErrorMessage}");
+```
+
+### Build a ReverseProxyConfig with multiple upstreams
+
+`ReverseProxyConfig` (namespace `CaddyVpsToolkit.Configuration`) renders a Caddyfile site block. It does not call Caddy. Use it to generate config text.
+
+```csharp
+using System;
+using CaddyVpsToolkit.Configuration;
+
+var proxy = new ReverseProxyConfig
+{
+    Domain = "app.example.com",
+    AutoHttps = true,
+    PathPrefix = "/api"                  // optional; omit to proxy every path
+};
+
+proxy.AddUpstream("127.0.0.1:3000");                 // weight defaults to 1
+proxy.AddUpstream("127.0.0.1:3001", weight: 3);
+proxy.AddUpstream("10.0.0.5:3000", 2);
+
+proxy.ExtraHeaders["X-Forwarded-Proto"] = "https";
+
+// Drop an upstream that is no longer needed
+proxy.RemoveUpstream("10.0.0.5:3000");
+
+Console.WriteLine(proxy.ToCaddyfileSnippet());
+```
+
+Output (from the snippet above):
+
+```caddyfile
+app.example.com {
+    reverse_proxy /api* 127.0.0.1:3000 127.0.0.1:3001 {
+        lb_policy weighted_round_robin
+        # weight 127.0.0.1:3000 = 1
+        # weight 127.0.0.1:3001 = 3
+        health_uri /health
+        health_interval 30s
+    }
+    header X-Forwarded-Proto "https"
+}
+```
+
+Notes on the output:
+
+- **Health checks are not configurable.** `ReverseProxyConfig` has no health-check properties. Every block includes `health_uri /health` and `health_interval 30s`, so each upstream must answer `GET /health`.
+- **Weights are written as comments.** When any upstream has a weight other than 1, the block gets `lb_policy weighted_round_robin` plus `# weight <host:port> = <n>` comment lines. The weights are not written into the `reverse_proxy` targets, so treat them as informational until the renderer is fixed.
+- `ToCaddyfileSnippet()` throws `InvalidOperationException` if `Domain` is empty or there are no upstreams.
+- `ToJson()` and `ReverseProxyConfig.FromJson(json)` round-trip the configuration if you need to store it.
+
+## Monitoring certificates
+
+`CertificateMonitor` (namespace `CaddyVpsToolkit.Monitoring`) connects to each domain on port 443 with SNI, reads the leaf certificate, and classifies it by its `NotAfter` date.
+
+Two limits apply:
+
+- **Thresholds are fixed:** 30 days for `ExpiringSoon` and 7 days for `Critical`. The constructor accepts `SslCertificateMonitoringOptions`, but `CertificateMonitor` does not read it, so `WarnDays` and `CriticalDays` have no effect here.
+- **Only expiry is checked.** The TLS callback accepts any certificate, so a self-signed or untrusted certificate is reported by its expiry date and not rejected.
+
+```csharp
+using System;
+using System.Collections.Generic;
+using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Monitoring;
+
+using var monitor = new CertificateMonitor();
+monitor.AddDomain("app.example.com");
+monitor.AddDomain("api.example.com");
+
+// Raised by CheckAllAsync for every domain whose status is not Valid
+monitor.CertificateAlert += alert => Console.WriteLine($"ALERT: {alert.Message}");
+
+IReadOnlyList<CertificateStatusResult> results = await monitor.CheckAllAsync();
+
+foreach (CertificateStatusResult result in results)
+{
+    Console.WriteLine($"{result.Health,-13} {result.DaysRemaining,4} days  {result.Message}");
+}
+
+// Check one domain on demand
+CertificateStatusResult single = await monitor.CheckDomainAsync("app.example.com");
+if (single.RequiresAttention)
+{
+    Console.WriteLine($"Act now: {single.Message}");
+}
+```
+
+`CertificateStatusResult` exposes `Health`, `DaysRemaining`, and `Message`, plus helpers `IsHealthy`, `IsExpiringSoon`, `IsExpired`, and `RequiresAttention` (Critical or Expired).
+
+### Interpreting the result
+
+| `Health` | `DaysRemaining` | Meaning |
+| --- | --- | --- |
+| `Valid` | 31 or more | Healthy. No action needed. |
+| `ExpiringSoon` | 8 to 30 | Inside the warning window. Check that automatic renewal is working. |
+| `Critical` | 0 to 7 | Less than a week left. Investigate now. Also used for a certificate that expired less than 24 hours ago, because the day count truncates toward zero. |
+| `Expired` | Negative | `NotAfter` passed at least 24 hours ago. Renew or fix the certificate immediately. |
+| `Error` | Always 0 | The domain could not be reached or the TLS handshake failed. `Message` holds the exception text, such as `app.example.com: error - ...`. Do not read `DaysRemaining` for this status. |
+
+`CheckAllAsync` returns one result per registered domain, in the order they were added. The `CertificateAlert` event fires for every result that is not `Valid`, including `Error`. It is raised only by `CheckAllAsync`, not by `CheckDomainAsync`.
+
+## Common errors
+
+| Message or symptom | Raised by | What it means | What to do |
+| --- | --- | --- | --- |
+| `Caddy admin API rejected the route for '<domain>'.` | `DomainManager.AddDomainAsync` | The admin API call returned a failure. This covers an unreachable admin API, because `HttpClientWrapper` turns network errors into failed responses, and it also covers Caddy rejecting the route body. The two cases look identical. | Run `curl http://localhost:2019/config/`. If it responds, the route body is the C#-property-name limitation described above. |
+| `Caddy admin API failed to remove route for '<domain>'.` | `DomainManager.RemoveDomainAsync` | Same cause as above, for the DELETE call. | Same check as above. |
+| `Domain '<domain>' is already registered.` | `DomainManager.AddDomainAsync` | This `DomainManager` instance already has a mapping for the domain. Other Caddy routes for the same domain are not detected. | Call `IsDomainRegistered` first, or call `RemoveDomainAsync` before adding again. |
+| `Upstream host must not be empty.` | `DomainManager.AddDomainAsync` | The upstream argument is blank. Only blank values are checked here. | Pass `host:port`, for example `localhost:8080`. |
+| Caddy rejects the route, with the same message as an unreachable admin API | `DomainManager.AddDomainAsync` | The upstream is malformed, for example it has no port. `DomainManager` does not validate the format and sends it to Caddy. | Use `host:port`. Test the value with `curl` against the admin API. |
+| `Upstream host:port must not be empty.` (`ArgumentException`) or `Weight must be at least 1.` (`ArgumentOutOfRangeException`) | `ReverseProxyConfig.AddUpstream` | Invalid arguments, thrown immediately. | Fix the call site. |
+| `error - ...` with `Health = Error` | `CertificateMonitor.CheckDomainAsync` / `CheckAllAsync` | The domain could not be reached on port 443 or the TLS handshake failed. | Check DNS, that port 443 is open, and that Caddy is running and serving the certificate. |
