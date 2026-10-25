@@ -75,5 +75,15 @@ namespace CaddyVpsToolkit.Domain.Models
             }
             return null;
         }
+
+        /// <summary>
+        /// Returns a concise summary of the key health check fields
+        /// (id, service, type, endpoint, interval, timeout and enabled state)
+        /// </summary>
+        /// <returns>A single-line summary of this health check configuration</returns>
+        public override string ToString()
+        {
+            return $"HealthCheckConfig {{ Id={Id}, ServiceId={ServiceId}, Type={Type}, Endpoint={Endpoint}, IntervalSeconds={IntervalSeconds}, TimeoutSeconds={TimeoutSeconds}, Enabled={Enabled} }}";
+        }
     }
 }
