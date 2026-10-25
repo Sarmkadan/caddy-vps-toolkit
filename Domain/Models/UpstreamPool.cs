@@ -152,6 +152,16 @@ namespace CaddyVpsToolkit.Domain.Models
         public int GetTotalActiveConnections() =>
             Servers.Sum(s => s.ActiveConnections);
 
+        /// <summary>
+        /// Returns a concise summary of the key pool fields
+        /// (id, name, service, strategy, server count, enabled state)
+        /// </summary>
+        /// <returns>A single-line summary of this upstream pool</returns>
+        public override string ToString()
+        {
+            return $"UpstreamPool {{ Id={Id}, Name={Name}, ServiceId={ServiceId}, Strategy={Strategy}, Servers={Servers.Count}, IsEnabled={IsEnabled} }}";
+        }
+
         // ─── Caddy Config Generation ──────────────────────────────────────────
 
         /// <summary>
