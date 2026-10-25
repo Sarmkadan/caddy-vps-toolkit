@@ -68,6 +68,9 @@ namespace CaddyVpsToolkit.Integration
 
         public async Task<bool> TriggerAsync(WebhookEventType eventType, object payload)
         {
+            if (payload == null)
+                throw new ArgumentNullException(nameof(payload));
+
             if (!_registrations.TryGetValue(eventType, out var urls))
                 return true;
 
