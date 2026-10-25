@@ -59,6 +59,9 @@ namespace CaddyVpsToolkit.Integration
 
         public void Unregister(string url, WebhookEventType eventType)
         {
+            if (string.IsNullOrEmpty(url))
+                throw new ArgumentException("URL required", nameof(url));
+
             if (_registrations.ContainsKey(eventType))
                 _registrations[eventType].Remove(url);
         }
