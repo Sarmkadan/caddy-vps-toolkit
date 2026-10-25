@@ -120,6 +120,13 @@ namespace CaddyVpsToolkit.Domain.Models
         public string GetUpstreamAddress() => $"{Address}:{Port}";
 
         /// <summary>
+        /// Returns a concise summary of this upstream server: its <c>host:port</c> address, operational status,
+        /// weight, and health flag (e.g. <c>"10.0.0.2:8080 [Active, weight=1, healthy=True]"</c>).
+        /// </summary>
+        /// <returns>A single-line, human-readable description of this upstream server.</returns>
+        public override string ToString() => $"{GetUpstreamAddress()} [{Status}, weight={Weight}, healthy={IsHealthy}]";
+
+        /// <summary>
         /// Determines whether this upstream is currently eligible to receive proxied requests.
         /// An upstream is available when its status is <see cref="UpstreamServerStatus.Active"/> and it is healthy.
         /// </summary>
