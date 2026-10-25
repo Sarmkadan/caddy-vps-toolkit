@@ -31,17 +31,8 @@ namespace CaddyVpsToolkit.Events
     }
 
     /// <summary>
-    /// Event bus for publishing and subscribing to domain events.
-    /// Supports async event handlers and maintains handler registrations.
-    /// This is a simple in-memory implementation suitable for single-server deployments.
+    /// In-memory implementation of <see cref="IEventBus"/> suitable for single-server deployments.
     /// </summary>
-    public interface IEventBus
-    {
-        void Subscribe<TEvent>(IEventHandler<TEvent> handler) where TEvent : DomainEvent;
-        void Unsubscribe<TEvent>(IEventHandler<TEvent> handler) where TEvent : DomainEvent;
-        Task PublishAsync<TEvent>(TEvent @event) where TEvent : DomainEvent;
-    }
-
     public sealed class EventBus : IEventBus
     {
         private readonly Dictionary<Type, List<object>> _handlers = new();
@@ -127,10 +118,10 @@ namespace CaddyVpsToolkit.Events
 
         private sealed class SubscriptionToken<TEvent> : IDisposable where TEvent : DomainEvent
         {
-            private readonly EventBus _bus;
+            private readonly IEventBus _bus;
             private IEventHandler<TEvent>? _handler;
 
-            public SubscriptionToken(EventBus bus, IEventHandler<TEvent> handler)
+            public SubscriptionToken(IEventBus bus, IEventHandler<TEvent> handler)
             {
                 _bus = bus;
                 _handler = handler;
