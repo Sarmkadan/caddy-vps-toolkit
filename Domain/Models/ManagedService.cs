@@ -126,5 +126,15 @@ namespace CaddyVpsToolkit.Domain.Models
         {
             return Name.ToLower().Replace(" ", "_").Replace("-", "_");
         }
+
+        /// <summary>
+        /// Returns a concise summary of the key service fields
+        /// (id, name, type, status, port, host binding and enabled state).
+        /// </summary>
+        /// <returns>A single-line summary of this managed service.</returns>
+        public override string ToString()
+        {
+            return $"ManagedService {{ Id={Id}, Name={Name}, Type={Type}, Status={Status}, Port={Port}, HostBinding={HostBinding}, IsEnabled={IsEnabled} }}";
+        }
     }
 }
