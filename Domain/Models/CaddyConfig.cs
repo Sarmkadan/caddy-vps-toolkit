@@ -103,5 +103,15 @@ namespace CaddyVpsToolkit.Domain.Models
 
             return string.Join("\n", lines);
         }
+
+        /// <summary>
+        /// Returns a concise summary of the key configuration fields
+        /// (id, admin endpoint, HTTP/HTTPS ports, TLS policy and active state)
+        /// </summary>
+        /// <returns>A single-line summary of this configuration</returns>
+        public override string ToString()
+        {
+            return $"CaddyConfig {{ Id={Id}, Admin={AdminHost}:{AdminPort}, Http={HttpPort}, Https={HttpsPort}, TlsPolicy={TlsPolicy}, IsActive={IsActive} }}";
+        }
     }
 }
