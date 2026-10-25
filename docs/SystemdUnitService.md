@@ -1,196 +1,249 @@
 # SystemdUnitService
 
-Provides a high‑level wrapper for managing systemd units (services, sockets, timers, etc.) from .NET code. The class encapsulates common operations such as creating or deleting unit files, starting/stopping/enabling/disabling services, and querying unit status.
+SystemdUnitService wraps `systemctl` and the unit directory (`/etc/systemd/system`) for the Caddy VPS Toolkit. It writes and deletes unit files, runs service lifecycle commands (start, stop, restart, reload, enable, disable), and reads unit state. It has no state of its own, so one instance can be reused.
+
+The source lives in `Services/SystemdUnitService.cs` and contains two public types:
+
+- `SystemdUnitService` is a `sealed` class. It manages unit files and runs `systemctl` commands.
+- `SystemdUnitStatus` is a `sealed` class. It holds the fields parsed from `systemctl show`.
+
+Unit configuration is described by [SystemdUnitConfig](SystemdUnitConfig.md). The service-level model is `ManagedService`.
+
+## Prerequisites
+
+- **systemd must be present.** The constructor runs `systemctl --version` and throws if it is missing or fails.
+- **Root privileges** are needed to write to `/etc/systemd/system` and to run lifecycle commands against system units.
+- **Unit names** are passed as-is to `systemctl`, for example `orders-api.service`.
 
 ## API
 
-### SystemdUnitService()
-Initializes a new instance of the `SystemdUnitService` class. The instance is not bound to any specific unit until the `UnitName` property is set or a method that requires a unit name is invoked with an explicit name parameter.
+### `SystemdUnitService`
 
-### CreateUnitFileAsync()
-**Purpose:** Writes a unit file to the systemd configuration directory (`/etc/systemd/system/` or `/usr/lib/systemd/system/` depending on privilege level).  
-**Parameters:** None (the unit file content is assumed to be supplied via a prior call to `SetUnitFileContent` or similar internal mechanism; if the class requires content, it must be provided before calling this method).  
-**Return Value:** `Task<bool>` – `true` if the unit file was created successfully; `false` if the file already exists and was not overwritten.  
-**Exceptions:**  
-- `UnauthorizedAccessException` – the process lacks permission to write to the target directory.  
-- `IOException` – an I/O error occurred while writing the file.  
-- `InvalidOperationException` – the unit name has not been specified.
+#### `SystemdUnitService()`
 
-### DeleteUnitFileAsync()
-**Purpose:** Removes the unit file associated with the unit from the systemd configuration directory.  
-**Parameters:** None.  
-**Return Value:** `Task<bool>` – `true` if the file was deleted; `false` if the file did not exist.  
-**Exceptions:**  
-- `UnauthorizedAccessException` – insufficient rights to delete the file.  
-- `IOException` – an I/O error occurred during deletion.
+Creates a service instance and checks that systemd is available.
 
-### StartServiceAsync()
-**Purpose:** Instructs systemd to start the unit.  
-**Parameters:** None.  
-**Return Value:** `Task<bool>` – `true` if the start command was accepted and the unit entered an active state; `false` if systemd reported a failure.  
-**Exceptions:**  
-- `InvalidOperationException` – the unit name is not set.  
-- `System.ComponentModel.Win32Exception` – the underlying `systemctl` call returned a non‑zero exit code indicating an error (e.g., unit not found).
+- **Parameters**: None.
+- **Exceptions**: Throws `SystemdOperationException` with the message `Failed to verify systemd availability` if `systemctl --version` cannot be started, does not exit within five seconds, or exits with a non-zero code.
 
-### StopServiceAsync()
-**Purpose:** Instructs systemd to stop the unit.  
-**Parameters:** None.  
-**Return Value:** `Task<bool>` – `true` if the stop command succeeded; `false` otherwise.  
-**Exceptions:** Same as `StartServiceAsync`.
+#### `Task<bool> CreateUnitFileAsync(SystemdUnitConfig config, ManagedService service, bool dryRun = false)`
 
-### RestartServiceAsync()
-**Purpose:** Stops and then starts the unit in a single operation.  
-**Parameters:** None.  
-**Return Value:** `Task<bool>` – `true` if both stop and start succeeded; `false` if either step failed.  
-**Exceptions:** Same as `StartServiceAsync`.
+Validates `config`, renders the unit content, writes it to `/etc/systemd/system/<UnitName>`, and runs `systemctl daemon-reload`. With `dryRun: true`, it prints the content to the console and changes nothing.
 
-### ReloadServiceAsync()
-**Purpose:** Sends a reload signal (SIGHUP) to the unit, prompting it to reload its configuration without a full restart.  
-**Parameters:** None.  
-**Return Value:** `Task<bool>` – `true` if the reload command was accepted; `false` if the unit does not support reload or the command failed.  
-**Exceptions:** Same as `StartServiceAsync`.
+- **Parameters**
+  - `config`: Unit definition. `Validate()` runs first, and the content comes from `GenerateSystemdContent()`.
+  - `service`: The managed service the unit belongs to. It is only checked for `null`; its fields are not used.
+  - `dryRun`: When `true`, prints the unit content and the `daemon-reload` step it would run, then returns without writing anything. Defaults to `false`.
+- **Return value**: `true` after the file is written and the daemon is reloaded, or after a dry run.
+- **Exceptions**
+  - `ArgumentNullException` if `config` or `service` is `null`.
+  - `ValidationException` if `config` fails validation (for example, empty `UnitName` or `ExecStart`, or a negative `RestartDelaySeconds`). This exception is not wrapped.
+  - `SystemdOperationException` with the message `Failed to create unit file: ...` if the directory is missing, the file cannot be written, or the daemon reload fails.
 
-### EnableServiceAsync()
-**Purpose:** Enables the unit to be started automatically at boot (creates the appropriate symlinks).  
-**Parameters:** None.  
-**Return Value:** `Task<bool>` – `true` if the unit was enabled; `false` if it was already enabled.  
-**Exceptions:** Same as `StartServiceAsync`.
+The method does not enable or start the unit. Call `EnableServiceAsync` and `StartServiceAsync` afterwards.
 
-### DisableServiceAsync()
-**Purpose:** Disables the unit, removing any boot‑time symlinks.  
-**Parameters:** None.  
-**Return Value:** `Task<bool>` – `true` if the unit was disabled; `false` if it was already disabled.  
-**Exceptions:** Same as `StartServiceAsync`.
+#### `Task<bool> DeleteUnitFileAsync(string unitName)`
 
-### GetServiceStatusAsync()
-**Purpose:** Queries systemd for the high‑level active state of the unit (e.g., active, inactive, failed).  
-**Parameters:** None.  
-**Return Value:** `Task<ServiceStatus>` – an enumeration indicating the current service status.  
-**Exceptions:**  
-- `InvalidOperationException` – unit name not set.  
-- `System.ComponentModel.Win32Exception` – `systemctl is-active` returned an error.
+Deletes the unit file from `/etc/systemd/system` and runs `systemctl daemon-reload`. It does not stop or disable the unit.
 
-### UnitFileExists
-**Purpose:** Gets a value indicating whether a unit file with the current `UnitName` exists on the system.  
-**Return Value:** `bool` – `true` if the file exists; otherwise `false`.  
-**Exceptions:** None (property is synchronous and performs a file system check; may throw `UnauthorizedAccessException` if the directory cannot be read).
+- **Parameters**
+  - `unitName`: File name of the unit, for example `orders-api.service`.
+- **Return value**: `true` if the file was deleted. `false` if no file with that name exists.
+- **Exceptions**
+  - `ArgumentException` if `unitName` is null, empty, or whitespace.
+  - `SystemdOperationException` with the message `Failed to delete unit file: ...` if the delete or the daemon reload fails.
 
-### GetUnitFileContentAsync()
-**Purpose:** Reads the contents of the unit file associated with the unit.  
-**Parameters:** None.  
-**Return Value:** `Task<string>` – the full text of the unit file.  
-**Exceptions:**  
-- `FileNotFoundException` – the unit file does not exist.  
-- `UnauthorizedAccessException` – insufficient rights to read the file.  
-- `IOException` – an I/O error occurred.
+#### `Task<bool> StartServiceAsync(string unitName)`
+#### `Task<bool> StopServiceAsync(string unitName)`
+#### `Task<bool> RestartServiceAsync(string unitName)`
+#### `Task<bool> ReloadServiceAsync(string unitName)`
+#### `Task<bool> EnableServiceAsync(string unitName)`
+#### `Task<bool> DisableServiceAsync(string unitName)`
 
-### ListUnitsAsync()
-**Purpose:** Enumerates all unit names known to systemd (equivalent to `systemctl list-units`).  
-**Parameters:** None.  
-**Return Value:** `Task<List<string>>` – a list of unit names.  
-**Exceptions:**  
-- `System.ComponentModel.Win32Exception` – the `systemctl` command failed.  
-- `UnauthorizedAccessException` – the process lacks permission to query systemd.
+Each method runs `systemctl <verb> <unitName>`. They differ only in the verb: `start`, `stop`, `restart`, `reload`, `enable`, and `disable`.
 
-### GetDetailedStatusAsync()
-**Purpose:** Retrieves detailed runtime information about the unit (main PID, memory usage, etc.).  
-**Parameters:** None.  
-**Return Value:** `Task<SystemdUnitStatus>` – a structure containing detailed status fields.  
-**Exceptions:** Same as `GetServiceStatusAsync`.
+- **Parameters**
+  - `unitName`: Name of the unit, for example `orders-api.service`.
+- **Return value**: `true` when `systemctl` exits with code `0`. Failure is reported by exception, never by `false`.
+- **Exceptions**: `SystemdOperationException` with a message such as `Failed to start service: ...` if the command exits non-zero, times out, or cannot be started. `ReloadServiceAsync` fails for units that do not define `ExecReload`, because `systemctl reload` then exits non-zero.
 
-### UnitName
-**Purpose:** Gets or sets the name of the systemd unit (e.g., `myservice.service`).  
-**Return Value:** `string` – the unit name.  
-**Exceptions:** None; setting to `null` or whitespace will cause subsequent operations to throw `InvalidOperationException`.
+#### `Task<ServiceStatus> GetServiceStatusAsync(string unitName)`
 
-### ActiveState
-**Purpose:** Gets the last known active state of the unit (e.g., `active`, `inactive`, `failed`). This property is updated only after a successful call to `GetServiceStatusAsync` or `GetDetailedStatusAsync`.  
-**Return Value:** `string`.  
-**Exceptions:** None.
+Runs `systemctl is-active <unitName>` and maps the output to a `ServiceStatus` value from `CaddyVpsToolkit.Core`.
 
-### Type
-**Purpose:** Gets the unit type as defined in the unit file (`simple`, `forking`, `oneshot`, `service`, `socket`, etc.).  
-**Return Value:** `string`.  
-**Exceptions:** None.
+- **Parameters**
+  - `unitName`: Name of the unit.
+- **Return value**: `Running` for `active`, `Stopped` for `inactive`, `Restarting` for `activating`, `Failed` for `failed`, and `Unknown` for anything else. Any exception also gives `Unknown`.
+- **Exceptions**: None. Every error is caught and returned as `ServiceStatus.Unknown`.
 
-### MainPid
-**Purpose:** Gets the main process ID of the unit, if it is currently running.  
-**Return Value:** `int` – the PID, or `0` if the unit is not active.  
-**Exceptions:** None.
+Read the behaviour note on this method before relying on the `Stopped` or `Failed` values.
 
-### TimeoutStartUsec
-**Purpose:** Gets the start timeout value configured for the unit, in microseconds.  
-**Return Value:** `ulong`.  
-**Exceptions:** None.
+#### `bool UnitFileExists(string unitName)`
+
+Checks whether a unit file exists in `/etc/systemd/system`. It does not ask systemd whether the unit is loaded.
+
+- **Parameters**
+  - `unitName`: File name of the unit.
+- **Return value**: `true` if the file exists.
+- **Exceptions**: Throws whatever `PathUtilities.SafeCombine` throws for an invalid file name.
+
+#### `string GenerateUnitPreview(SystemdUnitConfig config)`
+
+Validates `config` and returns the unit file content it would write. It touches no files and runs no commands.
+
+- **Parameters**
+  - `config`: Unit definition.
+- **Return value**: The unit file content as a string.
+- **Exceptions**
+  - `ArgumentNullException` if `config` is `null`.
+  - `ValidationException` if `config` fails validation.
+
+#### `Task<string> GetUnitFileContentAsync(string unitName)`
+
+Reads the content of a unit file from `/etc/systemd/system`.
+
+- **Parameters**
+  - `unitName`: File name of the unit.
+- **Return value**: The full file content.
+- **Exceptions**: `SystemdOperationException` with the message `Unit file not found: <unitName>` if the file does not exist. Read errors are not wrapped.
+
+#### `Task<List<string>> ListUnitsAsync()`
+
+Lists the `*.service` files in `/etc/systemd/system`. It returns file names only, with no state.
+
+- **Parameters**: None.
+- **Return value**: The file names, for example `orders-api.service`. The list is empty if the directory does not exist.
+- **Exceptions**: `SystemdOperationException` with the message `Failed to list units: ...` if the directory cannot be read.
+
+#### `Task<SystemdUnitStatus> GetDetailedStatusAsync(string unitName)`
+
+Runs `systemctl show <unitName>` and parses four properties: `ActiveState`, `Type`, `ExecMainPID`, and `TimeoutStartUSec`.
+
+- **Parameters**
+  - `unitName`: Name of the unit.
+- **Return value**: A `SystemdUnitStatus` whose `UnitName` is set to `unitName`. Properties that are missing from the output keep their defaults. For an unknown unit, systemd reports `ActiveState=inactive` and an empty `Type`, so no exception is thrown.
+- **Exceptions**: `SystemdOperationException` with the message `Failed to get status: ...` if `systemctl` fails to run.
+
+### `SystemdUnitStatus`
+
+A plain model with public settable properties. It has no constructor parameters.
+
+| Property | Type | Source | Notes |
+|----------|------|--------|-------|
+| `UnitName` | `string` | Set by `GetDetailedStatusAsync` | Unit name that was queried. |
+| `ActiveState` | `string` | `ActiveState=` | For example `active`, `inactive`, `failed`. `null` until set. |
+| `Type` | `string` | `Type=` | For example `simple` or `notify`. `null` until set. |
+| `MainPid` | `int` | `ExecMainPID=` | `0` when there is no main process. |
+| `TimeoutStartUsec` | `ulong` | `TimeoutStartUSec=` | See the behaviour note below. Stays `0` in practice. |
+
+#### `string ToString()`
+
+Returns a single-line summary of the four values, for example `SystemdUnitStatus { UnitName = orders-api.service, ActiveState = active, Type = simple, MainPid = 4242, TimeoutStartUsec = 0 }`.
 
 ## Usage
 
-### Example 1: Creating and enabling a service unit
+### Creating, enabling, and starting a unit
+
+Preview the unit first with a dry run, then write it and start the service.
+
 ```csharp
-using System;
-using System.Threading.Tasks;
-using CaddyVpsToolkit.Systemd; // assumed namespace
+using CaddyVpsToolkit.Domain.Models;
+using CaddyVpsToolkit.Services;
 
-class Program
+var systemd = new SystemdUnitService();
+
+var service = new ManagedService
 {
-    static async Task Main()
-    {
-        var service = new SystemdUnitService { UnitName = "example.service" };
+    Name = "orders-api",
+    ExecutablePath = "/opt/orders/bin/orders"
+};
 
-        // Ensure the unit file does not already exist
-        if (!await service.UnitFileExists)
-        {
-            // Assume unit file content has been set elsewhere or via a helper method
-            bool created = await service.CreateUnitFileAsync();
-            Console.WriteLine($"Unit file created: {created}");
-        }
+var config = new SystemdUnitConfig
+{
+    ServiceId = service.Id,
+    UnitName = "orders-api.service",
+    ExecStart = "/opt/orders/bin/orders --port 5000",
+    WorkingDirectory = "/opt/orders",
+    User = "orders",
+    Group = "orders",
+    RestartPolicy = RestartPolicy.OnFailure
+};
 
-        // Enable and start the service
-        bool enabled = await service.EnableServiceAsync();
-        Console.WriteLine($"Service enabled: {enabled}");
+// Print the unit content without writing anything
+await systemd.CreateUnitFileAsync(config, service, dryRun: true);
 
-        bool started = await service.StartServiceAsync();
-        Console.WriteLine($"Service started: {started}");
-    }
+// Write the unit file and run daemon-reload
+await systemd.CreateUnitFileAsync(config, service);
+
+await systemd.EnableServiceAsync("orders-api.service");
+await systemd.StartServiceAsync("orders-api.service");
+```
+
+### Checking detailed state
+
+`GetDetailedStatusAsync` returns the raw `ActiveState` string, which is useful when the simple `ServiceStatus` mapping is not enough.
+
+```csharp
+var status = await systemd.GetDetailedStatusAsync("orders-api.service");
+
+Console.WriteLine(status);
+
+if (status.ActiveState == "failed")
+{
+    Console.WriteLine($"Main PID was {status.MainPid}; check: journalctl -u {status.UnitName}");
 }
 ```
 
-### Example 2: Querying detailed status and stopping a service
+### Handling failures
+
+Lifecycle commands report failure by throwing, so wrap calls that can fail.
+
 ```csharp
-using System;
-using System.Threading.Tasks;
-using CaddyVpsToolkit.Systemd;
+using CaddyVpsToolkit.Core;
 
-class Program
+try
 {
-    static async Task Main()
-    {
-        var svc = new SystemdUnitService { UnitName = "nginx.service" };
-
-        // Check if the unit file exists before attempting any operation
-        if (svc.UnitFileExists)
-        {
-            var status = await svc.GetDetailedStatusAsync();
-            Console.WriteLine($"Main PID: {status.MainPid}");
-            Console.WriteLine($"Active state: {status.ActiveState}");
-            Console.WriteLine($"Memory usage: {status.MemoryCurrent} bytes");
-        }
-
-        // Stop the service if it is running
-        var active = await svc.GetServiceStatusAsync();
-        if (active == ServiceStatus.Active)
-        {
-            bool stopped = await svc.StopServiceAsync();
-            Console.WriteLine($"Service stopped: {stopped}");
-        }
-    }
+    await systemd.RestartServiceAsync("orders-api.service");
+}
+catch (SystemdOperationException ex)
+{
+    Console.Error.WriteLine($"Restart failed: {ex.Message}");
 }
 ```
 
-## Notes
-- The class does **not** synchronize access to its members. Concurrent calls from multiple threads may lead to race conditions (e.g., two threads trying to create the same unit file simultaneously). External synchronization is required if the instance is shared.
-- Property values such as `ActiveState`, `MainPid`, and `Type` reflect the state **at the time of the last successful asynchronous query**. They are not automatically updated; call the appropriate `Get*StatusAsync` method to refresh them.
-- Most methods rely on invoking `systemctl` or accessing files under `/etc/systemd/system/`. They will throw `UnauthorizedAccessException` if the process lacks sufficient privileges (typically root or membership in the `systemd-journal` group). Running the application with elevated privileges is recommended for modification operations.
-- If `UnitName` is not set before calling any operation that requires it, an `InvalidOperationException` will be thrown.
-- The `CreateUnitFileAsync` and `DeleteUnitFileAsync` methods do **not** automatically reload the systemd daemon. After creating or deleting a unit file, call `systemctl daemon-reload` via an external process or a future API addition if daemon reload is required for the changes to take effect.
-- The `ListUnitsAsync` method returns all units known to systemd, including those that are masked or inactive; filtering by type or state must be performed by the caller.
+### Previewing and reading unit content
+
+```csharp
+// Build the content without touching disk
+string preview = systemd.GenerateUnitPreview(config);
+
+// Read a unit that is already installed
+if (systemd.UnitFileExists("orders-api.service"))
+{
+    string installed = await systemd.GetUnitFileContentAsync("orders-api.service");
+}
+```
+
+### Removing a unit
+
+`DeleteUnitFileAsync` removes only the file. Stop and disable the unit first.
+
+```csharp
+await systemd.StopServiceAsync("orders-api.service");
+await systemd.DisableServiceAsync("orders-api.service");
+
+bool deleted = await systemd.DeleteUnitFileAsync("orders-api.service");
+// deleted is false if the file was already gone
+```
+
+## Behaviour Notes
+
+- **Only `systemctl` and the unit directory are used.** Commands run as child processes with `UseShellExecute = false`, so no shell is involved. Unit names are placed directly into the argument string, though, so a name that contains spaces is split into several arguments. Pass plain unit names.
+- **Timeouts.** Each command has a limit of `AppConstants.SystemdCommandTimeoutSeconds` (10 seconds). The limit is applied after stdout and stderr have been read to the end. A command that keeps its pipes open can therefore block longer than the limit.
+- **`GetServiceStatusAsync` rarely returns `Stopped` or `Failed`.** `systemctl is-active` exits with a non-zero code for an inactive unit (`inactive` exits with `4` on the systemd 259 host this was checked on). The non-zero exit becomes an exception inside the method, and the catch returns `Unknown`. Only `active` (exit code `0`) reaches the status mapping. For a stopped or failed state, use `GetDetailedStatusAsync` and read `ActiveState`.
+- **`TimeoutStartUsec` is not parsed.** `systemctl show` prints `TimeoutStartUSec` in human-readable form, for example `1min 30s`, not as a number of microseconds. The parse into `ulong` fails silently, so the field stays `0`. Use the raw string from `systemctl show` if you need the value.
+- **`CreateUnitFileAsync` does not enable or start.** Its XML doc summary says "create and enable", but the code only writes the file and runs `daemon-reload`. The `service` argument is only null-checked.
+- **Errors during the file write are re-wrapped.** `CreateUnitFileAsync` wraps every failure in the write path with the prefix `Failed to create unit file:`. Validation errors from `SystemdUnitConfig.Validate()` are thrown as `ValidationException` before that path starts.
+- **Status values use `systemctl show`, which does not fail for unknown units.** `GetDetailedStatusAsync` returns `ActiveState=inactive` for a unit that does not exist. Check `ActiveState` or use `UnitFileExists` if you need to tell a missing unit from a stopped one.
+- **No mutable state.** The class has no fields after construction, so one instance can be shared, and concurrent calls do not interfere with each other at the service level. Each call starts its own `systemctl` process.
+- **Validation helpers.** `SystemdUnitServiceValidation.Validate(this SystemdUnitStatus)` checks a `SystemdUnitStatus` and returns a list of error messages. It lives in `Services/SystemdUnitServiceValidation.cs`.
