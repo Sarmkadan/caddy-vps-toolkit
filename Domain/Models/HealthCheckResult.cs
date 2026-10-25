@@ -69,6 +69,16 @@ namespace CaddyVpsToolkit.Domain.Models
         {
             return ResponseTimeMs > thresholdMs;
         }
+
+        /// <summary>
+        /// Returns a concise summary of the key health check result fields
+        /// (service, status, response time, HTTP status, failure streak and error)
+        /// </summary>
+        /// <returns>A single-line summary of this health check result</returns>
+        public override string ToString()
+        {
+            return $"HealthCheckResult {{ ServiceId={ServiceId}, Status={Status}, ResponseTimeMs={ResponseTimeMs}, HttpStatusCode={HttpStatusCode}, ConsecutiveFailures={ConsecutiveFailures}, ErrorMessage={ErrorMessage} }}";
+        }
     }
 
     public enum HealthCheckStatus
