@@ -102,6 +102,23 @@ namespace CaddyVpsToolkit.Notifications
         }
 
         /// <summary>
+        /// Render a notification message template with the given variables.
+        /// </summary>
+        /// <param name="template">Template from <see cref="NotificationTemplates"/></param>
+        /// <param name="values">Variable name/value pairs referenced by the template</param>
+        /// <returns>The rendered message</returns>
+        private static string Render(string template, params (string Key, object Value)[] values)
+        {
+            var variables = new Dictionary<string, object>(values.Length);
+            foreach (var (key, value) in values)
+            {
+                variables[key] = value;
+            }
+
+            return TemplateEngine.Render(template, variables);
+        }
+
+        /// <summary>
         /// Generate a suppression key for a notification based on its content.
         /// This key is used to detect duplicate notifications.
         /// </summary>
@@ -252,7 +269,8 @@ namespace CaddyVpsToolkit.Notifications
             catch (Exception ex)
             {
                 circuitBreaker.RecordFailure();
-                await _logger.LogErrorAsync($"Error sending notification via {provider.ProviderName}: {ex.Message}");
+                await _logger.LogErrorAsync(Render(NotificationTemplates.ProviderSendError,
+                    ("provider", provider.ProviderName), ("error", ex.Message)));
                 return false;
             }
         }
@@ -272,7 +290,8 @@ namespace CaddyVpsToolkit.Notifications
             // Check if this notification should be suppressed
             if (ShouldSuppressNotification(suppressionKey))
             {
-                await _logger.LogInfoAsync($"Suppressed duplicate notification: {notification.Title}");
+                await _logger.LogInfoAsync(Render(NotificationTemplates.DuplicateSuppressed,
+                    ("title", notification.Title)));
                 return true; // Return true since we intentionally suppressed it (not a failure)
             }
 
@@ -287,8 +306,9 @@ namespace CaddyVpsToolkit.Notifications
                     var success = await SendToProviderWithResilienceAsync(provider, notification);
                     results.Add(success);
 
-                    var status = success ? "succeeded" : "failed";
-                    await _logger.LogInfoAsync($"Notification sent via {provider.ProviderName} ({status})");
+                    var status = success ? NotificationTemplates.StatusSucceeded : NotificationTemplates.StatusFailed;
+                    await _logger.LogInfoAsync(Render(NotificationTemplates.ProviderSendResult,
+                        ("provider", provider.ProviderName), ("status", status)));
 
                     if (success)
                     {
@@ -296,12 +316,13 @@ namespace CaddyVpsToolkit.Notifications
                     }
                     else
                     {
-                        failedProviders.Add((provider.ProviderName, "Delivery failed"));
+                        failedProviders.Add((provider.ProviderName, NotificationTemplates.DeliveryFailedError));
                     }
                 }
                 catch (Exception ex)
                 {
-                    await _logger.LogErrorAsync($"Error sending notification via {provider.ProviderName}: {ex.Message}");
+                    await _logger.LogErrorAsync(Render(NotificationTemplates.ProviderSendError,
+                        ("provider", provider.ProviderName), ("error", ex.Message)));
                     results.Add(false);
                     failedProviders.Add((provider.ProviderName, ex.Message));
                 }
@@ -313,7 +334,8 @@ namespace CaddyVpsToolkit.Notifications
                 foreach (var (providerName, error) in failedProviders)
                 {
                     AddToDeadLetterQueue(notification, providerName, error);
-                    await _logger.LogWarningAsync($"Failed to deliver notification to {providerName}: {error}");
+                    await _logger.LogWarningAsync(Render(NotificationTemplates.DeliveryFailedWarning,
+                        ("provider", providerName), ("error", error)));
                 }
             }
 
@@ -371,8 +393,15 @@ namespace CaddyVpsToolkit.Notifications
 
         public async Task<bool> SendAsync(Notification notification)
         {
-            Console.WriteLine($"[{notification.Priority}] {notification.Title}");
-            Console.WriteLine($" {notification.Message}");
+            Console.WriteLine(TemplateEngine.Render(NotificationTemplates.ConsoleTitle, new Dictionary<string, object>
+            {
+                ["priority"] = notification.Priority,
+                ["title"] = notification.Title
+            }));
+            Console.WriteLine(TemplateEngine.Render(NotificationTemplates.ConsoleMessage, new Dictionary<string, object>
+            {
+                ["message"] = notification.Message
+            }));
             return await Task.FromResult(true);
         }
     }
