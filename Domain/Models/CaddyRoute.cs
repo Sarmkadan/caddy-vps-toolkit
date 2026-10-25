@@ -118,5 +118,15 @@ namespace CaddyVpsToolkit.Domain.Models
         {
             return $"{Domain}{GetCaddyPathMatcher()}";
         }
+
+        /// <summary>
+        /// Returns a concise summary of the key route fields
+        /// (id, domain, path, upstream URL, HTTPS and active state).
+        /// </summary>
+        /// <returns>A single-line summary of this route</returns>
+        public override string ToString()
+        {
+            return $"CaddyRoute {{ Id={Id}, Domain={Domain}, Path={Path}, Upstream={UpstreamUrl}, Https={EnableHttps}, IsActive={IsActive} }}";
+        }
     }
 }
