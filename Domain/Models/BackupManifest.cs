@@ -58,6 +58,12 @@ namespace CaddyVpsToolkit.Domain.Models
         }
 
         /// <summary>
+        /// Returns a short summary of the manifest: backup ID, creation timestamp (UTC),
+        /// service count and SHA-256 checksum (null when not yet computed).
+        /// </summary>
+        public override string ToString() => $"BackupManifest {{ BackupId = {BackupId}, CreatedAt = {CreatedAt:O}, ServiceCount = {ServiceCount}, Sha256Checksum = {Sha256Checksum ?? "null"} }}";
+
+        /// <summary>
         /// Result of a backup integrity verification operation.
         /// </summary>
         public sealed class BackupIntegrityResult
