@@ -100,12 +100,14 @@ namespace CaddyVpsToolkit.Middleware
     /// </summary>
     public sealed class FixedWindowRateLimiter : IRateLimiter
     {
+        private const int DefaultWindowSeconds = 60;
+
         private readonly Dictionary<string, RequestWindow> _windows = new();
         private readonly int _maxRequestsPerWindow;
         private readonly int _windowSizeSeconds;
         private readonly object _lockObject = new();
 
-        public FixedWindowRateLimiter(int maxRequests, int windowSeconds = 60)
+        public FixedWindowRateLimiter(int maxRequests, int windowSeconds = DefaultWindowSeconds)
         {
             _maxRequestsPerWindow = maxRequests;
             _windowSizeSeconds = windowSeconds;
