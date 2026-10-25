@@ -51,6 +51,16 @@ namespace CaddyVpsToolkit.Domain.Models
         {
             return $"{InternalPort}:{ExternalPort}/{Protocol.ToString().ToLower()}";
         }
+
+        /// <summary>
+        /// Returns a concise summary of the key port fields
+        /// (service, internal and external ports, protocol, visibility)
+        /// </summary>
+        /// <returns>A single-line summary of this service port</returns>
+        public override string ToString()
+        {
+            return $"ServicePort {{ ServiceId={ServiceId}, InternalPort={InternalPort}, ExternalPort={ExternalPort}, Protocol={Protocol}, IsPublic={IsPublic} }}";
+        }
     }
 
     public enum PortProtocol
