@@ -111,6 +111,16 @@ namespace CaddyVpsToolkit.Domain.Models
         }
 
         /// <summary>
+        /// Returns a concise summary of the maintenance window: time range, days, enabled state and description.
+        /// </summary>
+        /// <returns>A human-readable summary string.</returns>
+        public override string ToString()
+        {
+            var state = IsEnabled ? "enabled" : "disabled";
+            return $"{StartTime}-{EndTime} on {DaysOfWeek} ({state}): {Description}";
+        }
+
+        /// <summary>
         /// Validates the maintenance window configuration.
         /// </summary>
         /// <exception cref="ValidationException">Thrown when configuration is invalid.</exception>
