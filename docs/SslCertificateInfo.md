@@ -1,123 +1,114 @@
 # SslCertificateInfo
 
-The `SslCertificateInfo` type serves as a data container within the `caddy-vps-toolkit` project, encapsulating the metadata and validation status of an SSL/TLS certificate associated with a specific domain. It aggregates critical details such as the certificate subject, issuer, validity period, and the current operational status, providing a standardized structure for reporting certificate health checks, expiration warnings, or retrieval errors.
+Metadata for an SSL/TLS certificate retrieved from a remote domain. `SslCertificateInfo` is a sealed domain model in the `CaddyVpsToolkit.Domain.Models` namespace. It holds the subject, issuer, and validity window of a certificate, and exposes two computed helpers, `DaysUntilExpiry` and `IsValid`, for expiry checks. It contains no network or I/O logic; `SslCertificateMonitoringService` populates it from a live TLS handshake.
+
+The same file also declares `SslCertificateStatus`, `CertificateStatusResult`, and `SslCertificateCheckResult`. Those types are documented separately. Extension methods for this model are described in [SslCertificateInfoExtensions](SslCertificateInfoExtensions.md).
 
 ## API
 
-The following members define the public interface of `SslCertificateInfo`:
+### `public string Domain`
+Domain name the certificate was retrieved from. Defaults to `string.Empty`. The property is annotated with `[Required]`, but that attribute is only enforced when the object is validated through `System.ComponentModel.DataAnnotations`. Setting the property does not validate it.
 
-### Instance Properties
+### `public string Subject`
+Certificate subject distinguished name, for example `CN=example.com`. Defaults to `string.Empty`.
 
-*   **`public string Domain`**
-    Gets the domain name for which the certificate was issued or checked. This property identifies the target host in the validation context.
+### `public string Issuer`
+Issuing authority distinguished name, for example `CN=R3, O=Let's Encrypt, C=US`. Defaults to `string.Empty`.
 
-*   **`public string Subject`**
-    Gets the subject distinguished name (DN) of the certificate, typically containing the Common Name (CN) and organization details of the entity owning the certificate.
+### `public DateTime IssuedAt`
+Date and time at which the certificate became valid. The monitoring service stores this value in UTC. Values with `DateTimeKind.Unspecified` are treated as local time by the `IsValid` comparison.
 
-*   **`public string Issuer`**
-    Gets the issuer distinguished name (DN) of the certificate authority (CA) that signed and issued the certificate.
+### `public DateTime ExpiresAt`
+Date and time at which the certificate expires. The monitoring service stores this value in UTC. Values with `DateTimeKind.Unspecified` are treated as local time by `DaysUntilExpiry` and `IsValid`.
 
-*   **`public DateTime IssuedAt`**
-    Gets the precise date and time when the certificate became valid. This value represents the start of the certificate's validity period.
+### `public int DaysUntilExpiry`
+Read-only computed property. Returns the number of whole days from the current UTC time until `ExpiresAt`. The value is truncated, not rounded, and is clamped to a minimum of `0`.
 
-*   **`public DateTime ExpiresAt`**
-    Gets the precise date and time when the certificate expires. This value represents the end of the certificate's validity period.
+Once the certificate has expired, the value is `0`, which is the same value an unexpired certificate reports when less than one full day remains. Use `IsValid` or compare `ExpiresAt` to tell these cases apart.
 
-*   **`public SslCertificateStatus Status`**
-    Gets the current validation status of the certificate (e.g., Valid, Expiring Soon, Expired, or Error). This enum value dictates the immediate action required regarding the certificate.
+### `public bool IsValid`
+Read-only computed property. Returns `true` when the current UTC time is at or after `IssuedAt` and strictly before `ExpiresAt`. Returns `false` before the validity window starts and after it ends. This property does not check the trust chain, the host name, or revocation.
 
-*   **`public SslCertificateInfo Certificate`**
-    Gets a nested `SslCertificateInfo` object. In specific implementation contexts, this may represent the primary certificate details when the current instance acts as a wrapper or result container, though its presence alongside duplicate properties suggests a specific structural pattern for nested validation data.
-
-*   **`public string Message`**
-    Gets a human-readable message providing additional context about the certificate status. This is particularly useful when the `Status` indicates an error or a specific warning condition.
-
-*   **`public DateTime CheckedAt`**
-    Gets the date and time when the certificate status was last verified or the check operation was performed.
-
-### Static Factory Methods
-
-*   **`public static SslCertificateCheckResult CreateValid`**
-    Creates a new `SslCertificateCheckResult` instance representing a successfully validated certificate.
-    *   **Parameters**: None (assumes context or default valid state construction).
-    *   **Return Value**: A `SslCertificateCheckResult` object with `Status` set to valid.
-    *   **Throws**: No exceptions expected under normal operation.
-
-*   **`public static SslCertificateCheckResult CreateExpiringSoon`**
-    Creates a new `SslCertificateCheckResult` instance indicating the certificate is approaching its expiration date.
-    *   **Parameters**: None.
-    *   **Return Value**: A `SslCertificateCheckResult` object with `Status` set to expiring soon.
-    *   **Throws**: No exceptions expected under normal operation.
-
-*   **`public static SslCertificateCheckResult CreateExpired`**
-    Creates a new `SslCertificateCheckResult` instance indicating the certificate has passed its expiration date.
-    *   **Parameters**: None.
-    *   **Return Value**: A `SslCertificateCheckResult` object with `Status` set to expired.
-    *   **Throws**: No exceptions expected under normal operation.
-
-*   **`public static SslCertificateCheckResult CreateError`**
-    Creates a new `SslCertificateCheckResult` instance indicating a failure occurred during the certificate check process.
-    *   **Parameters**: None.
-    *   **Return Value**: A `SslCertificateCheckResult` object with `Status` set to error, typically populated with a descriptive `Message`.
-    *   **Throws**: No exceptions expected under normal operation.
+### `public override string ToString()`
+Returns a diagnostic string of the form `SslCertificateInfo { Domain = ..., Subject = ..., Issuer = ..., IssuedAt = ..., ExpiresAt = ..., Domain = ... }`. The `Domain` value appears twice in the output (see Notes). The format is not intended for parsing.
 
 ## Usage
 
-### Example 1: Inspecting Certificate Validity
-This example demonstrates how to access properties of an existing `SslCertificateInfo` instance to determine if a certificate requires renewal.
+### Example 1: Building an instance from a remote certificate
+This mirrors how `SslCertificateMonitoringService` maps an `X509Certificate2` into the model. Both dates are converted to UTC before they are stored.
 
 ```csharp
-using CaddyVpsToolkit;
+using System;
+using System.Net.Security;
+using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
+using CaddyVpsToolkit.Domain.Models;
 
-public void CheckCertificateRenewal(SslCertificateInfo certInfo)
+static SslCertificateInfo FromHost(string domain, int port = 443)
 {
-    if (certInfo.Status == SslCertificateStatus.ExpiringSoon)
+    using var tcp = new TcpClient(domain, port);
+    using var ssl = new SslStream(tcp.GetStream(), leaveInnerStreamOpen: false);
+    ssl.AuthenticateAsClient(domain);
+
+    var x509 = (X509Certificate2)ssl.RemoteCertificate!;
+
+    return new SslCertificateInfo
     {
-        Console.WriteLine($"Alert: Certificate for {certInfo.Domain} is expiring soon.");
-        Console.WriteLine($"Issuer: {certInfo.Issuer}");
-        Console.WriteLine($"Expires: {certInfo.ExpiresAt:yyyy-MM-dd HH:mm:ss}");
-        Console.WriteLine($"Details: {certInfo.Message}");
-    }
-    else if (certInfo.Status == SslCertificateStatus.Expired)
-    {
-        Console.WriteLine($"Critical: Certificate for {certInfo.Domain} has expired on {certInfo.ExpiresAt}.");
-    }
+        Domain = domain,
+        Subject = x509.Subject,
+        Issuer = x509.Issuer,
+        IssuedAt = x509.NotBefore.ToUniversalTime(),
+        ExpiresAt = x509.NotAfter.ToUniversalTime()
+    };
 }
 ```
 
-### Example 2: Generating Status Results via Factory Methods
-This example illustrates the use of static factory methods to generate standardized check results based on application logic.
+The example performs a blocking handshake and does not check the certificate chain. The monitoring service uses a callback that accepts any certificate, because it only needs the metadata.
+
+### Example 2: Reading expiry state directly from the model
+Because `DaysUntilExpiry` is clamped to zero, check `IsValid` before you rely on the day count.
 
 ```csharp
-using CaddyVpsToolkit;
 using System;
+using CaddyVpsToolkit.Domain.Models;
 
-public SslCertificateCheckResult EvaluateCertificateHealth(DateTime expiresAt, bool checkSuccessful)
+var cert = new SslCertificateInfo
 {
-    if (!checkSuccessful)
-    {
-        return SslCertificateInfo.CreateError();
-    }
+    Domain = "example.com",
+    Subject = "CN=example.com",
+    Issuer = "CN=R3, O=Let's Encrypt, C=US",
+    IssuedAt = DateTime.UtcNow.AddDays(-60),
+    ExpiresAt = DateTime.UtcNow.AddDays(10)
+};
 
-    var timeUntilExpiry = expiresAt - DateTime.UtcNow;
-
-    if (timeUntilExpiry.TotalDays <= 0)
-    {
-        return SslCertificateInfo.CreateExpired();
-    }
-    
-    if (timeUntilExpiry.TotalDays <= 30)
-    {
-        return SslCertificateInfo.CreateExpiringSoon();
-    }
-
-    return SslCertificateInfo.CreateValid();
+if (!cert.IsValid)
+{
+    Console.WriteLine($"{cert.Domain} is outside its validity window (expired {cert.ExpiresAt:yyyy-MM-dd}).");
 }
+else if (cert.DaysUntilExpiry <= 30)
+{
+    Console.WriteLine($"{cert.Domain} expires in {cert.DaysUntilExpiry} day(s).");
+}
+```
+
+### Example 3: Logging an instance
+`ToString()` is convenient for logs and diagnostics.
+
+```csharp
+using System;
+using CaddyVpsToolkit.Domain.Models;
+
+var cert = new SslCertificateInfo { Domain = "api.example.com", Issuer = "CN=E5, O=Let's Encrypt, C=US" };
+
+Console.WriteLine(cert);
+// SslCertificateInfo { Domain = api.example.com, Subject = , Issuer = CN=E5, O=Let's Encrypt, C=US, IssuedAt = ..., ExpiresAt = ..., Domain = api.example.com }
 ```
 
 ## Notes
 
-*   **Property Redundancy**: The type definition includes the `Domain` property twice in its public signature. In runtime behavior, this typically resolves to a single backing field, but consumers should be aware that IntelliSense or reflection may expose this duplication depending on the compiler output.
-*   **Nested Structure**: The presence of the `Certificate` property of type `SslCertificateInfo` suggests a potential for recursive data structures or a wrapper pattern where the outer instance holds metadata (like `CheckedAt` and `Status`) while the inner `Certificate` property holds the raw certificate details. Care should be taken to avoid infinite recursion if traversing this property graph.
-*   **Thread Safety**: The instance properties are mutable getters without explicit synchronization mechanisms. While the static factory methods (`CreateValid`, `CreateExpired`, etc.) are inherently thread-safe as they do not rely on shared mutable state, instances of `SslCertificateInfo` should be treated as immutable once constructed or protected by external locking if modified across threads.
-*   **Time Zones**: The `DateTime` properties (`IssuedAt`, `ExpiresAt`, `CheckedAt`) should be assumed to be in UTC unless otherwise documented in the consuming application, to ensure accurate comparison logic across different server time zones.
+*   **Duplicate `Domain` in `ToString()`**: The override writes the `Domain` value twice. This is a known quirk of the current implementation. The output is informational only, so the duplication has no effect on behavior.
+*   **Expired versus expiring today**: `DaysUntilExpiry` returns `0` for both an expired certificate and one with less than 24 hours left. Use `IsValid` to distinguish them.
+*   **Time zones**: The monitoring service always stores UTC. If you construct instances by hand, pass UTC values. `DateTimeKind.Unspecified` values are interpreted as local time, which can shift the result by the local UTC offset.
+*   **No validation on assignment**: The type has no `Validate()` method and its setters do not check input. `Domain` is only checked if the caller runs DataAnnotations validation.
+*   **Mutability**: All properties have public setters. Treat an instance as a snapshot of one handshake, and do not share a single instance across threads while it is being modified.
+*   **Relationship to results**: `SslCertificateCheckResult.Certificate` holds an `SslCertificateInfo` when a retrieval succeeded and is `null` when it failed. Its `Status` is derived from the thresholds applied by the monitoring service, not from `IsValid` alone.
