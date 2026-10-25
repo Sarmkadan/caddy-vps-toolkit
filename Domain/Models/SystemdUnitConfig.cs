@@ -133,6 +133,16 @@ namespace CaddyVpsToolkit.Domain.Models
 
             return string.Join("\n", lines);
         }
+
+        /// <summary>
+        /// Returns a concise summary of the key unit fields
+        /// (service, unit name, exec start, user, type, restart policy)
+        /// </summary>
+        /// <returns>A single-line summary of this systemd unit configuration</returns>
+        public override string ToString()
+        {
+            return $"SystemdUnitConfig {{ ServiceId={ServiceId}, UnitName={UnitName}, ExecStart={ExecStart}, User={User}, Type={Type}, RestartPolicy={RestartPolicy} }}";
+        }
     }
 
     public enum RestartPolicy
