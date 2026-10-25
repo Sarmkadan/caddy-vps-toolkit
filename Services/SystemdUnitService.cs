@@ -149,6 +149,9 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task<ServiceStatus> GetServiceStatusAsync(string unitName)
         {
+            if (string.IsNullOrWhiteSpace(unitName))
+                throw new ArgumentException("Unit name is required", nameof(unitName));
+
             try
             {
                 var output = await ExecuteCommandAsync("systemctl", $"is-active {unitName}", captureOutput: true);
