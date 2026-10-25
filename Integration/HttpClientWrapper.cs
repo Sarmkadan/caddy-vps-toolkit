@@ -112,6 +112,10 @@ namespace CaddyVpsToolkit.Integration
             object data,
             Dictionary<string, string>? headers = null)
         {
+            if (url == null)
+                throw new ArgumentNullException(nameof(url));
+            if (string.IsNullOrWhiteSpace(url))
+                throw new ArgumentException("URL cannot be empty", nameof(url));
             return await ExecuteAsync<T>(async () =>
             {
                 var request = CreateRequest(HttpMethod.Put, url, headers);
