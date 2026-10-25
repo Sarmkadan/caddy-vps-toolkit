@@ -27,6 +27,8 @@ namespace CaddyVpsToolkit.Integration
 
     public sealed class HttpClientWrapper : IHttpClient
     {
+        private const int DefaultTimeoutMs = 30_000;
+
         private readonly HttpClient _client;
         private readonly IRetryPolicy _retryPolicy;
         private readonly int _timeoutMs;
@@ -56,7 +58,7 @@ namespace CaddyVpsToolkit.Integration
         /// </summary>
         /// <param name="timeoutMs">Timeout in milliseconds (default 30 000).</param>
         /// <param name="retryPolicy">Retry policy; if <c>null</c>, a <see cref="NoRetryPolicy"/> is used.</param>
-        public HttpClientWrapper(int timeoutMs = 30_000, IRetryPolicy? retryPolicy = null)
+        public HttpClientWrapper(int timeoutMs = DefaultTimeoutMs, IRetryPolicy? retryPolicy = null)
             : this(new HttpClientWrapperOptions { TimeoutMs = timeoutMs, RetryPolicy = retryPolicy })
         {
         }
