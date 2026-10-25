@@ -67,6 +67,8 @@ namespace CaddyVpsToolkit.Integration
         {
             if (url == null)
                 throw new ArgumentNullException(nameof(url));
+            if (string.IsNullOrWhiteSpace(url))
+                throw new ArgumentException("URL cannot be empty", nameof(url));
             if (headers != null)
             {
                 foreach (var kvp in headers)
