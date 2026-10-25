@@ -33,11 +33,8 @@ namespace CaddyVpsToolkit.Services
         /// </summary>
         public async Task<bool> CreateUnitFileAsync(SystemdUnitConfig config, ManagedService service, bool dryRun = false)
         {
-            if (config is null)
-                throw new ArgumentNullException(nameof(config));
-
-            if (service is null)
-                throw new ArgumentNullException(nameof(service));
+            ArgumentNullException.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(service);
 
             config.Validate();
 
